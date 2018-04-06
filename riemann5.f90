@@ -32,20 +32,6 @@ program main
   timeout =  0.00000000000000000D+00
  !はじめのout put time
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   
   dx = domlen / real(cells)
   a =  0.18730704064812873D+00 !時間刻み
