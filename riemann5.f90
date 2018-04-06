@@ -38,6 +38,10 @@ program main
 
 
 
+
+
+
+
   
   dx = domlen / real(cells)
   a =  0.18730704064812873D+00 !時間刻み
