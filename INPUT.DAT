@@ -1,0 +1,24 @@
+512,512      !Np1x,Np2x
+0.50d0,0.50d0  !ql1x,ql2x
+1.0d0,0.1250d0  !d1,d2
+0.0d0,0.0d0  !vx1,vx2
+0.0d0,0.0d0  !vy1,vy2
+0.0d0,0.0d0  !vz1,vz2
+1.0d0,0.10d0  !p1,p2
+0.750d0,0.750d0  !Bx1,Bx2
+1.0d0,-1.0d0  !By1,By2
+0.0d0,0.0d0  !Bz1,Bz2
+1.0d0,0.1250d0  !H1,H2
+0.0d0,0.0d0  !p1,p2
+0.0d0,0.0d0  !H21,H22
+0.0d0,0.0d0  !He1,He2
+0.0d0,0.0d0  !Hep1,Hep2
+0.0d0,0.0d0  !C1,C2
+0.0d0,0.0d0  !Cp1,Cp2
+0.0d0,0.0d0  !CO1,CO2
+0.490d0,1.d0   !CFL,facdep
+999,1,40.d0   !maxstp,nitera,tfinal
+1,1          !BCx1,BCx2
+0,0,0,0        !iflag,ifchem,ifthr,ifrad
+
+
