@@ -68,7 +68,7 @@ int main(void)
 {
     double x[3] = {0,0,0};
     double v[3] = {1,0,0};
-    double E[3] = {1.00,0.00,0.00};
+    double E[3] = {0.00,0.200,0.00};
     double B[3] = {0.00,0.00,1.00};
     FILE *fp;
     fp = fopen("../plasma-cal/ChargedParticle.dat","w");
