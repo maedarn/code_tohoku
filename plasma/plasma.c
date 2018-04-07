@@ -71,7 +71,7 @@ int main(void)
     double E[3] = {1.00,0.00,0.00};
     double B[3] = {0.00,0.00,1.00};
     FILE *fp;
-    fp = fopen("ChargedParticle.dat","w");
+    fp = fopen("../plasma-cal/ChargedParticle.dat","w");
     double t,dt=0.01;
     for(t=dt;t<=20*M_PI;t=t+dt)
     {
