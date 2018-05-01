@@ -1,3 +1,4 @@
+
 program main
   implicit none
   character filename*128
@@ -51,19 +52,19 @@ program main
 
   
   dx = domlen / real(cells)
-  a =  0.18730704064812873D+00 !時間刻み
-  tstep = 1 !時間ステップ数
+  a =  0.10D+00 !時間刻み
+  tstep = 5 !時間ステップ数
   nriter = 1000 !反復(ニュートンラフソン)
   tolpre = 1.0d-6 !ニュートンラフソン基準
 
   !allocate( dl(cells/2) , ul(cells/2) , pl(cells/2) , cl(cells/2) , dr(cells/2) , ur(cells/2) , pr(cells/2) , cr(cells/2))
 
-  dl = 1.0d0
+  dl = 0.1250d0
   ul = 0.0d0
-  pl = 1.0d0
-  dr = 0.1250d0
+  pl = 0.10d0
+  dr = 1.0d0
   ur = 0.0d0
-  pr = 0.10d0
+  pr = 1.0d0
 
   mpa = 1.0d0 !圧力を見やすさのため規格化
 
