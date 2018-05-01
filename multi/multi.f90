@@ -2,14 +2,16 @@
 !multiglid method     numerical recipe inF77
 !********************************************************!
 module comvar
+  implicit none
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
-  integer(8),PARAMETER :: NG=5,MEMLEN=4437
+  integer,PARAMETER :: NG=5,MEMLEN=4437
   integer, PARAMETER :: NPRE=1,NPOST=1
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
 
 program main
+  implicit none
   INTEGER :: n=32
   integer ncycle
   double precision u(1:32,1:32)
