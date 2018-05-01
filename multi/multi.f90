@@ -1,25 +1,30 @@
 !********************************************************!
 !multiglid method     numerical recipe inF77
 !********************************************************!
-
-
+module comvar
+ integer,PARAMETER :: NG=8,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-100/3
+ integer, PARAMETER :: NPRE=1,NPOST=1
+ integer mem
+ DOUBLE PRECISION z(MEMLEN)
+end module comvar
 
 program main
   INTEGER :: n=512
   integer ncycle
-  double precision u
+  double precision u(1:512,1:512)
   call mglin(u,n,ncycle)
 end program main
 
 
 SUBROUTINE mglin(u,n,ncycle)
+  use comvar
   INTEGER n,ncycle
-  integer,PARAMETER :: NG=8,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-100/3
-  integer, PARAMETER :: NPRE=1,NPOST=1
-  INTEGER j,jcycle,jj,jpost,jpre,mem,nf,ngrid,nn,ires(NG), irho(NG),irhs(NG),iu(NG),maloc
-  DOUBLE PRECISION z
+  !integer,PARAMETER :: NG=8,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-100/3
+  !integer, PARAMETER :: NPRE=1,NPOST=1
+  INTEGER j,jcycle,jj,jpost,jpre,nf,ngrid,nn,ires(NG), irho(NG),irhs(NG),iu(NG),maloc
+  !DOUBLE PRECISION z
   double precision u(n,n)
-  COMMON /memory/ z(MEMLEN),mem  !Storage for grid functions is allocated by maloc
+  !COMMON /memory/ z(MEMLEN),mem  !Storage for grid functions is allocated by maloc
   mem=0 !from array z.
   nn=n/2+1     !nはx,yのメッシュ数,nnは半分の地点
   ngrid=NG-1 !レベル2**Nみたいなもの（何回イタレーションするか）
@@ -238,12 +243,13 @@ SUBROUTINE fill0(u,n)
 END SUBROUTINE fill0
 
 FUNCTION maloc(len) !len=格子の個数
+  use comvar
   INTEGER maloc,len
-  integer , PARAMETER :: NG=8,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-100/3 !for mglin
+  !integer , PARAMETER :: NG=8,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-100/3 !for mglin
   !integer , PARAMETER :: NG=8,MEMLEN=17*2**(2*NG)/3+18*2**NG+10*NG-86/3 !for mgfas, N.B.!
-  INTEGER mem
-  DOUBLE PRECISION z
-  COMMON /memory/ z(MEMLEN),mem
+  !INTEGER mem
+  !DOUBLE PRECISION z
+  !COMMON /memory/ z(MEMLEN),mem
   !Dynamical storage allocation. Returns integer pointer to the starting position for len array
   !elements in the array z. The preceding array element is lled with the value of len, and
   !the variable mem is updated to point to the last element of z that has been used.
