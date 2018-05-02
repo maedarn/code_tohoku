@@ -18,10 +18,10 @@ end module comvar
 
 program main
   implicit none
-  INTEGER :: n=32
+  INTEGER :: n=33
   integer :: ncycle=10
-  double precision u(1:32,1:32),Px(1:32),Py(1:32),uBCx1(1:32),uBCy1(1:32),uBCxn(1:32),uBCyn(1:32)
-  call INITIA(u,n)
+  double precision u(1:33,1:33),Px(1:33),Py(1:33),uBCx1(1:33),uBCy1(1:33),uBCxn(1:33),uBCyn(1:33)
+  !call INITIA(u,n)
   !call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
   call mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
   call position(Px,Py,n)
@@ -37,10 +37,10 @@ subroutine INITIA(u,n)
         u(i,j) = 0.0d0
      end do
   end do
-  ! u(16,16) = 100.0d0
-  ! u(16,17) = 100.0d0
-  ! u(17,16) = 100.0d0
-  ! u(17,17) = 100.0d0
+   !u(16,16) = 100.0d0
+   !u(16,17) = 100.0d0
+   !u(17,16) = 100.0d0
+   u(17,17) = 100.0d0
    !write(*,*) '**********',u(16,16),'**********'
  write(*,*) '--------------INT----------------'
 end subroutine INITIA
@@ -52,6 +52,7 @@ subroutine position(Px,Py,n)
   double precision Px(n),Py(n)
   hx=1.0d0/dble(n)
   hy=1.0d0/dble(n)
+  !write(*,*) n,'99999999999'
   do i=1,n
      Px(i) = hx*i
   end do
@@ -174,10 +175,12 @@ SUBROUTINE rstrct(uc,uf,nc)
   DOUBLE PRECISION uc(nc,nc),uf(2*nc-1,2*nc-1)
   !Half-weighting restriction. nc is the coarse-grid dimension. The ne-grid solution is input
   !in uf(1:2*nc-1,1:2*nc-1), the coarse-grid solution is returned in uc(1:nc,1:nc).
-  INTEGER ic,iff,jc,jf
+  INTEGER :: ic,iff,jc,jf,count=1
   !write(*,*) uc(1,2),uc(2,1) ,'888888888888888888888888888' 後ろから格納
   !uc(1,2)=0.d0
   !uc(2,1)=0.d0
+  if(count==1) call INITIA(uf,2*nc-1)
+  count=count+1
   do  jc=2,nc-1 !Interior points.
      jf=2*jc-1
      do  ic=2,nc-1
