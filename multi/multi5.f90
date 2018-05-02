@@ -11,7 +11,7 @@ module comvar
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
   integer,PARAMETER :: NG=5
   integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
-  integer, PARAMETER :: NPRE=100,NPOST=1 !ガウスサイデル反復,smoosing
+  integer, PARAMETER :: NPRE=50,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
@@ -19,7 +19,7 @@ end module comvar
 program main
   implicit none
   INTEGER :: n=32
-  integer ncycle = 5
+  integer :: ncycle=5
   double precision u(1:32,1:32),Px(1:32),Py(1:32),uBCx1(1:32),uBCy1(1:32),uBCxn(1:32),uBCyn(1:32)
   call INITIA(u,n)
   call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
@@ -102,7 +102,7 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
   nn=3
   iu(1)=maloc(int(nn**2)) !1=ngrid
   irhs(1)=maloc(int(nn**2))
-  call slvsml(z(iu(1)),z(irho(1)),uBCx1(1),uBCy1(1),uBCxn(1),uBCyn(1)) !Initial solution on coarsest grid. 初期値uの
+  call slvsml(z(iu(1)),z(irho(1))) !Initial solution on coarsest grid. 初期値uの
   ngrid=NG
   do j=2,ngrid! Nested iteration loop. 粗い位置から始まる (前のv-loopnoの一番下から)
      nn=2*nn-1 !ふやしていく 細かく
@@ -135,7 +135,7 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
            call fill0(z(iu(jj-1)),nf) !Zero for initial guess in next relaxation. 初めに求めたポテンシャルを初期化(iu(j)を求めるために作った)
         enddo
         write(*,*) j
-        call slvsml(z(iu(1)),z(irhs(1)),uBCx1(1),uBCy1(1),uBCxn(1),uBCyn(1)) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
+        call slvsml(z(iu(1)),z(irhs(1))) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
         write(*,*) j
         nf=3
         do jj=2,j !Upward stroke of V.
@@ -222,7 +222,6 @@ SUBROUTINE addint(uf,uc,res,nf)
   INTEGER i,j
   write(*,*) j
   call interp(res,uc,nf)
-  write(*,*) j
   do  j=1,nf
      do  i=1,nf
         uf(i,j)=uf(i,j)+res(i,j) !新しいu(ポテンシャル)を作成
@@ -231,8 +230,8 @@ SUBROUTINE addint(uf,uc,res,nf)
   return
 END SUBROUTINE addint
 
-SUBROUTINE slvsml(u,rhs,uBCx1,uBCy1,uBCxn,uBCyn) !式19.0.6
-  DOUBLE PRECISION rhs(3,3),u(3,3),uBCx1(n),uBCy1(n),uBCxn(n),uBCyn(n)
+SUBROUTINE slvsml(u,rhs) !式19.0.6
+  DOUBLE PRECISION rhs(3,3),u(3,3)
   !C USES fill0
   !Solution of the model problem on the coarsest grid, where h = 1
   !2 . The right-hand side is
@@ -240,7 +239,7 @@ SUBROUTINE slvsml(u,rhs,uBCx1,uBCy1,uBCxn,uBCyn) !式19.0.6
   DOUBLE PRECISION h
   call fill0(u,3) !uの初期化 ここで密度から切り替わる(ポテンシャルに) このサブルーチン内では
   h=0.5d0
-  u(2,2)= uBCx1(1)+uBCxn(1)+uBCy1(1)+uBCyn(1)-h*h*rhs(2,2)/4.d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
+  u(2,2)= -h*h*rhs(2,2)/4.d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
 
   !u(2,2) = 5.0d0 !境界条件(potential center)
   return  !ただし全ての境界のuを0としている
