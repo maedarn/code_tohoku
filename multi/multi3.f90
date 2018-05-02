@@ -1,12 +1,17 @@
-!********************************************************!
-!multiglid method     numerical recipe inF77
-!********************************************************!
+!******************************************************************!
+!multiglid method    - numerical recipe inF77 -
+!mglin rstrct interp addint slvsml relax resid copy fill0 maloc
+!------------------------------------------------------------------!
+!arrange some subroutine
+!main initia position save comvar
+!******************************************************************!
+
 module comvar
   implicit none
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
   integer,PARAMETER :: NG=5
   integer(8),PARAMETER :: MEMLEN=5000
-  integer, PARAMETER :: NPRE=1,NPOST=1
+  integer, PARAMETER :: NPRE=5,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
@@ -31,6 +36,7 @@ subroutine INITIA(u,n)
         u(i,j) = 0.0d0
      end do
   end do
+  !u(16,16) = 100.0d0
 end subroutine INITIA
 
 subroutine position(Px,Py,n)
@@ -221,9 +227,9 @@ SUBROUTINE slvsml(u,rhs)
   DOUBLE PRECISION h
   call fill0(u,3) !uの初期化 ここで密度から切り替わる(ポテンシャルに) このサブルーチン内では
   h=0.5d0
-  !u(2,2)= -h*h*rhs(2,2)/4.d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
+  u(2,2)= -h*h*rhs(2,2)/4.d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
 
-  u(2,2) = 5.0d0 !境界条件(potential center)
+  !u(2,2) = 5.0d0 !境界条件(potential center)
   return  !ただし全ての境界のuを0としている
 END SUBROUTINE slvsml
 
