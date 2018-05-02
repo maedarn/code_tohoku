@@ -291,7 +291,8 @@ FUNCTION maloc(len) !len=格子の個数
      write(*,*) 'insufficient memory in maloc'
      stop
   else
-  z(mem+1)=len
+     z(mem+1)=len
+     write(*,*) len
   maloc=mem+2
   mem=mem+len+1
   endif
