@@ -19,7 +19,7 @@ end module comvar
 program main
   implicit none
   INTEGER :: n=32
-  integer ncycle = 5
+  integer :: ncycle = 5
   double precision u(1:32,1:32),Px(1:32),Py(1:32),uBCx1(1:32),uBCy1(1:32),uBCxn(1:32),uBCyn(1:32)
   call INITIA(u,n)
   call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
@@ -201,7 +201,7 @@ SUBROUTINE interp(uf,uc,nf)
 
   do jf=1,nf,2 !Do odd-numbered columns, interpolating verdo 内挿
      do iff=2,nf-1,2 !tically.
-        uf(iff,jf)=0.5d0*(uf(if+1,jf)+uf(iff-1,jf))
+        uf(iff,jf)=0.5d0*(uf(iff+1,jf)+uf(iff-1,jf))
      enddo
   enddo
   do jf=2,nf-1,2 !Do even-numbered columns, interpolating hordo

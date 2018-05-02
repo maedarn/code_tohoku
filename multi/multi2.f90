@@ -163,7 +163,7 @@ SUBROUTINE interp(uf,uc,nf)
 
   do jf=1,nf,2 !Do odd-numbered columns, interpolating verdo 内挿
      do iff=2,nf-1,2 !tically.
-        uf(iff,jf)=0.5d0*(uf(if+1,jf)+uf(iff-1,jf))
+        uf(iff,jf)=0.5d0*(uf(iff+1,jf)+uf(iff-1,jf))
      enddo
   enddo
   do jf=2,nf-1,2 !Do even-numbered columns, interpolating hordo
