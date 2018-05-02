@@ -42,7 +42,7 @@ subroutine INITIA(u,n)
    !u(17,16) = 100.0d0
    u(17,17) = 100.0d0
    !write(*,*) '**********',u(16,16),'**********'
- write(*,*) '--------------INT----------------'
+ !write(*,*) '--------------INT----------------'
 end subroutine INITIA
 
 subroutine position(Px,Py,n)
@@ -59,7 +59,7 @@ subroutine position(Px,Py,n)
   do i=1,n
      Py(i) = hy*i
   end do
-  write(*,*) '--------------pos----------------'
+ ! write(*,*) '--------------pos----------------'
 end subroutine position
 
 
@@ -79,7 +79,7 @@ subroutine save(u,Px,Py,n)
      end do
      write(10,*)
   end do
-  write(*,*) '--------------sav----------------'
+ ! write(*,*) '--------------sav----------------'
 end subroutine save
 
 
@@ -117,7 +117,7 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
      iu(j)=maloc(int(nn**2))
      irhs(j)=maloc(int(nn**2))
      ires(j)=maloc(int(nn**2))
-     write(*,*) j
+    ! write(*,*) j
      call interp(z(iu(j)),z(iu(j-1)),nn) !Interpolate from coarse grid to next ner grid. zに格納（挿入）細かく
 
      if (j.ne.ngrid) then !.ne. = not equal
@@ -255,7 +255,7 @@ SUBROUTINE addint(uf,uc,res,nf)
   !solution is returned in uf(1:nf,1:nf). res(1:nf,1:nf) is used for temporary storage.
   INTEGER i,j
   !write(*,*) j
-  write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
+  !write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   call interp(res,uc,nf)
  ! write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   do  j=1,nf
@@ -263,7 +263,7 @@ SUBROUTINE addint(uf,uc,res,nf)
         uf(i,j)=uf(i,j)+res(i,j) !新しいu(ポテンシャル)を作成
      enddo
   enddo
-  write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
+  !write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   return
 END SUBROUTINE addint
 
@@ -276,9 +276,9 @@ SUBROUTINE slvsml(u,rhs) !式19.0.6
   DOUBLE PRECISION h
   call fill0(u,3) !uの初期化 ここで密度から切り替わる(ポテンシャルに) このサブルーチン内では
   h=0.5d0
-  write(*,*) '**********',u(2,2),'**********'
+  !write(*,*) '**********',u(2,2),'**********'
   u(2,2)= -h*h*rhs(2,2)*0.25d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
- write(*,*) '**********',u(2,2),'**********'
+ !write(*,*) '**********',u(2,2),'**********'
   !u(2,2) = 5.0d0 !境界条件(potential center)
   return  !ただし全ての境界のuを0としている
 END SUBROUTINE slvsml
