@@ -10,7 +10,7 @@ module comvar
   implicit none
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
   integer,PARAMETER :: NG=5
-  integer(8),PARAMETER :: MEMLEN=5000
+  integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
   integer, PARAMETER :: NPRE=5,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
@@ -37,7 +37,10 @@ subroutine INITIA(u,n)
         u(i,j) = 0.0d0
      end do
   end do
-  !u(16,16) = 100.0d0
+  u(16,16) = 100.0d0
+  u(16,17) = 100.0d0
+  u(17,16) = 100.0d0
+  u(17,17) = 100.0d0
 end subroutine INITIA
 
 subroutine position(Px,Py,n)
@@ -99,13 +102,15 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
   nn=3
   iu(1)=maloc(int(nn**2)) !1=ngrid
   irhs(1)=maloc(int(nn**2))
-  call slvsml(z(iu(1)),z(irho(1)),uBCx1,uBCy1,uBCxn,uBCyn) !Initial solution on coarsest grid. 初期値uの
+  call slvsml(z(iu(1)),z(irho(1)),uBCx1(1),uBCy1(1),uBCxn(1),uBCyn(1)) !Initial solution on coarsest grid. 初期値uの
   ngrid=NG
   do j=2,ngrid! Nested iteration loop. 粗い位置から始まる (前のv-loopnoの一番下から)
      nn=2*nn-1 !ふやしていく 細かく
+      write(*,*) j
      iu(j)=maloc(int(nn**2))
      irhs(j)=maloc(int(nn**2))
      ires(j)=maloc(int(nn**2))
+     write(*,*) j
      call interp(z(iu(j)),z(iu(j-1)),nn) !Interpolate from coarse grid to next ner grid. zに格納（挿入）細かく
 
      if (j.ne.ngrid) then !.ne. = not equal
@@ -129,20 +134,24 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
 
            call fill0(z(iu(jj-1)),nf) !Zero for initial guess in next relaxation. 初めに求めたポテンシャルを初期化(iu(j)を求めるために作った)
         enddo
-        call slvsml(z(iu(1)),z(irhs(1)),uBCx1,uBCy1,uBCxn,uBCyn) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
+        write(*,*) j
+        call slvsml(z(iu(1)),z(irhs(1)),uBCx1(1),uBCy1(1),uBCxn(1),uBCyn(1)) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
+        write(*,*) j
         nf=3
         do jj=2,j !Upward stroke of V.
            nf=2*nf-1 !グリッドの目
+           write(*,*) j
            call addint(z(iu(jj)),z(iu(jj-1)),z(ires(jj)),nf) !粗いメッシュの残差が作ったポテンシャルを細かいグリッドの新たなzに足す。ただし初期化しているのはu(NG-1)までなので最終的なuは正しい値になる。
-
+           write(*,*) j
            !Use res for temporary storage inside addint.
 
            do jpost=1,NPOST !Post-smoothing.
               call relax(z(iu(jj)),z(irhs(jj)),nf) !さらに収束させる(残差を小さく)これは残差の作るポテンシャルを残差の作る密度で収束させている。
            enddo
         enddo
+        write(*,*) j
      enddo
-     call converge(z(iu(j)),nf)
+     !call converge(z(iu(j)),nf)
   enddo
   call copy(u,z(iu(ngrid)),n) !Return solution in u.
   return
@@ -387,7 +396,7 @@ end subroutine BC
 
 subroutine converge(u,n)
   integer n
-  double precision u(n,n) , cnv(0:10) , sum
+  double precision u(n,n) , cnv(0:50) , sum
   integer :: i=1
   integer j,k
 
