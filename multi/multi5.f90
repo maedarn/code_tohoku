@@ -11,7 +11,7 @@ module comvar
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
   integer,PARAMETER :: NG=5
   integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
-  integer, PARAMETER :: NPRE=50,NPOST=1 !ガウスサイデル反復,smoosing
+  integer, PARAMETER :: NPRE=100,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
@@ -19,12 +19,12 @@ end module comvar
 program main
   implicit none
   INTEGER :: n=32
-  integer :: ncycle=5
+  integer :: ncycle=10
   double precision u(1:32,1:32),Px(1:32),Py(1:32),uBCx1(1:32),uBCy1(1:32),uBCxn(1:32),uBCyn(1:32)
   call INITIA(u,n)
-  call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
-  call position(Px,Py,n)
+  !call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
   call mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
+  call position(Px,Py,n)
   call save(u,Px,Py,n)
 end program main
 
@@ -93,7 +93,153 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
   !COMMON /memory/ z(MEMLEN),mem  !Storage for grid functions is allocated by maloc
   mem=0 !from array z.
   nn=n/2+1     !nはx,yのメッシュ数,nnは半分の地点
- write(*,*) '----------OK----------'
+  ngrid=NG-1 !レベル2**Nみたいなもの（何回イタレーションするか）
+  irho(ngrid) = maloc(int(nn**2))   ! Allocate storage for r.h.s. on grid NG − 1,
+  !write(*,*) '**********',u(8,8),'**********'
+  !z(irho(ngrid)+1)=1.0d0
+  call rstrct(z(irho(ngrid)),u,nn)   !and ll it by restricting from the ne grid. 初期のuにはrhs(密度)が収められている
+1 if (nn.gt.3) then   !Similarly allocate storage and ll r.h.s. on all
+     nn=nn/2+1 !coarse grids.
+     ngrid=ngrid-1
+     irho(ngrid)=maloc(int(nn**2))
+     call rstrct(z(irho(ngrid)),z(irho(ngrid+1)),nn) !粗いグリッドと細かいグリッドを引数に取る
+     goto 1
+  endif
+  nn=3
+  iu(1)=maloc(int(nn**2)) !1=ngrid
+  irhs(1)=maloc(int(nn**2))
+  call slvsml(z(iu(1)),z(irho(1))) !Initial solution on coarsest grid. 初期値uの
+  ngrid=NG
+  do j=2,ngrid! Nested iteration loop. 粗い位置から始まる (前のv-loopnoの一番下から)
+     nn=2*nn-1 !ふやしていく 細かく
+      write(*,*) j
+     iu(j)=maloc(int(nn**2))
+     irhs(j)=maloc(int(nn**2))
+     ires(j)=maloc(int(nn**2))
+     write(*,*) j
+     call interp(z(iu(j)),z(iu(j-1)),nn) !Interpolate from coarse grid to next ner grid. zに格納（挿入）細かく
+
+     if (j.ne.ngrid) then !.ne. = not equal
+        call copy(z(irhs(j)),z(irho(j)),nn) !Set up r.h.s. 初期の密度を右辺の項に代入  zを使う(rstrctで用いた値を使う)
+     else
+        call copy(z(irhs(j)),u,nn) !j最大(ngrid)では元の密度分布を使う
+     endif
+
+     do jcycle=1,ncycle !V-cycle loop.
+        nf=nn
+        do jj=j,2,-1 !Downward stoke of the V.
+           do jpre=1,NPRE !Pre-smoothing.ガウスサイデル法の回数
+              call relax(z(iu(jj)),z(irhs(jj)),nf) !収束させる。
+           enddo
+
+           call resid(z(ires(jj)),z(iu(jj)),z(irhs(jj)),nf) !残差
+           nf=nf/2+1
+           call rstrct(z(irhs(jj-1)),z(ires(jj)),nf) !粗いメッシュの残差からのrhsを計測(残差による湧き出しの項)
+
+           !Restriction of the residual is the next r.h.s.
+
+           call fill0(z(iu(jj-1)),nf) !Zero for initial guess in next relaxation. 初めに求めたポテンシャルを初期化(iu(j)を求めるために作った)
+        enddo
+        write(*,*) j
+        call slvsml(z(iu(1)),z(irhs(1))) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
+        write(*,*) j
+        nf=3
+        do jj=2,j !Upward stroke of V.
+           nf=2*nf-1 !グリッドの目
+           write(*,*) j
+           call addint(z(iu(jj)),z(iu(jj-1)),z(ires(jj)),nf) !粗いメッシュの残差が作ったポテンシャルを細かいグリッドの新たなzに足す。ただし初期化しているのはu(NG-1)までなので最終的なuは正しい値になる。
+           write(*,*) j
+           !Use res for temporary storage inside addint.
+
+           do jpost=1,NPOST !Post-smoothing.
+                !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
+                call relax(z(iu(jj)),z(irhs(jj)),nf) !さらに収束させる(残差を小さく)これは残差の作るポテンシャルを残差の作る密度で収束させている。
+               !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
+           enddo
+        enddo
+        !write(*,*) j
+     enddo
+     !call converge(z(iu(j)),nf)
+  enddo
+  !write(*,*) u(n,n/2),'????????????????????????'
+  !write(*,*) z(iu(ngrid)) ,'!!!!!!!!!!!!!!!'
+  !write(*,*) z(iu(ngrid)+n**2-n/2),'!!!!!!!!!!!!!!!'
+  call copy(u,z(iu(ngrid)),n) !Return solution in u.
+  !write(*,*) u(n,n/2),'????????????????????????'
+  return
+END SUBROUTINE mglin
+
+SUBROUTINE rstrct(uc,uf,nc)
+  INTEGER nc
+  DOUBLE PRECISION uc(nc,nc),uf(2*nc-1,2*nc-1)
+  !Half-weighting restriction. nc is the coarse-grid dimension. The ne-grid solution is input
+  !in uf(1:2*nc-1,1:2*nc-1), the coarse-grid solution is returned in uc(1:nc,1:nc).
+  INTEGER ic,iff,jc,jf
+  !write(*,*) uc(1,2),uc(2,1) ,'888888888888888888888888888' 後ろから格納
+  !uc(1,2)=0.d0
+  !uc(2,1)=0.d0
+  do  jc=2,nc-1 !Interior points.
+     jf=2*jc-1
+     do  ic=2,nc-1
+        iff=2*ic-1
+        uc(ic,jc)=0.5d0*uf(iff,jf)+0.125d0*(uf(iff+1,jf)+ uf(iff-1,jf)+uf(iff,jf+1)+uf(iff,jf-1)) !平均
+     enddo
+  enddo
+  do  ic=1,nc !Boundary points. 境界では残差はもともと０
+     uc(ic,1)=uf(2*ic-1,1)
+     uc(ic,nc)=uf(2*ic-1,2*nc-1)
+  enddo
+  do  jc=1,nc !Boundary points.
+     uc(1,jc)=uf(1,2*jc-1)
+     uc(nc,jc)=uf(2*nc-1,2*jc-1)
+  enddo
+
+  uc((nc+1)/2,(nc+1)/2) = uf((nc+1),(nc+1)) !boundarypoint(center)
+
+  return
+END SUBROUTINE rstrct
+
+SUBROUTINE interp(uf,uc,nf)
+  INTEGER nf
+  DOUBLE PRECISION uc(int(nf/2)+1,int(nf/2)+1),uf(nf,nf)
+  INTEGER ic,iff,jc,jf,nc
+  !Coarse-to-ne prolongation by bilinear interpolation. nf is the ne-grid dimension. The
+  !coarse-grid solution is input as uc(1:nc,1:nc), where nc = nf=2 + 1. The ne-grid
+  !solution is returned in uf(1:nf,1:nf).
+  nc=int(nf/2)+1
+  !write(*,*) '----------OK----------'
+!***********************BC**************
+  uc(1,:) = 0.0d0
+  uc(nc,:) = 0.0d0
+  uc(:,1) = 0.0d0
+  uc(:,nc) = 0.0d0
+!***********************BC**************
+  ! write(*,*) '----------OK----------'
+  do  jc=1,nc !Do elements that are copies. 増やしたグリッドに元の値（雑な）を代入
+     jf=2*jc-1
+     do  ic=1,nc
+        uf(2*ic-1,jf)=uc(ic,jc)
+     enddo
+  enddo
+
+  do jf=1,nf,2 !Do odd-numbered columns, interpolating verdo 内挿
+     do iff=2,nf-1,2 !tically.
+        uf(iff,jf)=0.5d0*(uf(iff+1,jf)+uf(iff-1,jf))
+     enddo
+  enddo
+  do jf=2,nf-1,2 !Do even-numbered columns, interpolating hordo
+     do iff=1,nf !izontally.
+        uf(iff,jf)=0.5d0*(uf(iff,jf+1)+uf(iff,jf-1))
+     enddo
+  enddo
+   !write(*,*) '----------OK----------'
+!***********************BC**************
+  uf(1,:) = 0.0d0
+  uf(nf,:) = 0.0d0
+  uf(:,1) = 0.0d0
+  uf(:,nf) = 0.0d0
+!***********************BC**************
+   !write(*,*) '----------OK----------'
   return
 END SUBROUTINE interp
 
@@ -105,13 +251,16 @@ SUBROUTINE addint(uf,uc,res,nf)
   !coarse-grid solution is input as uc(1:nc,1:nc), where nc = nf=2 + 1. The ne-grid
   !solution is returned in uf(1:nf,1:nf). res(1:nf,1:nf) is used for temporary storage.
   INTEGER i,j
-  write(*,*) j
+  !write(*,*) j
+  write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   call interp(res,uc,nf)
+ ! write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   do  j=1,nf
      do  i=1,nf
         uf(i,j)=uf(i,j)+res(i,j) !新しいu(ポテンシャル)を作成
      enddo
   enddo
+  write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   return
 END SUBROUTINE addint
 
@@ -151,6 +300,7 @@ SUBROUTINE relax(u,rhs,n) !ガウスサイデル
      enddo
      jsw=3-jsw
   enddo
+ ! write(*,*) u(n,n/2),'????????????????????????'
   return
 END SUBROUTINE relax
 
@@ -182,11 +332,14 @@ SUBROUTINE copy(aout,ain,n)
   DOUBLE PRECISION ain(n,n),aout(n,n)
   !Copies ain(1:n,1:n) to aout(1:n,1:n).
   INTEGER i,j
+  !write(*,*) ain(1,1),'77777777777777777777777'
+  !write(*,*) ain(n,n/2),'77777777777777777777777'
   do i=1,n
      do j=1,n
         aout(j,i)=ain(j,i)
      enddo
   enddo
+   !write(*,*) aout(n,n/2),'77777777777777777777777'
   return
 END SUBROUTINE copy
 
