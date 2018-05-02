@@ -11,7 +11,7 @@ module comvar
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
   integer,PARAMETER :: NG=5
   integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
-  integer, PARAMETER :: NPRE=100,NPOST=1 !ガウスサイデル反復,smoosing
+  integer, PARAMETER :: NPRE=1,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
@@ -19,7 +19,7 @@ end module comvar
 program main
   implicit none
   INTEGER :: n=33
-  integer :: ncycle=10
+  integer :: ncycle=1
   double precision u(1:33,1:33),Px(1:33),Py(1:33),uBCx1(1:33),uBCy1(1:33),uBCxn(1:33),uBCyn(1:33)
   !call INITIA(u,n)
   !call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
