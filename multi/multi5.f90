@@ -1,3 +1,4 @@
+
 !******************************************************************!
 !multiglid method    - numerical recipe inF77 -
 !mglin rstrct interp addint slvsml relax resid copy fill0 maloc
@@ -9,17 +10,21 @@
 module comvar
   implicit none
   !integer(8),PARAMETER :: NG=5,MEMLEN=13*2**(2*NG)/3+14*2**NG+8*NG-int(100/3)
+  !integer,PARAMETER :: NG=9
   integer,PARAMETER :: NG=5
+  !integer(8),PARAMETER :: MEMLEN=1500000 !周回を増やす時もきをつけて
   integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
-  integer, PARAMETER :: NPRE=1,NPOST=1 !ガウスサイデル反復,smoosing
+  integer, PARAMETER :: NPRE=5,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
 
 program main
   implicit none
+  !INTEGER :: n=513
   INTEGER :: n=33
-  integer :: ncycle=1
+  integer :: ncycle=5
+  !double precision u(1:513,1:513),Px(1:513),Py(1:513),uBCx1(1:513),uBCy1(1:513),uBCxn(1:513),uBCyn(1:513)
   double precision u(1:33,1:33),Px(1:33),Py(1:33),uBCx1(1:33),uBCy1(1:33),uBCxn(1:33),uBCyn(1:33)
   !call INITIA(u,n)
   !call BChazi(uBCx1,uBCy1,uBCxn,uBCyn,n)
@@ -37,12 +42,13 @@ subroutine INITIA(u,n)
         u(i,j) = 0.0d0
      end do
   end do
-   !u(16,16) = 100.0d0
-   !u(16,17) = 100.0d0
-   !u(17,16) = 100.0d0
-   u(17,17) = 100.0d0
-   !write(*,*) '**********',u(16,16),'**********'
- !write(*,*) '--------------INT----------------'
+  !u(16,16) = 100.0d0
+  !u(16,17) = 100.0d0
+  !u(17,16) = 100.0d0
+  !u(257,257) = 100.0d0
+  u(17,17) = 100.0d0
+  !write(*,*) '**********',u(16,16),'**********'
+  !write(*,*) '--------------INT----------------'
 end subroutine INITIA
 
 subroutine position(Px,Py,n)
@@ -59,7 +65,7 @@ subroutine position(Px,Py,n)
   do i=1,n
      Py(i) = hy*i
   end do
- ! write(*,*) '--------------pos----------------'
+  ! write(*,*) '--------------pos----------------'
 end subroutine position
 
 
@@ -79,7 +85,7 @@ subroutine save(u,Px,Py,n)
      end do
      write(10,*)
   end do
- ! write(*,*) '--------------sav----------------'
+  ! write(*,*) '--------------sav----------------'
 end subroutine save
 
 
@@ -113,11 +119,11 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
   ngrid=NG
   do j=2,ngrid! Nested iteration loop. 粗い位置から始まる (前のv-loopnoの一番下から)
      nn=2*nn-1 !ふやしていく 細かく
-      write(*,*) j
+     write(*,*) j
      iu(j)=maloc(int(nn**2))
      irhs(j)=maloc(int(nn**2))
      ires(j)=maloc(int(nn**2))
-    ! write(*,*) j
+     ! write(*,*) j
      call interp(z(iu(j)),z(iu(j-1)),nn) !Interpolate from coarse grid to next ner grid. zに格納（挿入）細かく
 
      if (j.ne.ngrid) then !.ne. = not equal
@@ -128,6 +134,7 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
 
      do jcycle=1,ncycle !V-cycle loop.
         nf=nn
+        write(*,*) 'nf=' , nf
         do jj=j,2,-1 !Downward stoke of the V.
            do jpre=1,NPRE !Pre-smoothing.ガウスサイデル法の回数
               call relax(z(iu(jj)),z(irhs(jj)),nf) !収束させる。
@@ -141,9 +148,9 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
 
            call fill0(z(iu(jj-1)),nf) !Zero for initial guess in next relaxation. 初めに求めたポテンシャルを初期化(iu(j)を求めるために作った)
         enddo
-        write(*,*) j
+        !write(*,*) j
         call slvsml(z(iu(1)),z(irhs(1))) !Bottom of V: solve on coarsest grid. iu(1)が初期化されたのでもう一度呼び出す。
-        write(*,*) j
+        !write(*,*) j
         nf=3
         do jj=2,j !Upward stroke of V.
            nf=2*nf-1 !グリッドの目
@@ -153,10 +160,11 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
            !Use res for temporary storage inside addint.
 
            do jpost=1,NPOST !Post-smoothing.
-                !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
-                call relax(z(iu(jj)),z(irhs(jj)),nf) !さらに収束させる(残差を小さく)これは残差の作るポテンシャルを残差の作る密度で収束させている。
-               !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
+              !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
+              call relax(z(iu(jj)),z(irhs(jj)),nf) !さらに収束させる(残差を小さく)これは残差の作るポテンシャルを残差の作る密度で収束させている。
+              !write(*,*) z(iu(jj)+nf**2-2*nf) ,'!!!!!!!!!!!!!!!'
            enddo
+           !call converge(z(iu(j)),nf)
         enddo
         !write(*,*) j
      enddo
@@ -211,12 +219,12 @@ SUBROUTINE interp(uf,uc,nf)
   !solution is returned in uf(1:nf,1:nf).
   nc=int(nf/2)+1
   !write(*,*) '----------OK----------'
-!***********************BC**************
+  !***********************BC**************
   uc(1,:) = 0.0d0
   uc(nc,:) = 0.0d0
   uc(:,1) = 0.0d0
   uc(:,nc) = 0.0d0
-!***********************BC**************
+  !***********************BC**************
   ! write(*,*) '----------OK----------'
   do  jc=1,nc !Do elements that are copies. 増やしたグリッドに元の値（雑な）を代入
      jf=2*jc-1
@@ -235,14 +243,14 @@ SUBROUTINE interp(uf,uc,nf)
         uf(iff,jf)=0.5d0*(uf(iff,jf+1)+uf(iff,jf-1))
      enddo
   enddo
-   !write(*,*) '----------OK----------'
-!***********************BC**************
+  !write(*,*) '----------OK----------'
+  !***********************BC**************
   uf(1,:) = 0.0d0
   uf(nf,:) = 0.0d0
   uf(:,1) = 0.0d0
   uf(:,nf) = 0.0d0
-!***********************BC**************
-   !write(*,*) '----------OK----------'
+  !***********************BC**************
+  !write(*,*) '----------OK----------'
   return
 END SUBROUTINE interp
 
@@ -257,7 +265,7 @@ SUBROUTINE addint(uf,uc,res,nf)
   !write(*,*) j
   !write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   call interp(res,uc,nf)
- ! write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
+  ! write(*,*) '--------------------',uf(nf/2,nf/2),uf(nf,nf),'--------------------'
   do  j=1,nf
      do  i=1,nf
         uf(i,j)=uf(i,j)+res(i,j) !新しいu(ポテンシャル)を作成
@@ -278,7 +286,7 @@ SUBROUTINE slvsml(u,rhs) !式19.0.6
   h=0.5d0
   !write(*,*) '**********',u(2,2),'**********'
   u(2,2)= -h*h*rhs(2,2)*0.25d0 !rhsは元の配列(例えば密度) , 初期の長さを１としているのでh=0.5d0  rhs=f:銀本P40 逆行列解ける
- !write(*,*) '**********',u(2,2),'**********'
+  !write(*,*) '**********',u(2,2),'**********'
   !u(2,2) = 5.0d0 !境界条件(potential center)
   return  !ただし全ての境界のuを0としている
 END SUBROUTINE slvsml
@@ -303,7 +311,7 @@ SUBROUTINE relax(u,rhs,n) !ガウスサイデル
      enddo
      jsw=3-jsw
   enddo
- ! write(*,*) u(n,n/2),'????????????????????????'
+  ! write(*,*) u(n,n/2),'????????????????????????'
   return
 END SUBROUTINE relax
 
@@ -342,7 +350,7 @@ SUBROUTINE copy(aout,ain,n)
         aout(j,i)=ain(j,i)
      enddo
   enddo
-   !write(*,*) aout(n,n/2),'77777777777777777777777'
+  !write(*,*) aout(n,n/2),'77777777777777777777777'
   return
 END SUBROUTINE copy
 
@@ -375,10 +383,10 @@ FUNCTION maloc(len) !len=格子の個数
      write(*,*) 'insufficient memory in maloc'
      stop
   else
-  z(mem+1)=len
-  maloc=mem+2
-  mem=mem+len+1
-  write(*,*)'mem=', mem
+     z(mem+1)=len
+     maloc=mem+2
+     mem=mem+len+1
+     write(*,*)'mem=', mem
   endif
   return
 END FUNCTION maloc
