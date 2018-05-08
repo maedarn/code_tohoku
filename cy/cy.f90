@@ -12,6 +12,7 @@ program main
 
 100 format(E19.10e3,E19.10e3)
   open(10,file=dir//filenm//'.dat')
+  
   do i=1,100
      theta = theta + dx
 
