@@ -14,7 +14,7 @@ module comvar
   integer,PARAMETER :: NG=5
   !integer(8),PARAMETER :: MEMLEN=1500000 !周回を増やす時もきをつけて
   integer(8),PARAMETER :: MEMLEN=5000 !周回を増やす時もきをつけて
-  integer, PARAMETER :: NPRE=5,NPOST=1 !ガウスサイデル反復,smoosing
+  integer, PARAMETER :: NPRE=1,NPOST=1 !ガウスサイデル反復,smoosing
   integer mem
   DOUBLE PRECISION z(MEMLEN)
 end module comvar
@@ -135,7 +135,7 @@ SUBROUTINE mglin(u,n,ncycle,uBCx1,uBCy1,uBCxn,uBCyn)
      do jcycle=1,ncycle !V-cycle loop.
         nf=nn
         write(*,*) 'nf=' , nf
-        do jj=j,2,-1 !Downward stoke of the V.
+        do jj=j,2,-1 !Downward stoke of the V.  jはグリットの荒さ(どんどん細かく)
            do jpre=1,NPRE !Pre-smoothing.ガウスサイデル法の回数
               call relax(z(iu(jj)),z(irhs(jj)),nf) !収束させる。
            enddo
