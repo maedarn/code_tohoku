@@ -137,13 +137,13 @@ subroutine save(u,Px,Py,n,tsave,itr2,itr3,itr4)
   end if
 
 100 format(E19.10e3,E19.10e3,E19.10e3)
- ! open(10,file=dir//filenm//i4//i3//i2//sv//'.dat')
+  open(10,file=dir//filenm//i4//i3//i2//sv//'.dat')
   do i = 1,n
      do j=1,n
- !       write(10,100) Px(i) , Py(j) , u(i,j)
+        write(10,100) Px(i) , Py(j) , u(i,j)
         gosa(tsave)=u(i,j)**2+gosa(tsave)
      end do
-    ! write(10,*)
+     write(10,*)
   end do
   ! write(*,*) '--------------sav----------------'
   open(11,file=dir//filenm2//i4//i3//i2//'.dat')
