@@ -61,14 +61,14 @@ if(mode.eq.2) then
   UP = UPt; DOWN = DOWNt
 
   if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
-    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k)
+    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
   end do; end do; end if
   if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
     Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
   end do; end do; end if
 end if
 
-if(mode.eq.3) then
+if(mode.eq.3) then !acceraration because of gravity
   dxi = 1.d0/(12.d0*dx(0))
   do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
