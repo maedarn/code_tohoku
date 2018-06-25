@@ -1153,7 +1153,7 @@ double precision :: tau1,tau2,ct1,ct2,ym1,ym2,fes
 double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2
 double precision :: n1,n2,b21
 
-double precision :: heat , KIcool,samm,sammm
+double precision :: heat,KIcool,samm,sammm
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
