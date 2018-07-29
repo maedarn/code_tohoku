@@ -1,6 +1,6 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-  INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !512^3
+INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
@@ -14,7 +14,6 @@ DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
-!character(50) inputname
 END MODULE comvar
 
 MODULE mpivar
@@ -56,7 +55,10 @@ INCLUDE 'mpif.h'
 CALL MPI_INIT(IERR)
 CALL MPI_COMM_SIZE(MPI_COMM_WORLD,NPE  ,IERR)
 CALL MPI_COMM_RANK(MPI_COMM_WORLD,NRANK,IERR)
-
+!NPE=NPE/40
+!NRANK=NRANK/40
+!write(*,*) NPE,NRANK
+!write(*,*) 'OK'
 !----- Prepare MPI SPLIT -----------------------------------------------!
 
 if(NPE.eq.4)    then; NSPLTx = 2; NSPLTy = 2; NSPLTz = 1; end if
@@ -69,7 +71,10 @@ if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
 if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
+!write(*,*) 'OK1'
+
 IST = mod(NRANK,NSPLTx); KST = NRANK/(NSPLTx*NSPLTy); JST = NRANK/NSPLTx-NSPLTy*KST
+!write(*,*) 'OK11'
 LEFT = NRANK - 1            ; if(IST.eq.0       ) LEFT = NRANK + (NSPLTx-1)
 RIGT = NRANK + 1            ; if(IST.eq.NSPLTx-1) RIGT = NRANK - (NSPLTx-1)
 BOTM = NRANK - NSPLTx       ; if(JST.eq.0       ) BOTM = NRANK + NSPLTx*(NSPLTy-1)
@@ -77,7 +82,7 @@ TOP  = NRANK + NSPLTx       ; if(JST.eq.NSPLTy-1) TOP  = NRANK - NSPLTx*(NSPLTy-
 DOWN = NRANK - NSPLTx*NSPLTy; if(KST.eq.0       ) DOWN = NRANK + NSPLTx*NSPLTy*(NSPLTz-1)
 UP   = NRANK + NSPLTx*NSPLTy; if(KST.eq.NSPLTz-1) UP   = NRANK - NSPLTx*NSPLTy*(NSPLTz-1)
 !----------------------------------------------------------------------!
-
+!write(*,*) 'OK2'
 ALLOCATE( U(-1:ndx,-1:ndy,-1:ndz,8) )
 ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,-1:ndz),ndHe(-1:ndx,-1:ndy,-1:ndz), &
        ndHep(-1:ndx,-1:ndy,-1:ndz),ndC(-1:ndx,-1:ndy,-1:ndz),ndCp(-1:ndx,-1:ndy,-1:ndz),ndCO(-1:ndx,-1:ndy,-1:ndz), &
@@ -86,8 +91,13 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
 ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
 ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
+!write(*,*) 'OK3'
+
 call INITIA
+!write(*,*) 'OK'
 call EVOLVE
+
+!write(*,*) 'OK'
 
 DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
@@ -108,7 +118,7 @@ USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
 
-integer :: Np1x, Np2x, Np1y, Np2y, Np1z, Np2z, nunit, ix, jy, kz
+integer :: Np1x, Np2x, Np1y, Np2y, Np1z, Np2z, nunit, ix, jy, kz,b,c
 double precision ::  ql1x,ql2x,ql1y,ql2y,ql1z,ql2z,dinit1,dinit2,pinit1,pinit2, &
            vinitx1,vinitx2,vinity1,vinity2,vinitz1,vinitz2,           &
            binitx1,binitx2,binity1,binity2,binitz1,binitz2
@@ -118,12 +128,10 @@ double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC
 double precision :: ampn(2048),ampn0(2048)
 character*3 :: NPENUM
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+double precision, dimension(:,:), allocatable :: plane,rand
+integer i3,i4
 
-!open(51,file='/work/maedarn/3DMHD/name.DAT')
-!read(51,*) inputname
-!close(51)
-
-open(8,file='/work/maedarn/3DMHD/'//inputname//'INPUT3D.DAT')
+open(8,file='/work/maedarn/3DMHD/samplecnv2/INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -243,7 +251,7 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
   end if
 end do; end do; end do
-
+write(*,*) NRANK,'INIT'
 ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
 ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
 
@@ -291,18 +299,87 @@ end do
 
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
-  open(4,file='/work/maedarn/3DMHD/'//inputname//'cdnt.DAT')
+  open(4,file='/work/maedarn/3DMHD/samplecnv2/cdnt.DAT')
     write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
     write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
     write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
   close(4)
 END IF
 
-open(2,file='/work/maedarn/3DMHD/'//inputname//'tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
   read(2,'(1p1d25.17)') amp
   read(2,'(i8)') nunit
-close(2)
+  close(2)
 
+
+  !********purtube yz plane***********!
+  goto 1333
+  ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
+  open(unit=28,file='/work/maedarn/3DMHD/samplecnv2/delta2.dat',FORM='UNFORMATTED')
+  do c=-1,Ncellz*NSPLTz+2
+     do b=-1,Ncelly*NSPLTy+2
+        read(28) plane(b,c)
+     end do
+  end do
+  close(28)
+
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2 = IST*Ncellx+i
+   i3 = JST*Ncelly+j
+   i4 = KST*Ncellz+k
+  if(x_i(i2).le.plane(i3,i4)) then
+    U(i,j,k,1) = dinit1
+    U(i,j,k,2) = vinitx1
+    U(i,j,k,3) = vinity1
+    U(i,j,k,4) = vinitz1
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = binitx1
+    U(i,j,k,7) = binity1
+    U(i,j,k,8) = binitz1
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+  end if
+  if(x_i(i2).gt.plane(i3,i4)) then
+    U(i,j,k,1) = dinit1
+    U(i,j,k,2) = vinitx2
+    U(i,j,k,3) = vinity1
+    U(i,j,k,4) = vinitz1
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = binitx1
+    U(i,j,k,7) = binity2
+    U(i,j,k,8) = binitz1
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+  end if
+end do; end do; end do
+
+
+1333 continue
+  !********purtube yz plane***********!
+
+
+!/work/maedarn/3DMHD/samplecnv2/
 !***** Alfven wave propagation *****!
 goto 111
 do k = 1, Ncellz+1; do j = 1, Ncelly+1; do i = 1, Ncellx+1
@@ -329,7 +406,7 @@ end do; end do; end do
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
       WRITE(NPENUM,'(I3.3)') MRANK
-      open(unit=8,file='/work/maedarn/3DMHD/'//inputname//'DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = 1, Ncellz
       do j = 1, Ncelly
         read(8) (DTF(i,j,k),i=Ncellx*IS+1,Ncellx*IS+Ncellx)
@@ -353,12 +430,11 @@ end do; end do; end do
   CALL MPI_SENDRECV(DTF(-1,-1,1       ),1,VECU,DOWN,1, &
                     DTF(-1,-1,Ncellz+1),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_TYPE_FREE(VECU,IERR)
- 
+
   if(nunit.ne.1) goto 119
   do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     ix = Ncellx*IST+i
     U(i,j,k,1)   = dble(DTF(ix,j,k))
-
     U(i,j,k,2)   = -vinitx1*dtanh(0.5d0*(x(i)-ql1x))
     ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1)
     ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2)
@@ -377,7 +453,7 @@ DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCAT
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
-  open(unit=8,file='/work/maedarn/3DMHD/'//inputname//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     read(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -441,25 +517,25 @@ character*7 stb(3)
 character*3 fnunit,fnpe
 
 
-open(2,file='/work/maedarn/3DMHD/'//inputname//'tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
   read(2,*) time
   read(2,*) nunit
 close(2)
-open(2,file='/work/maedarn/3DMHD/'//inputname//'tsave2D.DAT')
+open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
   read(2,*) nunit2D
 close(2)
-open(3,file='/work/maedarn/3DMHD/'//inputname//'time.DAT')
+open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
 do i = 1, nunit
   read(3,'(1p1d25.17)') t(i)
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file='/work/maedarn/3DMHD/'//inputname//'test.DAT')
+!  open(2,file='/work/maedarn/3DMHD/samplecnv2/test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
-open(5,file='/work/maedarn/3DMHD/'//inputname//'info'//fnunit//'.DAT')
-!open(5,file'/work/maedarn/3DMHD/'//inputname//'info'//fnunit//fnpe//'.DAT')
+open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//'.DAT')
+!open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -482,20 +558,24 @@ do in10 = 1, maxstp
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
   call SAVEU(nunit,dt,stb,st,t,0)
-  
+ 
   do in20 = 1, nitera
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
     if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
     dt_mpi(NRANK) = tfinal
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
     call Couran(tLMT)
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
 
     call Stblty(tLMT)
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
@@ -522,10 +602,11 @@ do in10 = 1, maxstp
     if(NRANK.eq.0) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
-
+if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
     if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
     call SOURCE(0.5d0*dt)
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
 !***** Godunov parts *****
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
@@ -553,6 +634,7 @@ do in10 = 1, maxstp
     end if
 1000 continue
     DEALLOCATE(Bcc)
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
 !***** CT part *****
     ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
     call CC(1,dt)
@@ -565,10 +647,11 @@ do in10 = 1, maxstp
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
     call SOURCE(0.5d0*dt)
     if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
-
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
     time = time + dt
   end do
@@ -614,8 +697,8 @@ CHARACTER*3 NPENUM
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file='/work/maedarn/3DMHD/'//inputname//filenm//NPENUM//'.dat')
-open(10,FILE='/work/maedarn/3DMHD/'//inputname//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(10,file='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat')
+open(10,FILE='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
   do k = 1, Ncellz+1
@@ -643,7 +726,7 @@ close(10)
 
 IF(NRANK.EQ.0) THEN
   t(nunit) = time
-  open(3,file='/work/maedarn/3DMHD/'//inputname//'time.DAT')
+  open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
   do i = 1, nunit
     write(3,'(1p1d25.17)') t(i)
   end do
@@ -657,13 +740,13 @@ nunit = nunit + 1
   IF(NRANK.EQ.0) THEN
     write(5,'(a,1p1e11.3,1p1e11.3)') 'Done ! Time =', time, Tfinal
 !    close(5)
-    open(2,file='/work/maedarn/3DMHD/'//inputname//'tsave.DAT')
+    open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
     write(2,'(1p1d25.17)') time
     write(2,'(i8)') nunit-1
     close(2)
   END IF
 
-  open(8,file='/work/maedarn/3DMHD/'//inputname//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     write(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -686,10 +769,10 @@ INCLUDE 'mpif.h'
 
 character*3 filenm
 CHARACTER*3 NPENUM
-
+!write(*,*) Ncellx,Ncelly
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit2D
-open(11,FILE='/work/maedarn/3DMHD/'//inputname//'2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+open(11,FILE='/work/maedarn/3DMHD/samplecnv2/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   k=1; do j=1,Ncelly
     write(11) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
                sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
@@ -702,7 +785,7 @@ close(11)
 nunit2D = nunit2D + 1
 
 IF(NRANK.EQ.0) THEN
-  open(3,file='/work/maedarn/3DMHD/'//inputname//'/tsave2D.DAT')
+  open(3,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
     write(3,*) nunit2D
     write(3,*) time
   close(3)
@@ -2416,6 +2499,8 @@ do k = 0, Ncellz; do j = 0, Ncelly; do i = 0, Ncellx
   Qz(i,j,k) = Kcond * dmin1(rtTz,3.873d0) * ( Tn(i,j,k+1)-Tn(i,j,k) )*2.d0 /( dz(k) + dz(k+1) )
 end do; end do; end do
 
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),'point100'
+
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 !----- Cooling ---------------------------------------------------------
   Call Fcool( CooL,Tn(i,j,k),i,j,k)
@@ -2436,6 +2521,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   U(i,j,k,5) = dmin1(U(i,j,k,5),pmax)
 end do; end do; end do
 
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),'point101'
 
 N_MPI(20) = 1
 N_MPI(1)  = 5
@@ -2444,6 +2530,8 @@ iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
 do k = 0, Ncellz+1; do j = 0, Ncelly+1; do i = 0, Ncellx+1
   Tn(i,j,k) = U(i,j,k,5)/( kb*(ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)) )
 end do; end do; end do
+
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101a'
 
 do k = 0, Ncellz; do j = 0, Ncelly; do i = 0, Ncellx
   rtTx    = dsqrt(  ( dx(i)*Tn(i+1,j,k)+dx(i+1)*Tn(i,j,k) ) /( dx(i) + dx(i+1) )  )
@@ -2465,30 +2553,42 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
     Call IMC( Pn(i,j,k),ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k),dt,i,j,k ) !implicit
     U(i,j,k,5) = Pn(i,j,k)
   end if
+!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101b'
 !----- Conduction ------------------------------------------------------
   tcd = gammi1*Kcond*dsqrt( Tn(i,j,k) )
   tcd = 0.49d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k))*kb/tcd*(dx(i)**2.d0)
   tcd = dsign(0.5d0,tcd-dt)
   U(i,j,k,5) = U(i,j,k,5) + (tcd+0.5d0)*gammi1*dt* &
   ( (Qx(i,j,k)-Qx(i-1,j,k))/dx(i) + (Qy(i,j,k)-Qy(i,j-1,k))/dy(j) + (Qz(i,j,k)-Qz(i,j,k-1))/dz(k) )
+!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101c'
   U(i,j,k,5) = dmax1(U(i,j,k,5),pmin)
+!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101d'
   U(i,j,k,5) = dmin1(U(i,j,k,5),pmax)
+!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101e'
 end do; end do; end do
 
 DEALLOCATE(Tn,Pn,Qx,Qy,Qz)
 
 end if
 !*******************************(C3)
-
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point102'
 !*******************************(A1)
 if(ifchem.eq.2) then
 
+
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103am'
+
   ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
   ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
   T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
   call RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
   
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103al'
+
 ! H recombination & ionization by CR
   temp1 = kHrec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
@@ -2498,6 +2598,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndp(i,j,k) = (  zeta*ndpold +temp1*ndpold*temp2 +  zeta*ndHold*omeps )*temp3
   ndHold = ndH(i,j,k); ndpold = ndp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ak'
+
 !He recombination & ionization by CR
   temp1 = kHerec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
@@ -2506,6 +2609,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHe(i,j,k)  = ( temp1*ndHeold + zeta*ndHeold*temp2 + temp1*ndHepold*omeps )*temp3
   ndHep(i,j,k) = ( zeta*ndHepold +temp1*ndHepold*temp2+  zeta*ndHeold*omeps )*temp3
   ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103aj'
 
 !H2 formation & dissociation by UV & electron collision
   temp1 = kH2ph + kH2de*nde(i,j,k)
@@ -2517,6 +2623,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH2(i,j,k)= ( 2.d0*ndH2old+ndHold*omeps )*kH2*ndtot(i,j,k) + temp1*ndH2old*temp3
   ndH2(i,j,k)= ndH2(i,j,k)/temp2
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ai'
   
 !H2 dissociation by H collision
   temp1 = ndHold + 2.d0*ndH2old
@@ -2525,20 +2634,38 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH(i,j,k) = ndHold*temp1*temp3
   ndH2(i,j,k)= ndH2old*temp1*temp2*temp3
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ah'
   
 !CO formation
   temp1 = dexp(-dt*kCO*ndtot(i,j,k))
-  eps = dt*kCO*ndtot(i,j,k); call Omexp(omeps,eps)
+!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,temp1  
+eps = dt*kCO*ndtot(i,j,k)
+!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,eps
+ call Omexp(omeps,eps)
+!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,omeps
   ndCO(i,j,k)  = ndCOold + omeps*ndCpold
   ndCp(i,j,k)  = temp1*ndCpold
   ndCOold = ndCO(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ag'
+
 !CO dissociation by UV & electron collision & H collision
   temp1 = dexp(-dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold))
-  eps = dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold); call Omexp(omeps,eps)
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,temp1,dt,kCOph,kCOde,nde(33,33,33),kCOdH,ndHold
+  eps = dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold)
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,eps
+ call Omexp(omeps,eps)
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,omeps,eps
   ndC(i,j,k) = ndCold + omeps*ndCOold
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,ndCold,ndCOold,ndC(33,33,33)
   ndCO(i,j,k)= temp1*ndCOold
   ndCold = ndC(i,j,k); ndCOold = ndCO(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103af'
   
 !C recombination & ionization by CR & UV
   temp1 = kCrec*nde(i,j,k)
@@ -2548,6 +2675,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndC(i,j,k) = ( temp1*ndCold +   kCi*ndCold*temp2 + temp1*ndCpold*omeps )*temp3
   ndCp(i,j,k)= (  kCi*ndCpold + temp1*ndCpold*temp2+   kCi*ndCold*omeps )*temp3
   ndCold = ndC(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ae'
 
 !H, He, C ionization by e collision
    ndH(i,j,k) = ndHold *dexp(-dt*kHie *nde(i,j,k))
@@ -2559,6 +2689,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHold = ndH(i,j,k); ndHeold  =  ndHe(i,j,k);  ndCold =  ndC(i,j,k)
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ad'
 
 !H, He, C ionization by H or H2 or p collision
    temp1 = 1.d0/( 1.d0+kHiH*dt*ndHold )
@@ -2572,6 +2705,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHold = ndH(i,j,k); ndHeold  =  ndHe(i,j,k);  ndCold =  ndC(i,j,k)
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ac'
 
 !H2 dissiciation by Hep recombination
   temp1 = ndHepold-ndH2old
@@ -2597,6 +2733,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
    ndHold =  ndH(i,j,k);   ndpold =   ndp(i,j,k); ndH2old = ndH2(i,j,k)
   ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k) 
 
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ab'
+
 !CO dissiciation by Hep recombination
   temp1 = ndHepold-ndCOold
   if(temp1.ge.0.d0) then
@@ -2616,6 +2755,8 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
      ndCp(i,j,k) = ndCpold + temp3
      ndHe(i,j,k) = ndHeold + temp3
   end if
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103aa'
 
     ndH(i,j,k) = dmax1( ndHmin  ,ndH(i,j,k)   )
     ndp(i,j,k) = dmax1( ndpmin  ,ndp(i,j,k)   )
@@ -2625,14 +2766,15 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
     ndC(i,j,k) = dmax1( ndCmin  ,ndC(i,j,k)   )
    ndCp(i,j,k) = dmax1( ndCpmin ,ndCp(i,j,k)  )
    ndCO(i,j,k) = dmax1( ndCOmin ,ndCO(i,j,k)  )
-
+if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
+ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103a'
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   ndtot(i,j,k) = ndp(i,j,k)+ndH(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
   U(i,j,k,1) = mH*ndp(i,j,k)+mH*ndH(i,j,k)+mH2*ndH2(i,j,k)+mHe*ndHe(i,j,k)+mHe*ndHep(i,j,k)
 end do; end do; end do
 
 end if
-
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
 
 
 END SUBROUTINE SOURCE
@@ -2663,8 +2805,17 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tauC  =  U(i,j,k,5)/gammi1/dabs(CooL)
   tauC  =  dmax1( 0.2d0*tauC , 2.5d-4 )
 
+
+!if(NRANK==40) write(*,*) NRANK,tauC,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point201'
+
   tLMT =  dmin1( tLMT , tauC  )
+
+
+!if(NRANK==40) write(*,*) NRANK,tLMT,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point202'
+
   tLMT =  dmin1( tLMT , alpha )
+
+!if(NRANK==40) write(*,*) NRANK,tLMT,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point203'
 end do; end do; end do
 if(tLMT.lt.0.d0) write(5,*) time,NRANK,'err at Stblty'
 
@@ -2913,14 +3064,18 @@ ATN4 = ATN4*0.5d0
 !( 1 pc / 4.2e16  = 7.3469d1 )
 !( 4.35068d15 / 1 pc = 1.40995d-3 )
 !( 8.97293d18 / 1 pc = 2.90791d0  )
+if( k==33 .and. j==33 .and. i==33) write(*,*) NCO(33,33,33,1),NCO(33,33,33,2),'11'
+
 ATN5 = &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,1))**0.6) &
-+(0.5d0+dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,1))**(-0.75d0),(7.3469d1*NCO(i,j,k,1))**(-1.3d0) )
++(0.5d0+dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,1)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,1)+1.d-100)**(-1.3d0) )
+if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'12'
 ATN5 = ATN5 + &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,2))**0.6) &
-+(0.5d0+dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,2))**(-0.75d0),(7.3469d1*NCO(i,j,k,2))**(-1.3d0) )
++(0.5d0+dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,2)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,2)+1.d-100)**(-1.3d0) )
+if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'13'
 ATN5 = ATN5*0.5d0
-
+if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'14'
 !H Ionization
 zeta  = 9.4671d-4
 !H Recombination
@@ -2943,6 +3098,7 @@ kH2de = 1.133d6*(T**0.35d0)*dexp(-1.02d2/T)
 kCO   = 1.57785d-2/(1.d0+G0*ATN3/(ndH2(i,j,k)*xo))
 !***CO Photo-dissociation
 kCOph = 3.155d3*G0*ATN3*ATN4*ATN5
+if( k==33 .and. j==33 .and. i==33) write(*,*) G0,ATN3,ATN4,ATN5,kCOph
 !***C ionization
 SHLC1 = dexp(-2.6d0*Av1-3.0857d1*NnC(i,j,k,1)-4.33743413d-4*NH2(i,j,k,1))/(1.d0+4.33743413d-4*NH2(i,j,k,1))
 SHLC2 = dexp(-2.6d0*Av2-3.0857d1*NnC(i,j,k,2)-4.33743413d-4*NH2(i,j,k,2))/(1.d0+4.33743413d-4*NH2(i,j,k,2))

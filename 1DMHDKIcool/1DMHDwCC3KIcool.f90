@@ -255,12 +255,12 @@ do in10 = 1, maxstp
     dt = tfinal
     call Couran(tLMT)
     dt = dmin1( dt, CFL * tLMT )
-    
+
     if(ifthrm.eq.2) then
       call Stblty(tLMT)
       dt = dmin1( dt, 0.2d0 * tLMT )
     end if
-    
+
     if(mod(in20,10).eq.1) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
 
