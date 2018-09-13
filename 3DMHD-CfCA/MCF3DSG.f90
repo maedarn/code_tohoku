@@ -470,13 +470,13 @@ time_CPU(3) = 0.d0
 Time_signal = 0
 
 do in10 = 1, maxstp
-  
+
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
   call SAVEU(nunit,dt,stb,st,t,0)
-  
+
   do in20 = 1, nitera
     tsave2D = dtsave2D * nunit2D
     if(time.ge.tsave2D) call SAVEU2D(nunit2D)

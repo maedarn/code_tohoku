@@ -32,7 +32,7 @@ if(mode.eq.2) then
   CALL MPI_SENDRECV(Phi(1            ,-1,-1),1,VECU,LEFT,1, &
                     Phi(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_TYPE_FREE(VECU,IERR)
-  LEFT = LEFTt; RIGT = RIGTt 
+  LEFT = LEFTt; RIGT = RIGTt
 
   CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
@@ -169,7 +169,7 @@ call slvsmlb(cphi1(point1(1)),crho1(point1(1))) !BC set is necessary
 !Here nc=3
 ngrid = NGL
 do j=2,ngrid
-  
+
   IF(j.le.NGcr) THEN !*** generate candidate sol. from j-1 to j (upward) *** 
     ncx=ncx*2-1; ncy=ncy*2-1; ncz=ncz*2-1
     call interp(cphi1(point1(j)),cphi1(point1(j-1)),ncx,ncy,ncz,pointb1(j),1)  !BC set is necessary
@@ -590,7 +590,7 @@ SUBROUTINE addint(uf,uc,res,nx,ny,nz)
 double precision res(nx,ny,nz),uc(nx/2+1,ny/2+1,nz/2+1),uf(nx,ny,nz)
 call interp(res,uc,nx,ny,nz,0,0)
 !do k=1,nz; do j=1,ny; do i=1,nx
-!  uf(i,j,k)=uf(i,j,k)+res(i,j,k)
+!uf(i,j,k)=uf(i,j,k)+res(i,j,k)
 !end do; end do; end do
 
 isw=1 ! for speed up
@@ -835,7 +835,7 @@ end do; end do; end do
 
 do k=1,nz,2; do j=1,ny,2 !for speed up
 !do k=1,nz; do j=1,ny
-  res(1 ,j,k)=0.d0 
+  res(1 ,j,k)=0.d0
   res(nx,j,k)=0.d0
 end do; end do
 
@@ -960,16 +960,16 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   KSs = isend/(NSPLTx*NSPLTy); JSs = isend/NSPLTx-NSPLTy*KSs
   irecv = NRANK - NSPLTx*Nlp; if(irecv.lt.0  ) irecv = irecv + NPE
   KSr = irecv/(NSPLTx*NSPLTy); JSr = irecv/NSPLTx-NSPLTy*KSr
-  
+
   Nis = JSs + NSPLTy*KSs
   kls = Nis + 1
   Nir = JST + NSPLTy*KST
   klr = Nir + 1
-  
+
   if(kls.gt.Ncellx) then; isend = MPI_PROC_NULL; kls = Ncellx+1; end if
   if(klr.gt.Ncellx) then; irecv = MPI_PROC_NULL; klr = Ncellx+1; end if
   CALL MPI_SENDRECV(data(JST*Ncelly+1,KST*Ncellz+1,kls),1,VECU,isend,1, & !send
-                    data(JSr*Ncelly+1,KSr*Ncellz+1,klr),1,VECU,irecv,1, MPI_COMM_WORLD,MSTATUS,IERR) !recv 
+                    data(JSr*Ncelly+1,KSr*Ncellz+1,klr),1,VECU,irecv,1, MPI_COMM_WORLD,MSTATUS,IERR) !recv
 end do
 
 CALL MPI_TYPE_FREE(VECU,IERR)
@@ -989,7 +989,7 @@ nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
 if(klr.le.Ncellx) then
 
   call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1)
-  
+
   kz = klr
   zp1 = x(kz)-0.5d0*dzz
   zp2 = Lbox - zp1
@@ -997,7 +997,7 @@ if(klr.le.Ncellx) then
   temp1i = dat1(2,1) - data(2,1,klr) * 0.5d0*zp1 * facG
   temp2r = dat2(1,1) - data(1,1,klr) * 0.5d0*zp2 * facG
   temp2i = dat2(2,1) - data(2,1,klr) * 0.5d0*zp2 * facG
-  
+
   do m=1,nn2/2+1; do l=1,nn1/2
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
     kap = sqrt(kap)
@@ -1006,7 +1006,7 @@ if(klr.le.Ncellx) then
     dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
     dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do;end do
-  
+
   l=nn1/2+1
   do m=1,nn2/2+1
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
@@ -1014,7 +1014,7 @@ if(klr.le.Ncellx) then
     spe1(m) = spe1(m) + speq(m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
     spe2(m) = spe2(m) + speq(m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do
-  
+
   do m2=nn2/2+2,nn2; m=nn2+2-m2; do l=1,nn1/2
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
     kap = sqrt(kap)
@@ -1023,7 +1023,7 @@ if(klr.le.Ncellx) then
     dat2(2*l-1,m2) = dat2(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
     dat2(2*l  ,m2) = dat2(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do;end do
-  
+
   l=nn1/2+1
   do m2=nn2/2+2,nn2; m=nn2+2-m2
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
@@ -1031,7 +1031,7 @@ if(klr.le.Ncellx) then
     spe1(m2) = spe1(m2) + speq(m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
     spe2(m2) = spe2(m2) + speq(m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do
-  
+
   dat1(1,1) = temp1r
   dat1(2,1) = temp1i
   dat2(1,1) = temp2r
@@ -1072,7 +1072,7 @@ do j=0,ncy; n = j+kk
   if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
   if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
   if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
-  
+
   bphi2(pointb2(NGL)+n,1) = dble(data(jb,kbb,1))
   bphi2(pointb2(NGL)+n,2) = dble(data(jb,kbb,2))
 end do; end do

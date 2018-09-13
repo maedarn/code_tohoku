@@ -1265,7 +1265,7 @@ SUBROUTINE MHD(xelr,dxelr,dt)
 USE comvar
 USE mpivar
 USE chmvar
-      
+
 integer :: ix
 double precision  :: dt,xelr(-1:ndmax),dxelr(-1:ndmax), ekin,emag, invd, vel
 double precision  :: mmean
