@@ -97,6 +97,7 @@ NGcr = int(dlog(dble(NGcr))/dlog(2.d0)+1.d-3) + 1
 point1(1) = 1
 nl = 1
 nx=3; ny=3; nz=3
+
 2 continue
 point1(nl+1)=point1(nl)+(nx)*(ny)*(nz)
 nx=nx*2-1; ny=ny*2-1; nz=nz*2-1
@@ -170,7 +171,7 @@ call slvsmlb(cphi1(point1(1)),crho1(point1(1))) !BC set is necessary
 ngrid = NGL
 do j=2,ngrid
 
-  IF(j.le.NGcr) THEN !*** generate candidate sol. from j-1 to j (upward) *** 
+  IF(j.le.NGcr) THEN !*** generate candidate sol. from j-1 to j (upward) ***
     ncx=ncx*2-1; ncy=ncy*2-1; ncz=ncz*2-1
     call interp(cphi1(point1(j)),cphi1(point1(j-1)),ncx,ncy,ncz,pointb1(j),1)  !BC set is necessary
     call copy(crhs1(point1(j)),crho1(point1(j)),ncx,ncy,ncz)
@@ -198,7 +199,7 @@ do j=2,ngrid
         end do
         call resid(cres1(point1(jj)),cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz) 
         nfx=nfx/2+1; nfy=nfy/2+1; nfz=nfz/2+1
-        call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1)  !fill0 at BC below this subroutine is necessary
+        call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1)  ! fill0 at BC below this subroutine is necessary
         call  fill0(cphi1(point1(jj-1)),nfx,nfy,nfz)
       ELSE
         NPRE1 = NPRE; if(j.ge.NGL) NPRE1 = 2
@@ -369,7 +370,7 @@ end do
 
 IF(IST.eq.0) THEN
   do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
-    uc(1 ,jc,kc)=uf(1 ,jf,kf) 
+    uc(1 ,jc,kc)=uf(1 ,jf,kf)
   end do; end do
 END IF
 IF(IST.eq.NSPLTx-1) THEN
@@ -704,6 +705,7 @@ double precision h,h2
 h=Lbox/((nx-1)*NSPLTx)
 h2=h*h
 
+
 li=0; IF(IST.eq.0) li=1
 lj=0; IF(JST.eq.0) lj=1
 lk=0; IF(KST.eq.0) lk=1
@@ -854,6 +856,7 @@ END SUBROUTINE copyMPI
 
 SUBROUTINE fill0(u,nx,ny,nz)
 double precision u(nx,ny,nz)
+
 do j=1,ny; do i=1,nx
   u(i,j,1 )=0.d0
   u(i,j,nz)=0.d0
@@ -999,7 +1002,7 @@ if(klr.le.Ncellx) then
   temp2i = dat2(2,1) - data(2,1,klr) * 0.5d0*zp2 * facG
 
   do m=1,nn2/2+1; do l=1,nn1/2
-    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 ) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     kap = sqrt(kap)
     dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
     dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
