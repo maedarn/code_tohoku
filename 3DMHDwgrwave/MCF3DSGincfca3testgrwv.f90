@@ -1,7 +1,7 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -144,9 +144,9 @@ character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2y,i2z,rsph2
-double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
+double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa,diniratio
 
-open(8,file='/work/maedarn/3DMHD/samplecnv2/INPUT3D.DAT')
+open(8,file='/work/maedarn/3DMHD/test/INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -318,14 +318,14 @@ end do
 
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
-  open(4,file='/work/maedarn/3DMHD/samplecnv2/cdnt.DAT')
+  open(4,file='/work/maedarn/3DMHD/test/cdnt.DAT')
     write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
     write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
     write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
   close(4)
 END IF
 
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   read(2,'(1p1d25.17)') amp
   read(2,'(i8)') nunit
   close(2)
@@ -335,7 +335,9 @@ open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
   !goto 6011
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
+  diniratio=dinit1 !********圧力
   dinit1=2.0d0/G4pi/90.d0
+  diniratio=dinit1/dinitratio!********圧力
   censh = ql1x + dx(1)/2.0d0 !x=serfase
   Hsheet = 1.0d1
   !rsph = ql1x-ql1x/5.0d0
@@ -352,7 +354,7 @@ open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
       U(i,j,k,2) = 0.0d0
       U(i,j,k,3) = 0.0d0
       U(i,j,k,4) = 0.0d0
-      U(i,j,k,5) = pinit1
+      U(i,j,k,5) = pinit1*dinitratio!********圧力
       U(i,j,k,6) = 0.0d0
       U(i,j,k,7) = 0.0d0
       U(i,j,k,8) = 0.0d0
@@ -498,7 +500,7 @@ end do
   !********purtube yz plane***********!
   goto 1333
   ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
-  open(unit=28,file='/work/maedarn/3DMHD/samplecnv2/delta2.dat',FORM='UNFORMATTED')
+  open(unit=28,file='/work/maedarn/3DMHD/test/delta2.dat',FORM='UNFORMATTED')
   do c=-1,Ncellz*NSPLTz+2
      do b=-1,Ncelly*NSPLTy+2
         read(28) plane(b,c)
@@ -562,7 +564,7 @@ end do; end do; end do
   !********purtube yz plane***********!
 
 
-!/work/maedarn/3DMHD/samplecnv2/
+!/work/maedarn/3DMHD/test/
 !***** Alfven wave propagation *****!
 goto 111
 do k = 1, Ncellz+1; do j = 1, Ncelly+1; do i = 1, Ncellx+1
@@ -588,8 +590,8 @@ end do; end do; end do
 !call SELFGRAVWAVE(0.0d0,1)
 !do MRANK = 0, NPE-1
 !WRITE(NPENUM,'(I3.3)') MRANK
-!open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-!open(unit=18,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(unit=8,file='/work/maedarn/3DMHD/test/DTF/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(unit=18,file='/work/maedarn/3DMHD/test/DTF/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 !do k = -1, Ncellz+2
 !   do j = -1, Ncelly+2
       !do i = -1, Ncellx+2
@@ -619,7 +621,7 @@ end do; end do; end do
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
       WRITE(NPENUM,'(I3.3)') MRANK
-      open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file='/work/maedarn/3DMHD/test/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = 1, Ncellz
       do j = 1, Ncelly
         read(8) (DTF(i,j,k),i=Ncellx*IS+1,Ncellx*IS+Ncellx)
@@ -666,7 +668,7 @@ DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCAT
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
-  open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(unit=8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     read(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -733,25 +735,25 @@ character*7 stb(3)
 character*3 fnunit,fnpe
 
 
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   read(2,*) time
   read(2,*) nunit
 close(2)
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
   read(2,*) nunit2D
 close(2)
-open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
+open(3,file='/work/maedarn/3DMHD/test/time.DAT')
 do i = 1, nunit
   read(3,'(1p1d25.17)') t(i)
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file='/work/maedarn/3DMHD/samplecnv2/test.DAT')
+!  open(2,file='/work/maedarn/3DMHD/test/test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
-open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//'.DAT')
-!open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//fnpe//'.DAT')
+open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//'.DAT')
+!open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -831,11 +833,21 @@ do in10 = 1, maxstp
     if(ifgrv.eq.2) then
        !call GRAVTY(dt,3)
        !call SELFGRAVWAVE(dt,3)
-       call SELFGRAVWAVE(dt*0.5d0,3)
+       !call SELFGRAVWAVE(dt*0.5d0,3)
     end if
-    call SOURCE(0.5d0*dt)
+    !call SOURCE(0.5d0*dt)
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
-!***** Godunov parts *****
+    !***** Godunov parts *****
+
+
+
+
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+    goto 263
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
       ifEVO = 2; goto 1000
@@ -875,15 +887,23 @@ do in10 = 1, maxstp
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
+
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+    263 continue
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+
+
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
-    call SOURCE(0.5d0*dt)
+    !call SOURCE(0.5d0*dt)
     if(ifgrv.eq.2) then
        !call GRAVTY(dt,2)
        !call GRAVTY(dt,3)
        !call GRAVTY(dt*0.5d0,3)
        call SELFGRAVWAVE(dt,2)
-       call SELFGRAVWAVE(dt*0.5d0,3)
+       !call SELFGRAVWAVE(dt*0.5d0,3)
 
        !*********************************!収束判定
        call SELFGRAVWAVE(0.0d0,8) !収束判定
@@ -924,7 +944,7 @@ end if
 
 9000 continue
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
-call SAVEU(nunit,dt,stb,st,t,1)
+!call SAVEU(nunit,dt,stb,st,t,1)
 
 
 
@@ -949,8 +969,8 @@ CHARACTER*3 NPENUM
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat')
-open(10,FILE='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(10,file='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat')
+open(10,FILE='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
   do k = 1, Ncellz+1
@@ -978,7 +998,7 @@ close(10)
 
 IF(NRANK.EQ.0) THEN
   t(nunit) = time
-  open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
+  open(3,file='/work/maedarn/3DMHD/test/time.DAT')
   do i = 1, nunit
     write(3,'(1p1d25.17)') t(i)
   end do
@@ -992,13 +1012,13 @@ nunit = nunit + 1
   IF(NRANK.EQ.0) THEN
     write(5,'(a,1p1e11.3,1p1e11.3)') 'Done ! Time =', time, Tfinal
 !    close(5)
-    open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+    open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
     write(2,'(1p1d25.17)') time
     write(2,'(i8)') nunit-1
     close(2)
   END IF
 
-  open(8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     write(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -1024,7 +1044,7 @@ CHARACTER*3 NPENUM
 !write(*,*) Ncellx,Ncelly
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit2D
-open(11,FILE='/work/maedarn/3DMHD/samplecnv2/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+open(11,FILE='/work/maedarn/3DMHD/test/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   k=1; do j=1,Ncelly
     write(11) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
                sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
@@ -1037,7 +1057,7 @@ close(11)
 nunit2D = nunit2D + 1
 
 IF(NRANK.EQ.0) THEN
-  open(3,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
+  open(3,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
     write(3,*) nunit2D
     write(3,*) time
   close(3)
@@ -3457,8 +3477,8 @@ end if
 !****************read INITIAL CONDITION**************
 if(mode==1) then
       WRITE(NPENUM,'(I3.3)') NRANK
-      open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-      open(unit=18,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=18,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = -1, Ncellz+2
          do j = -1, Ncelly+2
             !do i = -1, Ncellx+2
@@ -3566,25 +3586,50 @@ end if
 !***************SAVE PHI & PHIDT FOR DEBUG & INITIAL**************
 if(mode==4) then
    WRITE(NPENUM,'(I3.3)') NRANK
-   open(unit=28,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-   open(unit=38,file='/work/maedarn/3DMHD/samplecnv2/DTF/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-   do k = -1, Ncellz+2
-      do j = -1, Ncelly+2
+   open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+
+
+   !-------------------INITIAL---------------------
+!   do k = -1, Ncellz+2
+!      do j = -1, Ncelly+2
+!         !do i = -1, Ncellx+2
+!         write(28) (Phi(i,j,k),i=-1,Ncellx+2)
+!         !enddo
+!      end do
+!   end do
+!   close(28)
+!   do k = -1, Ncellz+2
+!      do j = -1, Ncelly+2
+!         !do i = -1, Ncellx+2
+!         write(38) (Phidt(i,j,k),i=-1,Ncellx+2) 
+!         !enddo
+!      end do
+!   end do
+!   close(38)
+   !-------------------INITIAL---------------------
+
+
+   !-------------------TEST---------------------
+   do k = 1, Ncellz
+      do j = 1, Ncelly
          !do i = -1, Ncellx+2
-         write(28) (Phi(i,j,k),i=-1,Ncellx+2)
+         write(28) (sngl(Phi(i,j,k)),i=1,Ncellx)
          !enddo
       end do
    end do
    close(28)
-   do k = -1, Ncellz+2
-      do j = -1, Ncelly+2
+   do k = 1, Ncellz
+      do j = 1, Ncelly
          !do i = -1, Ncellx+2
-            write(38) (Phidt(i,j,k),i=-1,Ncellx+2) 
-            !enddo
-         end do
+         write(38) (sngl(Phidt(i,j,k)),i=1,Ncellx)
+         !enddo
       end do
-      close(38)
+   end do
+   close(38)
+   !-------------------TEST---------------------
 end if
+
 !***************SAVE PHI & PHIDT FOR DEBUG & INITIAL**************
 
 
