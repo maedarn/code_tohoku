@@ -37,7 +37,7 @@ INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
-double precision :: cg  , deltalength,cgcsratio , shusuku1=0.0d0
+double precision :: cg  , deltalength,cgcsratio , shusoku1=0.0d0
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
@@ -820,7 +820,7 @@ do in10 = 1, maxstp
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
       end do
-    END IF
+   END IF
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -830,11 +830,11 @@ do in10 = 1, maxstp
     if(time+dt.gt.tsave ) dt = tsave  - time
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
-    if(ifgrv.eq.2) then
+    !if(ifgrv.eq.2) then
        !call GRAVTY(dt,3)
        !call SELFGRAVWAVE(dt,3)
        !call SELFGRAVWAVE(dt*0.5d0,3)
-    end if
+    !end if
     !call SOURCE(0.5d0*dt)
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
     !***** Godunov parts *****
@@ -926,7 +926,7 @@ do in10 = 1, maxstp
     time_CPU(2) = ( time_CPU(2)-time_CPU(1) )/3.6d3
     time_CPU(3) = time_CPU(3)+time_CPU(2)
     IF(time_CPU(3)+time_CPU(2).GT.11.7d0) Time_signal=1
-  END IF
+ END IF
   CALL MPI_BCAST(Time_signal,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   IF(Time_signal.EQ.1) GOTO 9000
