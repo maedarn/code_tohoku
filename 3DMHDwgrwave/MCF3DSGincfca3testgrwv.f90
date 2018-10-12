@@ -336,9 +336,13 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !goto 6011
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
-  diniratio=dinit1 !********圧力
-  dinit1=2.0d0/G4pi/90.d0
-  diniratio=dinit1/diniratio!********圧力
+
+
+!  diniratio=dinit1 !********圧力
+!  dinit1=2.0d0/G4pi/90.d0
+!  diniratio=dinit1/diniratio!********圧力
+
+
   censh = ql1x + dx(1)/2.0d0 !x=serfase
   Hsheet = 1.0d1
   !rsph = ql1x-ql1x/5.0d0
@@ -355,7 +359,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
       U(i,j,k,2) = 0.0d0
       U(i,j,k,3) = 0.0d0
       U(i,j,k,4) = 0.0d0
-      U(i,j,k,5) = pinit1*diniratio!********圧力
+      U(i,j,k,5) = pinit1 !*diniratio!********圧力
       U(i,j,k,6) = 0.0d0
       U(i,j,k,7) = 0.0d0
       U(i,j,k,8) = 0.0d0
@@ -694,6 +698,10 @@ end do; end do; end do
 
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 
+   !---------------debug-------------------
+   write(*,*) '-------------1-----------',NRANK
+   !---------------debug-------------------
+
 if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
@@ -701,6 +709,10 @@ if(ifgrv.eq.2) then
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   call SELFGRAVWAVE(0.0d0,6) !calculate cg
 end if
+
+!---------------debug-------------------
+write(*,*) '-------------2-----------',NRANK
+!---------------debug-------------------
 
 END SUBROUTINE INITIA
 
@@ -770,13 +782,17 @@ time_CPU(2) = 0.d0
 time_CPU(3) = 0.d0
 Time_signal = 0
 
+!---------------debug-------------------
+write(*,*) '-------------3-----------',NRANK
+!---------------debug-------------------
+
 do in10 = 1, maxstp
 
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
-  call SAVEU(nunit,dt,stb,st,t,0)
+  !call SAVEU(nunit,dt,stb,st,t,0)
 
   do in20 = 1, nitera
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
@@ -793,15 +809,35 @@ do in10 = 1, maxstp
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
 
+    !---------------debug-------------------
+    write(*,*) '-------------4-----------',NRANK
+    !---------------debug-------------------
+
+
     if(ifgrv==2) then
     call SELFGRAVWAVE(stt,5)
     end if
 
+
+    !---------------debug-------------------
+    write(*,*) '-------------5-----------',NRANK
+    !---------------debug-------------------
+
+
     call Stblty(tLMT)
 
+    !---------------debug-------------------
+    write(*,*) '-------------6-----------',NRANK
+    !---------------debug-------------------
+
     if(ifgrv==2) then
-    call SELFGRAVWAVE(tLMT,7)
+       call SELFGRAVWAVE(tLMT,7)
     endif
+
+ !---------------debug-------------------
+ write(*,*) '-------------1-----------',NRANK
+ !---------------debug-------------------
+ 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -895,6 +931,9 @@ do in10 = 1, maxstp
     !---------------------------skip-----------------------------
     !---------------------------skip-----------------------------
 
+    !---------------debug-------------------
+    write(*,*) '-------------10-----------',NRANK
+    !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
@@ -906,6 +945,10 @@ do in10 = 1, maxstp
        call SELFGRAVWAVE(dt,2)
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
+       !---------------debug-------------------
+       write(*,*) '-------------13-----------',NRANK
+       !---------------debug-------------------
+
        !*********************************!収束判定
        call SELFGRAVWAVE(0.0d0,8) !収束判定
        if(shusoku1 > 2.0d0) then
@@ -914,6 +957,10 @@ do in10 = 1, maxstp
        !*********************************!収束判定
 
     end if
+
+    !---------------debug-------------------
+    write(*,*) '-------------12-----------',NRANK
+    !---------------debug-------------------
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
     time = time + dt
@@ -935,6 +982,9 @@ do in10 = 1, maxstp
 
 end do
 
+!---------------debug-------------------
+write(*,*) '-------------22-----------',NRANK
+!---------------debug-------------------
 !**********************!収束判定
 !if(ifgrv.eq.2) then !if文中には飛べない
 2419 continue
@@ -2190,6 +2240,12 @@ USE chmvar
 
 double precision :: tCFL,c2
 
+!--------------for numelcal------------
+tCFL = 1.0d2
+if(U(i,j,k,1) < 1.0d-7) then
+!--------------for numelcal------------
+
+
 tCFL = tfinal
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
@@ -2199,6 +2255,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tCFL = dmin1(tCFL, dy(j)/(dsqrt(c2) + dabs(U(i,j,k,3))) )
   tCFL = dmin1(tCFL, dz(k)/(dsqrt(c2) + dabs(U(i,j,k,4))) )
 end do; end do; end do
+end if
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
 
 END SUBROUTINE Couran
@@ -3066,7 +3123,12 @@ double precision  CooL
 tLMT = tfinal
 !cs =
 
+
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
+!--------------------------fornumerical-------------
+   if (U(i,j,k,1) < 1.0d-7) then
+!--------------------------fornumerical-------------
+
   Nn = ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
   Tn = U(i,j,k,5)/(kb*Nn)
 !-----------------------------( Courant condition )
@@ -3079,7 +3141,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   Call Fcool(CooL,Tn,i,j,k)
   tauC  =  U(i,j,k,5)/gammi1/dabs(CooL)
   tauC  =  dmax1( 0.2d0*tauC , 2.5d-4 )
-  
+
 
 !if(NRANK==40) write(*,*) NRANK,tauC,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point201'
 
@@ -3091,6 +3153,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tLMT =  dmin1( tLMT , alpha )
 
 !if(NRANK==40) write(*,*) NRANK,tLMT,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point203'
+end if
 end do; end do; end do
 if(tLMT.lt.0.d0) write(5,*) time,NRANK,'err at Stblty'
 
