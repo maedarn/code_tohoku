@@ -12,6 +12,7 @@ DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
+DOUBLE PRECISION  :: shusoku1=0.0d0
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 END MODULE comvar
@@ -37,7 +38,7 @@ INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
-double precision :: cg  , deltalength,cgcsratio , shusoku1=0.0d0
+double precision :: cg  , deltalength,cgcsratio !, shusoku1=0.0d0
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
