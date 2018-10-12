@@ -3445,7 +3445,7 @@ DOUBLE PRECISION  :: VECU
 character(3) NPENUM
 double precision tfluid , cs
 double precision dt_mpi_gr(0:NRANK),dt_gat_gr(0:1024),maxcs,tcool,cgtime
-double precision :: ave1,ave2(0:NRANK),ave,ave2_gather(0:NRANK) , eps=1.0d-4
+double precision :: ave1,ave1pre,ave2(0:NRANK),ave,avepre,ave2_gather(0:NRANK) , eps=1.0d-4
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
@@ -3662,15 +3662,31 @@ end if
 
 !*****************shuusoku****************
 if(mode==8) then
-ave1=0.0d0
+
+   ave1=0.0d0
+   ave1pre=0.0d0
+
+!do k=1,Ncellz
+!   do j=1,Ncelly
+!      do i=1,Ncellx
+         !ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k) + 1.0d-10) + ave1
+!         ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k)) + ave1
+!      end do
+!   end do
+!end do
+
 do k=1,Ncellz
    do j=1,Ncelly
       do i=1,Ncellx
-         ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k)) + ave1
+         ave1pre=ave1
+         !ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k) + 1.0d-10) + ave1
+         ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k))
+         ave1 = dmax1( ave1pre , ave1 )
       end do
    end do
 end do
-ave1=ave1/dble((Ncellx*Ncelly*Ncellz))
+
+!ave1=ave1/dble((Ncellx*Ncelly*Ncellz))
 ave2(NRANK)=ave1
 
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -3680,10 +3696,12 @@ CALL MPI_GATHER(ave2(NRANK),1,MPI_REAL8,   &
 
 IF(NRANK.EQ.0)  THEN
    ave=0.0d0
+   avepre=0.0d0
    do i_t = 0, NPE-1
-      ave  = ave2_gather(i_t) + ave
+      !ave  = ave2_gather(i_t) + ave
+      ave=dmax1(ave,ave2_gather(i_t))
    end do
-   ave=ave/dble(NPE)
+   !ave=ave/dble(NPE)
 END IF
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 CALL MPI_BCAST(ave,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
@@ -3692,6 +3710,7 @@ if(ave<eps) then
 end if
 
 end if
+!*****************shuusoku****************
 end subroutine SELFGRAVWAVE
 
 subroutine gravslv(dt)

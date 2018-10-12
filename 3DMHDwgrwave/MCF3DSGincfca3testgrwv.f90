@@ -797,7 +797,7 @@ do in10 = 1, maxstp
   do in20 = 1, nitera
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
-    if(time.ge.tsave2D) call SAVEU2D(nunit2D)
+    !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
@@ -952,6 +952,9 @@ do in10 = 1, maxstp
        !*********************************!収束判定
        call SELFGRAVWAVE(0.0d0,8) !収束判定
        if(shusoku1 > 2.0d0) then
+          !---------------debug-------------------
+          write(*,*) '-------------goto-----------',NRANK
+          !---------------debug-------------------
           goto 2419
        end if
        !*********************************!収束判定
@@ -3802,6 +3805,10 @@ do k=1,Ncellz
    end do
 end do
 
+!---------------debug-------------------
+write(*,*) '-------------1---------3-----------',NRANK
+!---------------debug-------------------
+
 !ave1=ave1/dble((Ncellx*Ncelly*Ncellz))
 ave2(NRANK)=ave1
 
@@ -3825,7 +3832,11 @@ if(ave<eps) then
    shusoku1=1.0d2
 end if
 
+!---------------debug-------------------
+write(*,*) '-------------1---------44-----------',NRANK
+!---------------debug-------------------
 end if
+!*****************shuusoku****************
 end subroutine SELFGRAVWAVE
 
 subroutine gravslv(dt)
