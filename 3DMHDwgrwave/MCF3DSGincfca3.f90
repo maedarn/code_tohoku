@@ -915,8 +915,9 @@ do in10 = 1, maxstp
 end do
 
 !**********************!収束判定
-if(ifgrv.eq.2) then
+!if(ifgrv.eq.2) then !if文中には飛べない
 2419 continue
+if(ifgrv.eq.2) then
    call  SELFGRAVWAVE(0.0d0,4)
 end if
 !**********************!収束判定

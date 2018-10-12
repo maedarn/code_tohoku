@@ -337,7 +337,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !dinit1=1.0d0/G4pi
   diniratio=dinit1 !********圧力
   dinit1=2.0d0/G4pi/90.d0
-  diniratio=dinit1/dinitratio!********圧力
+  diniratio=dinit1/diniratio!********圧力
   censh = ql1x + dx(1)/2.0d0 !x=serfase
   Hsheet = 1.0d1
   !rsph = ql1x-ql1x/5.0d0
@@ -354,7 +354,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
       U(i,j,k,2) = 0.0d0
       U(i,j,k,3) = 0.0d0
       U(i,j,k,4) = 0.0d0
-      U(i,j,k,5) = pinit1*dinitratio!********圧力
+      U(i,j,k,5) = pinit1*diniratio!********圧力
       U(i,j,k,6) = 0.0d0
       U(i,j,k,7) = 0.0d0
       U(i,j,k,8) = 0.0d0
@@ -935,8 +935,9 @@ do in10 = 1, maxstp
 end do
 
 !**********************!収束判定
-if(ifgrv.eq.2) then
+!if(ifgrv.eq.2) then !if文中には飛べない
 2419 continue
+if(ifgrv.eq.2) then
    call  SELFGRAVWAVE(0.0d0,4)
 end if
 !**********************!収束判定
