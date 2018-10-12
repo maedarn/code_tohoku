@@ -2241,19 +2241,27 @@ USE chmvar
 double precision :: tCFL,c2
 
 !--------------for numelcal------------
-tCFL = 1.0d2
+!tCFL = 1.0d2
 if(U(i,j,k,1) < 1.0d-7) then
 !--------------for numelcal------------
 
 
 tCFL = tfinal
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
+
+!--------------for numelcal------------
+!tCFL = 1.0d2
+if(U(i,j,k,1) > 1.0d-7) then
+!--------------for numelcal------------
+
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
   gamma = ( 5.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+7.d0*ndH2(i,j,k) )/gamma
   c2 = ( gamma * U(i,j,k,5) + Bcc(i,j,k,1)**2.d0+Bcc(i,j,k,2)**2.d0+Bcc(i,j,k,3)**2.d0 ) / U(i,j,k,1)
   tCFL = dmin1(tCFL, dx(i)/(dsqrt(c2) + dabs(U(i,j,k,2))) )
   tCFL = dmin1(tCFL, dy(j)/(dsqrt(c2) + dabs(U(i,j,k,3))) )
   tCFL = dmin1(tCFL, dz(k)/(dsqrt(c2) + dabs(U(i,j,k,4))) )
+
+  end if
 end do; end do; end do
 end if
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
@@ -3126,7 +3134,7 @@ tLMT = tfinal
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 !--------------------------fornumerical-------------
-   if (U(i,j,k,1) < 1.0d-7) then
+   if (U(i,j,k,1) > 1.0d-7) then
 !--------------------------fornumerical-------------
 
   Nn = ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
