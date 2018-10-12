@@ -3538,8 +3538,8 @@ INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 character(3) NPENUM
 double precision tfluid , cs
-double precision dt_mpi_gr(0:NRANK),dt_gat_gr(0:1024),maxcs,tcool,cgtime
-double precision :: ave1,ave1pre,ave2(0:NRANK),ave,avepre,ave2_gather(0:NRANK) , eps=1.0d-4
+double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
+double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-4
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
@@ -3820,15 +3820,27 @@ CALL MPI_GATHER(ave2(NRANK),1,MPI_REAL8,   &
 IF(NRANK.EQ.0)  THEN
    ave=0.0d0
    avepre=0.0d0
+   !---------------debug-------------------
+   write(*,*) '-------------1-ok??-----------',NRANK
+   !---------------debug-------------------
+
+
    do i_t = 0, NPE-1
       !ave  = ave2_gather(i_t) + ave
       ave=dmax1(ave,ave2_gather(i_t))
    end do
+
+
    !ave=ave/dble(NPE)
+   !---------------debug-------------------
+   write(*,*) '-------------1-ok??-----------',NRANK
+   !---------------debug-------------------
 END IF
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(maxcs,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 CALL MPI_BCAST(ave,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
-if(ave<eps) then
+if(ave < eps) then
    shusoku1=1.0d2
 end if
 

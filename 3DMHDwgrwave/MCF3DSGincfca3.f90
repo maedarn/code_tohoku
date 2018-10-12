@@ -3444,8 +3444,8 @@ INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 character(3) NPENUM
 double precision tfluid , cs
-double precision dt_mpi_gr(0:NRANK),dt_gat_gr(0:1024),maxcs,tcool,cgtime
-double precision :: ave1,ave1pre,ave2(0:NRANK),ave,avepre,ave2_gather(0:NRANK) , eps=1.0d-4
+double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
+double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-4
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
