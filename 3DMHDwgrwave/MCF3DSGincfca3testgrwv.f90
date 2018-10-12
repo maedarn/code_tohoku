@@ -60,7 +60,7 @@ CALL MPI_COMM_SIZE(MPI_COMM_WORLD,NPE  ,IERR)
 CALL MPI_COMM_RANK(MPI_COMM_WORLD,NRANK,IERR)
 !NPE=NPE/40
 !NRANK=NRANK/40
-!write(*,*) NPE,NRANK
+write(*,*) NPE,NRANK
 !write(*,*) 'OK'
 !----- Prepare MPI SPLIT -----------------------------------------------!
 
@@ -75,6 +75,9 @@ if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
 !write(*,*) 'OK1'
+   write(*,*) 'OK1',NRANK
+   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   write(*,*) 'OK2',NRANK
 
 IST = mod(NRANK,NSPLTx); KST = NRANK/(NSPLTx*NSPLTy); JST = NRANK/NSPLTx-NSPLTy*KST
 !write(*,*) 'OK11'
@@ -853,7 +856,8 @@ do in10 = 1, maxstp
       dt  = tfinal
       dtt = tfinal
       do i_t = 0, NPE-1
-        dt  = dmin1( dt, dt_gat(i_t) )
+         dt  = dmin1( dt, dt_gat(i_t) )
+         write(*,*) '--------------dt--------------' , dt
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
       end do
@@ -865,6 +869,8 @@ do in10 = 1, maxstp
     !if(NRANK.eq.0) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
+
+    write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
     !if(ifgrv.eq.2) then
@@ -951,7 +957,7 @@ do in10 = 1, maxstp
 
        !*********************************!収束判定
        call SELFGRAVWAVE(0.0d0,8) !収束判定
-       if(shusoku1 > 2.0d0) then
+       if(shusoku1 > 1.0d0) then
           !---------------debug-------------------
           write(*,*) '-------------goto-----------',NRANK
           !---------------debug-------------------
@@ -3712,6 +3718,7 @@ end if
 !***************SABILITY1**************
 if(mode==5) then
    tfluid = dt/CFL
+   write(*,*) '------------------tfluid-------------' , tfluid
    cs = deltalength/tfluid
    if(cs > cg) then
       write(*,*)
@@ -3806,7 +3813,7 @@ do k=1,Ncellz
 end do
 
 !---------------debug-------------------
-write(*,*) '-------------1---------3-----------',NRANK
+write(*,*) '-------------1---------3-----------',NRANK , ave1
 !---------------debug-------------------
 
 !ave1=ave1/dble((Ncellx*Ncelly*Ncellz))
@@ -3821,13 +3828,18 @@ IF(NRANK.EQ.0)  THEN
    ave=0.0d0
    avepre=0.0d0
    !---------------debug-------------------
+   write(*,*)
+   write(*,*)
    write(*,*) '-------------1-ok??-----------',NRANK
+   write(*,*)
+   write(*,*)
    !---------------debug-------------------
 
 
    do i_t = 0, NPE-1
       !ave  = ave2_gather(i_t) + ave
       ave=dmax1(ave,ave2_gather(i_t))
+      write(*,*) ave , '-----ave-----'
    end do
 
 
@@ -3836,12 +3848,18 @@ IF(NRANK.EQ.0)  THEN
    write(*,*) '-------------1-ok??-----------',NRANK
    !---------------debug-------------------
 END IF
+
+!---------------debug-------------------
+write(*,*) '-------------1-ok??*****-----------',NRANK
+!---------------debug-------------------
+
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !CALL MPI_BCAST(maxcs,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 CALL MPI_BCAST(ave,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 if(ave < eps) then
    shusoku1=1.0d2
+!else !if(ave > eps) then
 end if
 
 !---------------debug-------------------

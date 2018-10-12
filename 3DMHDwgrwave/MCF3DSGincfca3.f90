@@ -74,7 +74,9 @@ if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
 if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
-!write(*,*) 'OK1'
+   !write(*,*) 'OK1',NRANK
+   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   !write(*,*) 'OK2',NRANK
 
 IST = mod(NRANK,NSPLTx); KST = NRANK/(NSPLTx*NSPLTy); JST = NRANK/NSPLTx-NSPLTy*KST
 !write(*,*) 'OK11'
