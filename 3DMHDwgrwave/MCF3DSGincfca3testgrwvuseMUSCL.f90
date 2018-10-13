@@ -2084,7 +2084,7 @@ do i = i_sta, Ncell+i_end
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
- 
+
 end do
 end if
 if((k.ge.9).and.(k.le.11)) then
@@ -3997,58 +3997,48 @@ DEALLOCATE(Phidummy)
 !DEALLOCATE(Phidtdummy)
 end subroutine gravslv
 
-subroutine gravslvMUSCL1D(dt)
+subroutine gravslvMUSCL1D(dt,direction,mode)
 USE comvar
 USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phidummy !, Phidtdummy
-double precision :: nu2 , w=6.0d0 , dt2 , dt
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phidummy , gradPhidt !, Phidtdummy
+double precision :: nu2 , w=6.0d0 , dt2 , dt ,Ncell
 character(3) rn
+DOUBLE PRECISION, dimension(:), allocatable :: grad1DPhi , Phi1D
+integer direction , mode , invdt
 
 nu2 = cg * dt / deltalength
 nu2 = nu2 * nu2
 dt2 = dt * dt
-write(rn,'(i3.3)') NRANK
-ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
-!ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
-open(122,file='kakuninpost'//rn//'.dat')
-open(123,file='kakuninpre'//rn//'.dat')
+invdt = 1.0d0 / dt
 
-do k = -1 , Ncellz+2
-   do j = -1 , Ncelly+2
-      do i = -1 , Ncellx+2
-         Phidummy(i,j,k) = Phi(i,j,k)
-         !Phidtdummy(i,j,k) = Phidt(i,j,k)
-         write(123,*) Phi(i,j,k)
+Ncell=Ncellx
+
+!-------------need 2step---------------
+!------------- dPhi/dt ----------------
+allocate(gradPhidt(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2))
+do k=-1,Ncellz+2
+   do j=-1,Ncelly+2
+      do i=-1,Ncellx+2
+         gradPhidt(i,j,k) = invdt * (Phi(i,j,k) - Phidt(i,j,k))
       end do
    end do
 end do
-close(123)
-do k = 1 , Ncellz
-   do j = 1 , Ncelly
-      do i = 1 , Ncellx
-         Phi(i,j,k) = 2.0d0*Phidummy(i,j,k) - Phidt(i,j,k) + nu2 * (Phidummy(i-1,j,k) + Phidummy(i+1,j,k) + &
-              Phidummy(i,j-1,k) + Phidummy(i,j+1,k) + Phidummy(i,j,k-1) + Phidummy(i,j,k+1) - w * Phidummy(i,j,k)) + &
-              U(i,j,k,1) * G4pi * dt2
-         write(122,*) Phi(i,j,k)
-      end do
-   end do
-end do
-close(122)
+!------------- dPhi/dt ----------------
 
-do k = -1 , Ncellz+2
-   do j = -1 , Ncelly+2
-      do i = -1 , Ncellx+2
-         Phidt(i,j,k) = Phidummy(i,j,k)
-      end do
-   end do
-end do
-
-DEALLOCATE(Phidummy)
 
 
 !--------------integral----------------
+ALLOCATE(Phi1D(-1:Ncell+2))
+ALLOCATE(grad1DPhi(0:Ncell+1))
+do i = -1 , Ncell+2
+   Phi1D(i) = gradPhidt(i,j,k)
+end do
+call gradforintegral(Phi1D(-1),grad1DPhi(0),Ncell+1) !意味あるのか？
+
+do i=1,Ncell
+   Phi1D(i) = Phi1D(i) + 
 
 !--------------integral----------------
 
@@ -4094,8 +4084,19 @@ u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
 
 !2131 continue
 
-end subroutine gravslv
+end subroutine gravslvMUSCL1D
 
+
+subroutine gradforintegral(Phi1D,grad1DPhi,len)
+  integer len
+  double precision grad1DPhi(0:len),Phi1D(-1,len+1)
+  double precision invdlen
+  invdlen = 1.0d0 / deltalength
+
+  do i = 0 , len
+     grad1DPhi(i) = 0.5d0 * (Phi1D(i-1) + Phi1D(i+1)) * invdlen
+  end do
+end subroutine gradforintegral
 
 
 SUBROUTINE PB()
