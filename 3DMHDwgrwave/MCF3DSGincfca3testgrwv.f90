@@ -289,6 +289,7 @@ end do
 
 !dx=dy=dz
 deltalength = dx_i(0)
+write(*,*) dx_i(0),'--------------dx_i(0)------------'
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
@@ -955,15 +956,6 @@ do in10 = 1, maxstp
        write(*,*) '-------------13-----------',NRANK
        !---------------debug-------------------
 
-       !*********************************!収束判定
-       call SELFGRAVWAVE(0.0d0,8) !収束判定
-       if(shusoku1 > 1.0d0) then
-          !---------------debug-------------------
-          write(*,*) '-------------goto-----------',NRANK
-          !---------------debug-------------------
-          goto 2419
-       end if
-       !*********************************!収束判定
 
     end if
 
@@ -973,10 +965,25 @@ do in10 = 1, maxstp
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
     time = time + dt
-  end do
+ end do
   itime = itime - 1
   7777   continue
   itime = itime + 1
+
+
+
+  !*********************************!収束判定
+  call SELFGRAVWAVE(0.0d0,8) !収束判定
+  if(shusoku1 > 1.0d0) then
+     !---------------debug-------------------
+     write(*,*) '-------------goto-----------',NRANK
+     !---------------debug-------------------
+     goto 2419
+  end if
+  !*********************************!収束判定
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
   IF(NRANK.EQ.0) THEN
     time_CPU(2) = MPI_WTIME()
@@ -3338,7 +3345,7 @@ do k = 1, Ncellz; do j = 1, Ncelly
   end do
   Nttot(j,k,IST)=tNtot; NtH2(j,k,IST)=tNH2; NtC(j,k,IST)=tNC; NtCO(j,k,IST)=tNCO; tau(j,k,IST)=ttau
 end do; end do
-      
+
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 DO L = 1, NSPLTx-1
   ITO    = NRANK + L
@@ -3769,19 +3776,29 @@ if(mode==6) then
 !        st_gat_gr       ,1,MPI_INTEGER, &
 !        0            ,MPI_COMM_WORLD,IERR)
    IF(NRANK.EQ.0)  THEN
+
+      !---------------debug-------------------
+      write(*,*)
+      write(*,*)
+      write(*,*) '-------------NRANK==0-----------',NRANK
+      write(*,*)
+      write(*,*)
+      !---------------debug-------------------
       !dt  = tfinal
       !dtt = tfinal
       maxcs = 0.0d0
       do i_t = 0, NPE-1
          maxcs  = dmax1( maxcs, dt_gat_gr(i_t) )
+         write(*,*) maxcs , '-----------maxcs-------'
 !         if(dt.lt.dtt) st = st_gat(i_t)
 !         dtt = dt
       end do
+      cg = cgcsratio * maxcs
    END IF
    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-   CALL MPI_BCAST(maxcs,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+   CALL MPI_BCAST(cg,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   cg = cgcsratio * maxcs
+   !cg = cgcsratio * maxcs
    write(*,*) NRANK,cg,'---------------cg------------------'
 end if
 !*****************cg****************
@@ -3824,13 +3841,14 @@ CALL MPI_GATHER(ave2(NRANK),1,MPI_REAL8,   &
      ave2_gather       ,1,MPI_REAL8,   &
      0            ,MPI_COMM_WORLD,IERR)
 
+
 IF(NRANK.EQ.0)  THEN
    ave=0.0d0
    avepre=0.0d0
    !---------------debug-------------------
    write(*,*)
    write(*,*)
-   write(*,*) '-------------1-ok??-----------',NRANK
+   write(*,*) '-------------NRANK==000-----------',NRANK
    write(*,*)
    write(*,*)
    !---------------debug-------------------
@@ -3847,6 +3865,13 @@ IF(NRANK.EQ.0)  THEN
    !---------------debug-------------------
    write(*,*) '-------------1-ok??-----------',NRANK
    !---------------debug-------------------
+
+   if(ave < eps) then
+      shusoku1=1.0d2
+   ELSE
+      shusoku1=0.0d0
+      !else !if(ave > eps) then
+   end if
 END IF
 
 !---------------debug-------------------
@@ -3856,11 +3881,13 @@ write(*,*) '-------------1-ok??*****-----------',NRANK
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !CALL MPI_BCAST(maxcs,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-CALL MPI_BCAST(ave,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
-if(ave < eps) then
-   shusoku1=1.0d2
+!CALL MPI_BCAST(ave,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+CALL MPI_BCAST(shuskou1,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+
+!if(ave < eps) then  aveの初期条件で入ってしまう?
+!   shusoku1=1.0d2
 !else !if(ave > eps) then
-end if
+!end if
 
 !---------------debug-------------------
 write(*,*) '-------------1---------44-----------',NRANK
