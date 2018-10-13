@@ -289,7 +289,7 @@ end do
 
 !dx=dy=dz
 deltalength = dx_i(0)
-write(*,*) dx_i(0),deltalength,'--------------dx_i(0)------------'
+!write(*,*) dx_i(0),deltalength,'--------------dx_i(0)------------'
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
@@ -705,7 +705,7 @@ end do; end do; end do
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 
    !---------------debug-------------------
-   write(*,*) '-------------1-----------',NRANK
+   !write(*,*) '-------------1-----------',NRANK
    !---------------debug-------------------
 
 if(ifgrv.eq.2) then
@@ -714,10 +714,11 @@ if(ifgrv.eq.2) then
   !call SELFGRAVWAVE(0.0d0,1)
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   call SELFGRAVWAVE(0.0d0,6) !calculate cg
+  call SELFGRAVWAVE(0.0d0,4) !INITAL
 end if
 
 !---------------debug-------------------
-write(*,*) '-------------2-----------',NRANK
+!write(*,*) '-------------2-----------',NRANK
 !---------------debug-------------------
 
 END SUBROUTINE INITIA
@@ -789,7 +790,7 @@ time_CPU(3) = 0.d0
 Time_signal = 0
 
 !---------------debug-------------------
-write(*,*) '-------------3-----------',NRANK
+!write(*,*) '-------------3-----------',NRANK
 !---------------debug-------------------
 
 do in10 = 1, maxstp
@@ -816,7 +817,7 @@ do in10 = 1, maxstp
     stt= dt_mpi(NRANK)
 
     !---------------debug-------------------
-    write(*,*) '-------------4-----------',NRANK
+    !write(*,*) '-------------4-----------',NRANK
     !---------------debug-------------------
 
 
@@ -826,7 +827,7 @@ do in10 = 1, maxstp
 
 
     !---------------debug-------------------
-    write(*,*) '-------------5-----------',NRANK
+    !write(*,*) '-------------5-----------',NRANK
     !---------------debug-------------------
 
 
@@ -838,7 +839,7 @@ do in10 = 1, maxstp
 
 
     !---------------debug-------------------
-    write(*,*) '-------------6-----------',NRANK
+    !write(*,*) '-------------6-----------',NRANK
     !---------------debug-------------------
 
     if(ifgrv==2) then
@@ -846,7 +847,7 @@ do in10 = 1, maxstp
     endif
 
  !---------------debug-------------------
- write(*,*) '-------------1-----------',NRANK
+ !write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
@@ -865,7 +866,7 @@ do in10 = 1, maxstp
       dtt = tfinal
       do i_t = 0, NPE-1
          dt  = dmin1( dt, dt_gat(i_t) )
-         write(*,*) '--------------dt--------------' , dt
+         !write(*,*) '--------------dt--------------' , dt
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
       end do
@@ -878,7 +879,7 @@ do in10 = 1, maxstp
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
 
-    write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
+    !write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
     !if(ifgrv.eq.2) then
@@ -946,7 +947,7 @@ do in10 = 1, maxstp
     !---------------------------skip-----------------------------
 
     !---------------debug-------------------
-    write(*,*) '-------------10-----------',NRANK
+    !write(*,*) '-------------10-----------',NRANK
     !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
@@ -956,19 +957,19 @@ do in10 = 1, maxstp
        !call GRAVTY(dt,2)
        !call GRAVTY(dt,3)
        !call GRAVTY(dt*0.5d0,3)
-       write(*,*) dt,NRANK,'--dt--dt--'
+       !write(*,*) dt,NRANK,'--dt--dt--'
        call SELFGRAVWAVE(dt,2)
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
        !---------------debug-------------------
-       write(*,*) '-------------13-----------',NRANK
+       !write(*,*) '-------------13-----------',NRANK
        !---------------debug-------------------
 
 
     end if
 
     !---------------debug-------------------
-    write(*,*) '-------------12-----------',NRANK
+    !write(*,*) '-------------12-----------',NRANK
     !---------------debug-------------------
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
@@ -978,6 +979,9 @@ do in10 = 1, maxstp
   7777   continue
   itime = itime + 1
 
+  if(ifgrv.eq.2) then
+     call  SELFGRAVWAVE(0.0d0,4)
+  end if
 
 
   !*********************************!収束判定
@@ -1016,7 +1020,7 @@ if(ifgrv.eq.2) then
    call  SELFGRAVWAVE(0.0d0,4)
 end if
 !**********************!収束判定
-
+write(*,*) 'save',NRANK
 
 9000 continue
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
@@ -3552,15 +3556,16 @@ USE comvar
 USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
-integer mode,MRANK
+integer :: mode,MRANK,count=0
 DOUBLE PRECISION  :: dt,dxi
 INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 character(3) NPENUM
+character(6) countcha
 double precision tfluid , cs
 double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
-double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-4
+double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
@@ -3604,10 +3609,13 @@ if(mode==2) then
   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   !call PB()
   !call mglin(Nmem1,Nmem2,2,5,5)
-  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
+  !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
   call gravslv(dt)
   !DEALLOCATE(bphi1,bphi2)
-  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
+  if(NRANK==0) then
+     write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
+     write(*,*) NRANK,Phi(0,0,0),Phidt(1,1,1),Phidt(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
+  end if
   N_ol = 2
   !*************一応***************
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -3665,7 +3673,7 @@ if(mode==2) then
   !  Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
   !end do; end do; end if
   !*********use phi exact**********
-  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
+  !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
 end if
 !****************GRAVITY SOLVER*****************
 
@@ -3683,10 +3691,12 @@ end if
 
 !***************SAVE PHI & PHIDT FOR DEBUG & INITIAL**************
 if(mode==4) then
+   !write(*,*) 'save???'
    WRITE(NPENUM,'(I3.3)') NRANK
-   open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-   open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-
+   WRITE(countcha,'(I6.6)') count
+   open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='FORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//countcha//'.DAT',FORM='FORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   !write(*,*) 'save?????'
 
    !-------------------INITIAL---------------------
 !   do k = -1, Ncellz+2
@@ -3709,23 +3719,25 @@ if(mode==4) then
 
 
    !-------------------TEST---------------------
-   do k = 1, Ncellz
-      do j = 1, Ncelly
+   do k = -1, Ncellz+2
+      do j = -1, Ncelly+2
          !do i = -1, Ncellx+2
-         write(28) (sngl(Phi(i,j,k)),i=1,Ncellx)
+         write(28,*) (sngl(Phi(i,j,k)),i=-1,Ncellx+2)
          !enddo
       end do
    end do
    close(28)
-   do k = 1, Ncellz
-      do j = 1, Ncelly
+   do k = -1, Ncellz+2
+      do j = -1, Ncelly+2
          !do i = -1, Ncellx+2
-         write(38) (sngl(Phidt(i,j,k)),i=1,Ncellx)
+         write(38,*) (sngl(Phidt(i,j,k)),i=-1,Ncellx+2)
          !enddo
       end do
    end do
    close(38)
    !-------------------TEST---------------------
+   count=count+1
+   !write(*,*) 'save????????????'
 end if
 
 !***************SAVE PHI & PHIDT FOR DEBUG & INITIAL**************
@@ -3756,7 +3768,8 @@ end if
 !***************SABILITY2**************
 if(mode==7) then
    tcool = dt
-   cgtime = deltalength/cg * CFL
+   !cgtime = deltalength/cg * CFL
+   cgtime = deltalength/cg * 0.2d0 !3D
    if(dt > cgtime) then
       write(*,*)
       write(*,*) '---------------------------------'
@@ -3854,7 +3867,7 @@ do k=1,Ncellz
 end do
 
 !---------------debug-------------------
-write(*,*) '-------------1---------3-----------',NRANK , ave1
+!write(*,*) '-------------1---------3-----------',NRANK , ave1
 !---------------debug-------------------
 
 !ave1=ave1/dble((Ncellx*Ncelly*Ncellz))
@@ -3887,7 +3900,7 @@ IF(NRANK.EQ.0)  THEN
 
    !ave=ave/dble(NPE)
    !---------------debug-------------------
-   write(*,*) '-------------1-ok??-----------',NRANK
+   !write(*,*) '-------------1-ok??-----------',NRANK
    !---------------debug-------------------
 
    if(ave < eps) then
@@ -3899,7 +3912,7 @@ IF(NRANK.EQ.0)  THEN
 END IF
 
 !---------------debug-------------------
-write(*,*) '-------------1-ok??*****-----------',NRANK
+!write(*,*) '-------------1-ok??*****-----------',NRANK
 !---------------debug-------------------
 
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -3914,7 +3927,7 @@ CALL MPI_BCAST(shuskou1,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !end if
 
 !---------------debug-------------------
-write(*,*) '-------------1---------44-----------',NRANK
+!write(*,*) '-------------1---------44-----------',NRANK
 !---------------debug-------------------
 end if
 !*****************shuusoku****************
@@ -3931,7 +3944,7 @@ character(3) rn
 
 nu2 = cg * dt / deltalength
 nu2 = nu2 * nu2
-write(*,*) nu2,cg,dt,deltalength,'-----------???????------------' , NRANK
+!write(*,*) nu2,cg,dt,deltalength,'-----------???????------------' , NRANK
 dt2 = dt * dt
 write(rn,'(i3.3)') NRANK
 
@@ -3949,7 +3962,7 @@ do k = -1 , Ncellz+2
       end do
    end do
 end do
-!close(123)
+close(123)
 do k = 1 , Ncellz
    do j = 1 , Ncelly
       do i = 1 , Ncellx
@@ -3960,6 +3973,7 @@ do k = 1 , Ncellz
       end do
    end do
 end do
+close(122)
 
 do k = -1 , Ncellz+2
    do j = -1 , Ncelly+2
