@@ -968,6 +968,16 @@ do in10 = 1, maxstp
 
     end if
 
+    !*********************************!収束判定
+    call SELFGRAVWAVE(0.0d0,8) !収束判定
+    if(shusoku1 > 1.0d0) then
+       !---------------debug-------------------
+       write(*,*) '-------------goto-----------',NRANK
+       !---------------debug-------------------
+       goto 2419
+    end if
+    !*********************************!収束判定
+
     !---------------debug-------------------
     !write(*,*) '-------------12-----------',NRANK
     !---------------debug-------------------
@@ -985,13 +995,13 @@ do in10 = 1, maxstp
 
 
   !*********************************!収束判定
-  call SELFGRAVWAVE(0.0d0,8) !収束判定
-  if(shusoku1 > 1.0d0) then
+  !call SELFGRAVWAVE(0.0d0,8) !収束判定
+  !if(shusoku1 > 1.0d0) then
      !---------------debug-------------------
-     write(*,*) '-------------goto-----------',NRANK
+  !   write(*,*) '-------------goto-----------',NRANK
      !---------------debug-------------------
-     goto 2419
-  end if
+  !  goto 2419
+  !end if
   !*********************************!収束判定
 
 
@@ -3694,8 +3704,8 @@ if(mode==4) then
    !write(*,*) 'save???'
    WRITE(NPENUM,'(I3.3)') NRANK
    WRITE(countcha,'(I6.6)') count
-   open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='FORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-   open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//countcha//'.DAT',FORM='FORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
    !write(*,*) 'save?????'
 
    !-------------------INITIAL---------------------
@@ -3722,7 +3732,7 @@ if(mode==4) then
    do k = -1, Ncellz+2
       do j = -1, Ncelly+2
          !do i = -1, Ncellx+2
-         write(28,*) (sngl(Phi(i,j,k)),i=-1,Ncellx+2)
+         write(28) (sngl(Phi(i,j,k)),i=-1,Ncellx+2)
          !enddo
       end do
    end do
@@ -3730,7 +3740,7 @@ if(mode==4) then
    do k = -1, Ncellz+2
       do j = -1, Ncelly+2
          !do i = -1, Ncellx+2
-         write(38,*) (sngl(Phidt(i,j,k)),i=-1,Ncellx+2)
+         write(38) (sngl(Phidt(i,j,k)),i=-1,Ncellx+2)
          !enddo
       end do
    end do
