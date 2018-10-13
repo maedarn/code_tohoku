@@ -38,7 +38,7 @@ INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
-double precision :: cg  , deltalength,cgcsratio = 10.0d0 !, shusoku1=0.0d0
+double precision :: cg  , deltalength,cgcsratio = 1.0d0 !, shusoku1=0.0d0
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
@@ -75,9 +75,9 @@ if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
 !write(*,*) 'OK1'
-   write(*,*) 'OK1',NRANK
-   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-   write(*,*) 'OK2',NRANK
+!   write(*,*) 'OK1',NRANK
+!   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!   write(*,*) 'OK2',NRANK
 
 IST = mod(NRANK,NSPLTx); KST = NRANK/(NSPLTx*NSPLTy); JST = NRANK/NSPLTx-NSPLTy*KST
 !write(*,*) 'OK11'
@@ -289,7 +289,7 @@ end do
 
 !dx=dy=dz
 deltalength = dx_i(0)
-write(*,*) dx_i(0),'--------------dx_i(0)------------'
+write(*,*) dx_i(0),deltalength,'--------------dx_i(0)------------'
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
@@ -828,7 +828,12 @@ do in10 = 1, maxstp
     !---------------debug-------------------
 
 
+
+    !--------for INIT---------------
     call Stblty(tLMT)
+    !--------for INIT---------------
+
+
 
     !---------------debug-------------------
     write(*,*) '-------------6-----------',NRANK
@@ -841,7 +846,7 @@ do in10 = 1, maxstp
  !---------------debug-------------------
  write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
- 
+
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -949,6 +954,7 @@ do in10 = 1, maxstp
        !call GRAVTY(dt,2)
        !call GRAVTY(dt,3)
        !call GRAVTY(dt*0.5d0,3)
+       write(*,*) dt,NRANK,'--dt--dt--'
        call SELFGRAVWAVE(dt,2)
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
@@ -3596,9 +3602,10 @@ if(mode==2) then
   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   !call PB()
   !call mglin(Nmem1,Nmem2,2,5,5)
+  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
   call gravslv(dt)
   !DEALLOCATE(bphi1,bphi2)
-
+  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
   N_ol = 2
   !*************一応***************
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -3656,7 +3663,7 @@ if(mode==2) then
   !  Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
   !end do; end do; end if
   !*********use phi exact**********
-
+  write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
 end if
 !****************GRAVITY SOLVER*****************
 
@@ -3902,31 +3909,37 @@ USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phidummy !, Phidtdummy
-double precision :: nu2 , w=6.0d0 , dt2
+double precision :: nu2 , w=6.0d0 , dt2 , dt
+character(3) rn
 
 nu2 = cg * dt / deltalength
 nu2 = nu2 * nu2
-
+write(*,*) nu2,cg,dt,deltalength,'-----------???????------------' , NRANK
 dt2 = dt * dt
+write(rn,'(i3.3)') NRANK
 
 ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
 !ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
+open(122,file='kakuninpost'//rn//'.dat')
+open(123,file='kakuninpre'//rn//'.dat')
 
 do k = -1 , Ncellz+2
    do j = -1 , Ncelly+2
       do i = -1 , Ncellx+2
          Phidummy(i,j,k) = Phi(i,j,k)
          !Phidtdummy(i,j,k) = Phidt(i,j,k)
+         write(123,*) Phi(i,j,k)
       end do
    end do
 end do
-
+!close(123)
 do k = 1 , Ncellz
    do j = 1 , Ncelly
       do i = 1 , Ncellx
          Phi(i,j,k) = 2.0d0*Phidummy(i,j,k) - Phidt(i,j,k) + nu2 * (Phidummy(i-1,j,k) + Phidummy(i+1,j,k) + &
               Phidummy(i,j-1,k) + Phidummy(i,j+1,k) + Phidummy(i,j,k-1) + Phidummy(i,j,k+1) - w * Phidummy(i,j,k)) + &
               U(i,j,k,1) * G4pi * dt2
+         write(122,*) Phi(i,j,k)
       end do
    end do
 end do
