@@ -346,6 +346,8 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
 !  dinit1=2.0d0/G4pi/90.d0
 !  diniratio=dinit1/diniratio!********圧力
 
+  !dinit1=dinit1*1.0d4
+  !pinit1=pinit1*1.0d4
 
   censh = ql1x + dx(1)/2.0d0 !x=serfase
   Hsheet = 1.0d1
@@ -3825,13 +3827,28 @@ if(mode==8) then
 !   end do
 !end do
 
+!do k=1,Ncellz
+!   do j=1,Ncelly
+!      do i=1,Ncellx
+!         ave1pre=ave1
+!         ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k)) + ave1
+         !ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k) + 1.0d-10) + ave1
+         !ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k))
+!         ave1 = dmax1( ave1pre , ave1 )
+!      end do
+!   end do
+!end do
+
 do k=1,Ncellz
    do j=1,Ncelly
       do i=1,Ncellx
+         if(Phidt(i,j,k) .ne. 0.0d0) then
          ave1pre=ave1
+         ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k)) + ave1
          !ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k) + 1.0d-10) + ave1
-         ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k))
+         !ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k))
          ave1 = dmax1( ave1pre , ave1 )
+         end if
       end do
    end do
 end do
