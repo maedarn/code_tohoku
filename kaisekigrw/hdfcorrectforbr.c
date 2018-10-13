@@ -8,7 +8,7 @@
 #define NX 128
 #define NY 128
 #define NZ 128
-#define last 30
+#define last 300
 //#define M_PI 3.1415926535897932
 
 
