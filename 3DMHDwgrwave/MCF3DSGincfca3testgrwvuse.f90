@@ -3828,8 +3828,8 @@ end if
 !*****************shuusoku****************
 if(mode==8) then
 
-   ave1=0.0d0
-   ave1pre=0.0d0
+   ave1=1.0d2
+   ave1pre=1.0d2
 
 !do k=1,Ncellz
 !   do j=1,Ncelly
@@ -3880,21 +3880,21 @@ CALL MPI_GATHER(ave2(NRANK),1,MPI_REAL8,   &
 
 
 IF(NRANK.EQ.0)  THEN
-   ave=0.0d0
-   avepre=0.0d0
+   ave=1.0d2
+   avepre=1.0d2
    !---------------debug-------------------
-   write(*,*)
-   write(*,*)
-   write(*,*) '-------------NRANK==000-----------',NRANK
-   write(*,*)
-   write(*,*)
+   !write(*,*)
+   !write(*,*)
+   !write(*,*) '-------------NRANK==000-----------',NRANK
+   !write(*,*)
+   !write(*,*)
    !---------------debug-------------------
 
 
    do i_t = 0, NPE-1
       !ave  = ave2_gather(i_t) + ave
       ave=dmax1(ave,ave2_gather(i_t))
-      write(*,*) ave , '-----ave-----'
+      write(*,*) ave , '-----ave-----',i_t
    end do
 
 
