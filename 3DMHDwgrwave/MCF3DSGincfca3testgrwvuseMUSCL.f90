@@ -38,7 +38,7 @@ INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
-double precision :: cg  , deltalength,cgcsratio = 1.0d0 !, shusoku1=0.0d0
+double precision :: cg  , deltalength,cgcsratio = 1.0d0 ,dtpre = !, shusoku1=0.0d0
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
@@ -4003,25 +4003,28 @@ USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phidummy , gradPhidt !, Phidtdummy
-double precision :: nu2 , w=6.0d0 , dt2 , dt ,Ncell
+double precision :: nu2 , w=6.0d0 , dt2 , dt ,Ncell , kappa , deltap,deltam
 character(3) rn
 DOUBLE PRECISION, dimension(:), allocatable :: grad1DPhi , Phi1D
+double precision dimension(:,:,:), allocatable :: intgral !intgrl(0:NPE-1)
 integer direction , mode , invdt
+DOUBLE PRECISION, dimension(:,:), allocatable :: intC
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: f,g
 
 nu2 = cg * dt / deltalength
-nu2 = nu2 * nu2
+!nu2 = nu2 * nu2
 dt2 = dt * dt
-invdt = 1.0d0 / dt
+invdt = 1.0d0 / dtpre
 
 Ncell=Ncellx
 
-!-------------need 2step---------------
+!-------------1st order---------------
 !------------- dPhi/dt ----------------
 allocate(gradPhidt(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2))
 do k=-1,Ncellz+2
    do j=-1,Ncelly+2
       do i=-1,Ncellx+2
-         gradPhidt(i,j,k) = invdt * (Phi(i,j,k) - Phidt(i,j,k))
+         gradPhidt(i,j,k) = invdt * (Phi(i,j,k) - Phidt(i,j,k)) !dtは過去の
       end do
    end do
 end do
@@ -4030,37 +4033,85 @@ end do
 
 
 !--------------integral----------------
+!--------------?台形法?-----------------
 ALLOCATE(Phi1D(-1:Ncell+2))
 ALLOCATE(grad1DPhi(0:Ncell+1))
+ALLOCATE(integral(1:Ncelly,1:Ncellz,0:NPE-1))
+allocate(intC(1:Ncelly,1:Ncellz))
 do i = -1 , Ncell+2
-   Phi1D(i) = gradPhidt(i,j,k)
+   Phi1D(i) = gradPhidt(i,j,k) * deltalength
 end do
-call gradforintegral(Phi1D(-1),grad1DPhi(0),Ncell+1) !意味あるのか？
+!call gradforintegral(Phi1D(-1),grad1DPhi(0),Ncell+1) !spatial cen-dif
 
+!do i=1,Ncell
+!   Phi1D(i) = Phi1D(i) * deltalength
+!end do
+do i = -1 , Ncell+2
+   Phi1D(i) = gradPhidt(i,j,k) * deltalength
+end do
+integral(j,k,NRANK)=0.0d0
 do i=1,Ncell
-   Phi1D(i) = Phi1D(i) + 
+   integral(j,k,NRANK) = integral(j,k,NRANK) + Phi1D(i)
+end do
 
+do Nroot=0,NPE-1
+  CALL MPI_BCAST(integral(1,1,Nroot),(Ncelly)*(Ncellz),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+intC(:,:)=0.0d0
+do Nroot=0,NPE-1
+   ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
+   if(KST==KSTt .and. JST==JSTt) then
+      intC(:,:) = integral(:,:,Nroot)+intC(:,:) !C=0?
+   end if
+end do
 !--------------integral----------------
 
 
 !------------split f,g-----------------
-f(i,j,k) = 0.5d0 * Phi(i,j,k) + intgG
-g(i,j,k) = 0.5d0 * Phi(i,j,k) - intgG
+allocate(f(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
+allocate(g(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
+f(i,j,k) = 0.5d0 * Phi(i,j,k) + intgG(j,k) !x+cg*t
+g(i,j,k) = 0.5d0 * Phi(i,j,k) - intgG(j,k) !x-cg*t
 !------------split f,g-----------------
 
 
-
-
 !-------------MUSCL solver-------------
-ul(i,j,k) = u(i,j,k) + 0.25d0 * s * ((1-kappa*s)*gradum + (1+kappa*s)*gradup) !j-1
-ur(i,j,k) = u(i,j,k) - 0.25d0 * s * ((1-kappa*s)*gradup + (1+kappa*s)*gradum) !j+1
+kappa=1.0d0/3.0d0
+!ul(i,j,k) = u(i,j,k) + 0.25d0 * s * ((1-kappa*s)*gradum + (1+kappa*s)*gradup) !j-1
+!ur(i,j,k) = u(i,j,k) - 0.25d0 * s * ((1-kappa*s)*gradup + (1+kappa*s)*gradum) !j+1
+deltap = f(i+2,j,k) - f(i+1,j,k)
+deltam = f(i+1,j,k) - f(i  ,j,k)
+fluxf(i,j,k) = f(i+1,j,k) - gradf * 0.25d0 *( (1.0d0 - kappa * gradf) * deltap + (1.0d0 + kappa * gradf) * deltam)  !ur_{j+1/2}
+!fluxf(i,j,k) = - cg * fluxf(i,j,k)
 
-fluxr = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) + ul(i,j,k) - ur(i,j,k)) !向きによって片方で良い
-fluxl = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) - ul(i,j,k) + ur(i,j,k)) !向きによって片方で良い
+!fluxf = 0.5d0 * 
+
+!f(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
+fdt2(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
 
 
-u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
+deltap = g(i+1,j,k) - g(i  ,j,k)
+deltam = g(i  ,j,k) - g(i-1,j,k)
+fluxg(i,j,k) = g(i  ,j,k) + gradg * 0.25d0 *( (1.0d0 - kappa * gradg) * deltam + (1.0d0 + kappa * gradg) * deltap)  !ul_{j+1/2}
+fluxg(i,j,k) =   cg * fluxg(i,j,k)
+
+
+!fluxr = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) + ul(i,j,k) - ur(i,j,k)) !向きによって片方で良い
+!fluxl = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) - ul(i,j,k) + ur(i,j,k)) !向きによって片方で良い
+
+
+!u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
 !-------------MUSCL solver-------------
+
+
+!------------newPHI------------------
+Phi(i,j,k) = f(i,j,k) + g(i,j,k)
+!------------newPHI------------------
+
+
+
+
+
 !DEALLOCATE(Phidtdummy)
 
 !goto 2131
@@ -4087,16 +4138,32 @@ u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
 end subroutine gravslvMUSCL1D
 
 
-subroutine gradforintegral(Phi1D,grad1DPhi,len)
-  integer len
-  double precision grad1DPhi(0:len),Phi1D(-1,len+1)
-  double precision invdlen
-  invdlen = 1.0d0 / deltalength
+subroutine slvgrvsource(dt,gradPhidt)
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+  double precision dt
 
-  do i = 0 , len
-     grad1DPhi(i) = 0.5d0 * (Phi1D(i-1) + Phi1D(i+1)) * invdlen
-  end do
-end subroutine gradforintegral
+  Phi(i,j,k) = 0.5d0 * G4pi * U(i,j,k,1) * dt * dt + dt * gradPhidt(i,j,k) + Phi(i,j,k)
+
+end subroutine slvgrvsource
+
+!subroutine gradforintegral(Phi1D,grad1DPhi,len)
+!USE comvar
+!USE mpivar
+!USE slfgrv
+!INCLUDE 'mpif.h'
+!  integer len
+!  double precision grad1DPhi(0:len),Phi1D(-1,len+1)
+  !double precision Phi1Dr(-1,len+1),Phi1Dl(-1,len+1)
+!  double precision invdlen
+!  invdlen = 1.0d0 / deltalength
+
+!  do i = 0 , len
+!     grad1DPhi(i) = 0.5d0 * (Phi1D(i-1) + Phi1D(i+1)) * invdlen
+!  end do
+!end subroutine gradforintegral
 
 
 SUBROUTINE PB()
