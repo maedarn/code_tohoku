@@ -36,7 +36,7 @@ MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
-double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
+double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm , Phi2dt
 DOUBLE PRECISION :: Lbox
 double precision :: cg  , deltalength,cgcsratio = 1.0d0 ,dtpre = !, shusoku1=0.0d0
 
@@ -99,8 +99,9 @@ ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
 !*********grvwave*********
 ALLOCATE(Phidt(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Phi2dt(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz))
 !*********grvwave*********
 
 !write(*,*) 'OK3'
@@ -118,8 +119,10 @@ DEALLOCATE(Phi)
 
 !********gravwave**********
 DEALLOCATE(Phidt)
-DEALLOCATE(Phicgp)
-DEALLOCATE(Phicgm)
+DEALLOCATE(Phi2dt)
+
+!DEALLOCATE(Phicgp)
+!DEALLOCATE(Phicgm)
 !********gravwave**********
 
 CALL MPI_FINALIZE(IERR)
@@ -3544,7 +3547,7 @@ if((IST.eq.0).or.(IST.eq.NSPLTx-1)) then
     ix = i+offset
     divv(i,j,k) = ( U(ix+1,j,k,2)-U(ix-1,j,k,2)+U(ix,j+1,k,3)-U(ix,j-1,k,3)+U(ix,j,k+1,4)-U(ix,j,k-1,4) )*0.25d0
   end do; end do; end do
-  
+
   do k=1,Ncellz; do j=1,Ncelly; do i=1,10
     ix = i+offset
     U(ix,j,k,2) = U(ix,j,k,2) + 0.1d0*(divv(i+1,j,k)-divv(i-1,j,k))
@@ -4020,11 +4023,23 @@ Ncell=Ncellx
 
 !-------------1st order---------------
 !------------- dPhi/dt ----------------
+!allocate(gradPhidt(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2))
+!do k=-1,Ncellz+2
+!   do j=-1,Ncelly+2
+!      do i=-1,Ncellx+2
+!         gradPhidt(i,j,k) = invdt * (Phi(i,j,k) - Phidt(i,j,k)) !dtは過去の
+!      end do
+!   end do
+!end do
+!------------- dPhi/dt ----------------
+
+!-------------2nd order---------------
+!------------- dPhi/dt ----------------
 allocate(gradPhidt(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2))
 do k=-1,Ncellz+2
    do j=-1,Ncelly+2
       do i=-1,Ncellx+2
-         gradPhidt(i,j,k) = invdt * (Phi(i,j,k) - Phidt(i,j,k)) !dtは過去の
+         gradPhidt(i,j,k) = invdt * ( 3.0d0 * Phi(i,j,k) - 4.0d0 * Phidt(i,j,k) + Phi2dt(i,j,k)) !dtは過去の,後退差分
       end do
    end do
 end do
@@ -4032,8 +4047,9 @@ end do
 
 
 
+
 !--------------integral----------------
-!--------------?台形法?-----------------
+!--------------?台形法?-----------------OK cell center
 ALLOCATE(Phi1D(-1:Ncell+2))
 ALLOCATE(grad1DPhi(0:Ncell+1))
 ALLOCATE(integral(1:Ncelly,1:Ncellz,0:NPE-1))
@@ -4108,32 +4124,6 @@ fluxg(i,j,k) =   cg * fluxg(i,j,k)
 Phi(i,j,k) = f(i,j,k) + g(i,j,k)
 !------------newPHI------------------
 
-
-
-
-
-!DEALLOCATE(Phidtdummy)
-
-!goto 2131
-!PHI and PHIdt  ->  Phicgp Phicgm
-!fphiR
-!fphiL
-!gphiR
-!gphiL
-
-!cg
-
-
-!fphiL = u+s*0.25d0*((1-kappa*s)*dm + (1+kappa*s)*dp)
-
-
-
-!muscl method 銀本
-
-!fluxp=0.5*(cg*fphiR + cg*fphiL - c(fphiR - fphiL)) !cg+
-!fluxm=0.5*(cg*fphiR + cg*fphiL + c(fphiR - fphiL)) !cg-
-
-!2131 continue
 
 end subroutine gravslvMUSCL1D
 
