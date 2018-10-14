@@ -510,27 +510,39 @@ do dloop = 1,3 !three-direction
       Ncell1=Ncelly
       Ncell2=Ncellz
       allocate(Phisurface(1:Ncelly,1:Ncellz))
+      do k = 1 , Ncell
+      do j = 1 , Ncell
       do i = 1 , Ncell
          !Phi1D(i) = gradPhidt(i,j,k) * deltalength ! dphi/dt = a(x,y,z) , a(x,y,z) * dx
-         Phisurface(j,k)=gradPhidt(i,j,k)
+         Phisurface(j,k)=gradPhidt(i,j,k) + Phisurface(j,k)
+      end do
+      end do
       end do
    elseif(dloop==2) then
       Ncell=Ncelly
       Ncell1=Ncellx
       Ncell2=Ncellz
       allocate(Phisurface(1:Ncellx,1:Ncellz))
+      do i = 1 , Ncell
+      do k = 1 , Ncell
       do j = 1 , Ncell
          !Phi1D(i) = gradPhidt(i,j,k) * deltalength
          Phisurface(i,k)=gradPhidt(i,j,k)
+      end do
+      end do
       end do
    else
       Ncell=Ncellz
       Ncell1=Ncellx
       Ncell2=Ncelly
       allocate(Phisurface(1:Ncellx,1:Ncelly))
+      do i = 1 , Ncell
+      do j = 1 , Ncell
       do k = 1 , Ncell
          !Phi1D(i) = gradPhidt(i,j,k) * deltalength
          Phisurface(i,j)=gradPhidt(i,j,k)
+      end do
+      end do
       end do
    end if
 !--------------integral----------------
@@ -538,7 +550,11 @@ do dloop = 1,3 !three-direction
 
 integral(j,k,NRANK)=0.0d0
 !do i=1,Ncell
-   integral(j,k,NRANK) = Phisurface(i,j)
+do k=1,Ncell
+do j=1,Ncell
+   integral(j,k,NRANK) = Phisurface(j,k)
+end do
+end do
 !end do
 
 
@@ -551,32 +567,81 @@ intC(:,:)=0.0d0
 do Nroot=0,NPE-1
    ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
    if(KST==KSTt .and. JST==JSTt) then
-      intC(:,:) = integral(:,:,Nroot)+intC(:,:) !C=0
+      do i=1,Ncell
+         do j=1,Ncell
+            intC(i,j) = integral(i,j,Nroot)+intC(i,j) !C=0
+         end do
+      end do
    end if
 end do
 !------------integral-mpi--------------
+
+
+do k=1,Ncellz
+   do j=1,Ncelly
+      do i=1,Ncellx
+         gradPhidt(i,j,k) =  gradPhidt(i,j,k) + intC(i,j)
+      end do
+   end do
+end do
+
 
 
 
 !------------split f,g-----------------
 allocate(f(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
 allocate(g(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
-f(i,j,k) = 0.5d0 * Phi(i,j,k) + intgG(j,k) !x+cg*t
-g(i,j,k) = 0.5d0 * Phi(i,j,k) - intgG(j,k) !x-cg*t
+do k=1,Ncellz
+do j=1,Ncelly
+do i=1,Ncellx
+!f(i,j,k) = 0.5d0 * Phi(i,j,k) + intgG(j,k) !x+cg*t
+!g(i,j,k) = 0.5d0 * Phi(i,j,k) - intgG(j,k) !x-cg*t
+f(i,j,k) = 0.5d0 * Phi(i,j,k) + gradPhidt(i,j,k) !x+cg*t
+g(i,j,k) = 0.5d0 * Phi(i,j,k) - gradPhidt(i,j,k) !x-cg*t
+end do
+end do
+end do
+
+
+CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+!LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL !x exact
+!RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL !x exact
+LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL 周期
+RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL 周期
+!*****  BC for the leftsides of domains  *****
+CALL MPI_SENDRECV(Phi(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
+                  Phi(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+!*****  BC for the rightsides of domains *****
+CALL MPI_SENDRECV(Phi(1            ,-1,-1),1,VECU,LEFT,1, &
+                  Phi(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+LEFT = LEFTt; RIGT = RIGTt
 !------------split f,g-----------------
+
 
 
 !-------------MUSCL solver-------------
 kappa=1.0d0/3.0d0
+
+!------1st step-----
+do k=1,Ncellz
+do j=1,Ncelly
+do i=1,Ncellx
+f(i,j,k) = fpre(i,j,k) - nu2 * 0.5d0 * (fpre(i+1,j,k) - fpre(i,j,k)) !f(t+2dt)
+g(i,j,k) = gpre(i,j,k) - nu2 * 0.5d0 * (fpre(i,j,k) - fpre(i-1,j,k))
+end do
+end do
+end do
+
+!------2nd step-----
 !ul(i,j,k) = u(i,j,k) + 0.25d0 * s * ((1-kappa*s)*gradum + (1+kappa*s)*gradup) !j-1
 !ur(i,j,k) = u(i,j,k) - 0.25d0 * s * ((1-kappa*s)*gradup + (1+kappa*s)*gradum) !j+1
 deltap = f(i+2,j,k) - f(i+1,j,k)
 deltam = f(i+1,j,k) - f(i  ,j,k)
 fluxf(i,j,k) = f(i+1,j,k) - gradf * 0.25d0 *( (1.0d0 - kappa * gradf) * deltap + (1.0d0 + kappa * gradf) * deltam)  !ur_{j+1/2}
 !fluxf(i,j,k) = - cg * fluxf(i,j,k)
-
-!fluxf = 0.5d0 * 
-
+!fluxf = 0.5d0 *
 !f(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
 fdt2(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
 
@@ -589,8 +654,6 @@ fluxg(i,j,k) =   cg * fluxg(i,j,k)
 
 !fluxr = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) + ul(i,j,k) - ur(i,j,k)) !向きによって片方で良い
 !fluxl = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) - ul(i,j,k) + ur(i,j,k)) !向きによって片方で良い
-
-
 !u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
 !-------------MUSCL solver-------------
 
@@ -665,9 +728,12 @@ subroutine INTEGRAL1D(NCELL1,NCELL2,NCELL3,loop,gradPhidt,Phisurface)
            intC(:,:) = integral(:,:,Nroot)+intC(:,:) !C=0
         end if
      end do
+     do k = 1 , Ncell
+       gradPhidt(:,:,k) = gradPhidt(:,:,k) + intC(:,:)
+     end do
   end if
 
-
+end subroutine INTEGRAL1D
 !subroutine gradforintegral(Phi1D,grad1DPhi,len)
 !USE comvar
 !USE mpivar
