@@ -568,7 +568,13 @@ do dloop = 1,3 !three-direction
 !--------------integral----------------
 !--------------?台形法?-----------------OK cell center
 
+
+
+
    if(doolp==1) then
+      iwx=1
+      iwy=0
+      iwz=0
       Ncell=Ncellx
       Ncell1=Ncelly
       Ncell2=Ncellz
@@ -611,7 +617,7 @@ do dloop = 1,3 !three-direction
 !--------------integral----------------
 !------------integral-mpi--------------
 
-integral(j,k,NRANK)=0.0d0
+integral(:,:,NRANK)=0.0d0
 !do i=1,Ncell
 do k=1,Ncell
 do j=1,Ncell
@@ -629,7 +635,7 @@ end do
 intC(:,:)=0.0d0
 do Nroot=0,NPE-1
    ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
-   if(KST==KSTt .and. JST==JSTt) then
+   if(KST==KSTt .and. JST==JSTt .and. ISTt < IST) then
       do i=1,Ncell
          do j=1,Ncell
             intC(i,j) = integral(i,j,Nroot)+intC(i,j) !C=0
@@ -728,8 +734,299 @@ Phi(i,j,k) = f(i,j,k) + g(i,j,k)
 
 end subroutine gravslvMUSCL1D
 
+subroutine slvg
+
+  call MUSCL1D(phipre1,phipre1,phi,f,g)
+  fx=f
+  gx=g
+  call MUSCL1D(phipre1,phipre1,phi,f,g)
+  fy=f
+  gy=g
+  call MUSCL1D(phipre1,phipre1,phi,f,g)
+  fz=f
+  gz=g
+
+  phi = 1.0d0 / 3.0d0 * (fx+gx+fy+gy+fz+gz) !------???--------
 
 
+end subroutine slvg
+
+subroutine exact
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+  integer :: ix,iy,iz
+  integer :: Impix,Jmpiy,Kmpiz
+
+  phi(i,j,k) = 0.5d0 * 4piG * (dt**2) + gradPhi * dt +Phipre
+
+end subroutine exact
+
+subroutine MUSCL1D(ix,iy,iz)
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+  integer :: ix,iy,iz
+  integer :: Impix,Jmpiy,Kmpiz
+
+  if(ix.eq.1) then; Ncell=Ncellx; Ncm=Ncelly; Ncl=Ncellz;  end if
+  if(iy.eq.1) then; Ncell=Ncelly; Ncm=Ncellz; Ncl=Ncellx;  end if
+  if(iz.eq.1) then; Ncell=Ncellz; Ncm=Ncellx; Ncl=Ncelly;  end if
+
+
+
+     allocate(Phisurface(1:Ncm,1:Ncl))
+     do k = 1 , Ncl
+        do j = 1 , Ncm
+           do i = 1 , Ncell
+         !Phi1D(i) = gradPhidt(i,j,k) * deltalength ! dphi/dt = a(x,y,z) , a(x,y,z) * dx
+              Phisurface(j,k)=gradPhidt(i,j,k) + Phisurface(j,k)
+           end do
+        end do
+     end do
+     integral(:,:,NRANK)=0.0d0
+     !do i=1,Ncell
+     do k=1,Ncl
+        do j=1,Ncm
+           integral(j,k,NRANK) = Phisurface(j,k)
+        end do
+     end do
+     do Nroot=0,NPE-1
+        CALL MPI_BCAST(integral(1,1,Nroot),(Ncm)*(Ncl),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+     end do
+     intC(:,:)=0.0d0
+
+     if(ix==1) then
+        do Nroot=0,NPE-1
+           ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
+           if(KST==KSTt .and. JST==JSTt .and. ISTt < IST) then
+              do i=1,Ncl
+                 do j=1,Ncm
+                    intC(i,j) = integral(i,j,Nroot)+intC(i,j) !C=0
+                 end do
+              end do
+           end if
+        end do
+
+        do k=1,Ncl
+           do j=1,Ncm
+              do i=1,Ncell
+                 gradPhidt(i,j,k) =  gradPhidt(i,j,k) + intC(j,k)
+              end do
+           end do
+        end do
+        call splitfg
+     end if
+
+     if(iy==1) then
+        do Nroot=0,NPE-1
+           ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
+           if(IST==ISTt .and. KST==KSTt .and. JSTt < JST) then
+              do i=1,Ncl
+                 do j=1,Ncm
+                    intC(i,j) = integral(i,j,Nroot)+intC(i,j) !C=0
+                 end do
+              end do
+           end if
+        end do
+
+        do i=1,Ncl
+           do k=1,Ncm
+              do j=1,Ncell
+                 gradPhidt(i,j,k) =  gradPhidt(i,j,k) + intC(k,i)
+              end do
+           end do
+        end do
+        call splitfg
+     end if
+
+     if(iz==1) then
+        do Nroot=0,NPE-1
+           ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
+           if(JST==JSTt .and. IST==ISTt .and. KSTt < KST) then
+              do i=1,Ncl
+                 do j=1,Ncm
+                    intC(i,j) = integral(i,j,Nroot)+intC(i,j) !C=0
+                 end do
+              end do
+           end if
+        end do
+
+        do j=1,Ncl
+           do i=1,Ncm
+              do k=1,Ncell
+                 gradPhidt(i,j,k) =  gradPhidt(i,j,k) + intC(i,j)
+              end do
+           end do
+        end do
+        call splitfg
+     end if
+
+end subroutine MUSCL1D
+
+subroutine splitfg
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+
+
+  !------------split f,g-----------------
+  allocate(f(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
+  allocate(g(-1:Ncell+2,-1:Ncell+2,-1:Ncell+2))
+  do k=1,Ncellz
+     do j=1,Ncelly
+        do i=1,Ncellx
+           !f(i,j,k) = 0.5d0 * Phi(i,j,k) + intgG(j,k) !x+cg*t
+           !g(i,j,k) = 0.5d0 * Phi(i,j,k) - intgG(j,k) !x-cg*t
+           f(i,j,k) = 0.5d0 * Phi(i,j,k) + gradPhidt(i,j,k) !x+cg*t
+           g(i,j,k) = 0.5d0 * Phi(i,j,k) - gradPhidt(i,j,k) !x-cg*t
+        end do
+     end do
+  end do
+
+
+  !*************一応***************
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !*************一応***************
+  IF(iwx.EQ.1) THEN
+
+
+     CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+     CALL MPI_TYPE_COMMIT(VECU,IERR)
+     !LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL !x exact
+     !RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL !x exact
+     LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL 周期
+     RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL 周期
+     !*****  BC for the leftsides of domains  *****
+     CALL MPI_SENDRECV(Phi(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
+          Phi(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     !*****  BC for the rightsides of domains *****
+     CALL MPI_SENDRECV(Phi(1            ,-1,-1),1,VECU,LEFT,1, &
+          Phi(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     CALL MPI_TYPE_FREE(VECU,IERR)
+     LEFT = LEFTt; RIGT = RIGTt
+
+  end IF
+
+  if(iwy==1) then
+
+     CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+     CALL MPI_TYPE_COMMIT(VECU,IERR)
+     BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
+     TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+     !*****  BC for the downsides of domains  ****
+     CALL MPI_SENDRECV(Phi(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
+          Phi(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     !*****  BC for the upsides of domains  ****
+     CALL MPI_SENDRECV(Phi(-1,1            ,-1),1,VECU,BOTM,1, &
+          Phi(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     CALL MPI_TYPE_FREE(VECU,IERR)
+     TOP = TOPt; BOTM = BOTMt
+
+  end if
+
+  if(iwz==1) then
+     CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+     CALL MPI_TYPE_COMMIT(VECU,IERR)
+     DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
+     UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+     !*****  BC for the downsides of domains  ****
+     CALL MPI_SENDRECV(Phi(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
+          Phi(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     !*****  BC for the upsides of domains  ****
+     CALL MPI_SENDRECV(Phi(-1,-1,1            ),1,VECU,DOWN,1, &
+          Phi(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+     CALL MPI_TYPE_FREE(VECU,IERR)
+     UP = UPt; DOWN = DOWNt
+  end if
+end subroutine splitfg
+
+subroutine muslcslv1D
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+
+  !-------------MUSCL solver-------------
+  kappa=1.0d0/3.0d0
+  nu2 = cg * dt / deltalength
+  !------1st step-----
+  do k=1,Ncellz
+     do j=1,Ncelly
+        do i=1,Ncellx
+           f(i,j,k) = fpre(i,j,k) - nu2 * 0.5d0 * (fpre(i+1,j,k) - fpre(i,j,k)) !f(t+2dt)
+           g(i,j,k) = gpre(i,j,k) - nu2 * 0.5d0 * (fpre(i,j,k) - fpre(i-1,j,k))
+        end do
+     end do
+  end do
+
+  call vanalbada(fpre)
+  call vanalbada(gpre)
+  !------2nd step-----
+  !ul(i,j,k) = u(i,j,k) + 0.25d0 * s * ((1-kappa*s)*gradum + (1+kappa*s)*gradup) !j-1
+  !ur(i,j,k) = u(i,j,k) - 0.25d0 * s * ((1-kappa*s)*gradup + (1+kappa*s)*gradum) !j+1
+  do k = 1 , Ncl
+     do j = 1 , Ncm
+        do i = 1 , Ncell
+           deltap = fpre(i+2,j,k) - fpre(i+1,j,k)
+           deltam = fpre(i+1,j,k) - fpre(i  ,j,k)
+           fluxf(i,j,k) = f(i+1,j,k) - gradf * 0.25d0 *( (1.0d0 - kappa * gradf) * deltap + (1.0d0 + kappa * gradf) * deltam)  !ur_{j+1/2}
+           !fluxf(i,j,k) = - cg * fluxf(i,j,k)
+           !fluxf = 0.5d0 *
+           !f(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
+           !fdt2(i,j,k) = f(i,j,k) - nu2 * 0.5d0 * (fluxf(i,j,k) - fluxf(i-1,j,k)) !dt/2 timestep
+
+           deltap = gpre(i+1,j,k) - gpre(i  ,j,k)
+           deltam = gpre(i  ,j,k) - gpre(i-1,j,k)
+           fluxg(i,j,k) = g(i  ,j,k) + gradg * 0.25d0 *( (1.0d0 - kappa * gradg) * deltam + (1.0d0 + kappa * gradg) * deltap)  !ul_{j+1/2}
+           !fluxg(i,j,k) =   cg * fluxg(i,j,k)
+        end do
+     end do
+  end do
+  do k = 1 , Ncl
+     do j = 1 , Ncm
+        do i = 1 , Ncell
+           f(i,j,k) = fpre(i,j,k) - nu2 * (f(i+1,j,k) - f(i  ,j,k))
+           g(i,j,k) = gpre(i,j,k) - nu2 * (g(i  ,j,k) - g(i-1,j,k))
+        end do
+     end do
+  end do
+
+  !deltap = g(i+1,j,k) - g(i  ,j,k)
+  !deltam = g(i  ,j,k) - g(i-1,j,k)
+  !fluxg(i,j,k) = g(i  ,j,k) + gradg * 0.25d0 *( (1.0d0 - kappa * gradg) * deltam + (1.0d0 + kappa * gradg) * deltap)  !ul_{j+1/2}
+  !fluxg(i,j,k) =   cg * fluxg(i,j,k)
+
+
+  !fluxr = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) + ul(i,j,k) - ur(i,j,k)) !向きによって片方で良い
+  !fluxl = 0.5d0 * cg * (ul(i,j,k)+ur(i,j,k) - ul(i,j,k) + ur(i,j,k)) !向きによって片方で良い
+  !u(i,j,k) = u(i.j,k) - dt/dx * (fluxr-fluxl)
+  !-------------MUSCL solver-------------
+end subroutine muslcslv1D
+
+subroutine vanalbada
+
+
+  do i = i_sta, Ncell+i_end
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+
+     delp = wave(ixp,jyp,kzp,k)-wave(ix ,jy ,kz ,k)
+     delm = wave(ix ,jy ,kz ,k)-wave(ixm,jym,kzm,k)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !grdU(i,k) = flmt*( wave(ixp,jyp,kzp)-wave(ixm,jym,kzm) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
+     grdwave(i,k) = flmt*( wave(ixp,jyp,kzp)-wave(ixm,jym,kzm) )/( 2.0d0 * deltalength )
+  end do
 
 subroutine slvgrvsource(dt,gradPhidt)
   USE comvar
