@@ -844,6 +844,7 @@ do in10 = 1, maxstp
 
     if(ifgrv==2) then
        call SELFGRAVWAVE(tLMT,7)
+       call SELFGRAVWAVE(tLMT,9)
     endif
 
  !---------------debug-------------------
@@ -3544,7 +3545,7 @@ if((IST.eq.0).or.(IST.eq.NSPLTx-1)) then
     ix = i+offset
     divv(i,j,k) = ( U(ix+1,j,k,2)-U(ix-1,j,k,2)+U(ix,j+1,k,3)-U(ix,j-1,k,3)+U(ix,j,k+1,4)-U(ix,j,k-1,4) )*0.25d0
   end do; end do; end do
-  
+
   do k=1,Ncellz; do j=1,Ncelly; do i=1,10
     ix = i+offset
     U(ix,j,k,2) = U(ix,j,k,2) + 0.1d0*(divv(i+1,j,k)-divv(i-1,j,k))
@@ -3574,8 +3575,9 @@ DOUBLE PRECISION  :: VECU
 character(3) NPENUM
 character(6) countcha
 double precision tfluid , cs
-double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
+double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime,sourcedt
 double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
+!double precision , dimension(:,:,:) , allocatable :: stbPhi
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
@@ -3617,7 +3619,22 @@ end if
 if(mode==2) then
   N_MPI(20)=1; N_MPI(1)=1
   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
-  !call PB()
+
+
+  call PB()
+
+
+  !*********use phi exact**********
+  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
+  end do; end do; end if
+  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
+  end do; end do; end if
+  !*********use phi exact**********
+
+
+
   !call mglin(Nmem1,Nmem2,2,5,5)
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
   call gravslv(dt)
@@ -3919,6 +3936,7 @@ IF(NRANK.EQ.0)  THEN
       shusoku1=0.0d0
       !else !if(ave > eps) then
    end if
+
 END IF
 
 !---------------debug-------------------
@@ -3941,7 +3959,94 @@ CALL MPI_BCAST(shuskou1,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !---------------debug-------------------
 end if
 !*****************shuusoku****************
+
+
+
+!***************SABILITY-exa**************
+if(mode==9) then
+   sourcedt = dt
+   !cgtime = deltalength/cg * CFL
+   call STBLphi(sourcedt)
+   dt = sourcedt
+end if
+!***************SABILITY-exa**************
 end subroutine SELFGRAVWAVE
+
+subroutine STBLphi(dt)
+  USE comvar
+  USE mpivar
+  USE slfgrv
+  INCLUDE 'mpif.h'
+  !integer :: mode,MRANK,count=0
+  DOUBLE PRECISION  :: dt,dt2
+  !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
+  !INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+  !DOUBLE PRECISION  :: VECU
+  !character(3) NPENUM
+  !character(6) countcha
+  !double precision tfluid , cs
+  !double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
+  !double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
+  double precision , dimension(1:Ncellx,1:Ncelly,1:Ncellz) :: stbPhi
+  double precision phimax,phi,ratiomax,ratioshd=0.3d0,prephidt
+  integer Imax,Kmax,Jmax
+
+  dt2 = dt * dt
+
+ ! do k = 1 , Ncellz
+ !    do j = 1 , Ncelly
+ !       do i = 1 , Ncellx
+ !          stbPhi(i,j,k) = 2.0d0*Phi(i,j,k) - Phidt(i,j,k) + U(i,j,k,1) * G4pi * dt2
+ !       end do
+ !    end do
+ ! end do
+
+
+  phimax=0.0d0
+
+  do k = 1 , Ncellz
+     do j = 1 , Ncelly
+        do i = 1 , Ncellx
+           if(Phi(i,j,k)==0.0d0) then
+              phi=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) + G4pi * U(i,j,k,1) * dt2)
+              phimax = dmax1(phimax,phi)
+              Imax=i
+              Kmax=k
+              Jmax=j
+           end if
+        end do
+     end do
+  end do
+
+
+  ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) + G4pi * U(Imax,Jmax,Kmax,1) * dt2
+  prephidt = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax)
+  if(phimax > ratioshd .and. ratiomax > 0.0d0) then
+     if((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+        write(*,*) '-----------err  /0------------'
+     end if
+     dt = dsqrt((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)))
+
+     write(*,*)
+     write(*,*) '---------------------------------'
+     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+     write(*,*) '---------------------------------'
+     write(*,*)
+  end if
+  if(phimax > ratioshd .and. ratiomax < 0.0d0) then
+     if((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+        write(*,*) '-----------err  /0------------'
+     end if
+     dt = dsqrt((-ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)))
+
+     write(*,*)
+     write(*,*) '---------------------------------'
+     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+     write(*,*) '---------------------------------'
+     write(*,*)
+  end if
+
+end subroutine STBLphi
 
 subroutine gravslv(dt)
 USE comvar
@@ -3984,6 +4089,7 @@ do k = 1 , Ncellz
    end do
 end do
 close(122)
+
 
 do k = -1 , Ncellz+2
    do j = -1 , Ncelly+2
@@ -4218,6 +4324,14 @@ end do; end do
 !open(30,file='bpl'//fn//'.DAT')
 !open(560,file='bpr'//fn//'.DAT')
 
+
+
+
+
+
+
+
+
 ncx=Ncellx+1; ncy=Ncelly+1; ncz=Ncellz+1
 do k=0,ncz; kk= (ncy+1)*k
 do j=0,ncy; n = j+kk
@@ -4230,12 +4344,61 @@ do j=0,ncy; n = j+kk
 
   bphi2(pointb2(NGL)+n,1) = dble(data(jb,kbb,1))
   bphi2(pointb2(NGL)+n,2) = dble(data(jb,kbb,2))
+  !IF(IST==0) then
+     Phi(1,j,k)= bphi2(pointb2(NGL)+n,1)
+  !end IF
 !  write(30,*) bphi2(pointb2(NGL)+n,1)
 !  write(560,*) bphi2(pointb2(NGL)+n,2)
 end do
 !write(30,*)
 !write(560,*)
 end do
+
+!IF(IST==0) then
+
+!   Phi(i,j,k) =
+
+
+
+
+
+
+IF(IST==0) then
+do k=0,ncz; kk= (ncy+1)*k
+do j=0,ncy; n = j+kk
+  jb  = JST*Ncelly + j
+  kbb = KST*Ncellz + k
+  if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
+  if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
+  if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+  if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+
+  Phi(1,j,k)= bphi2(pointb2(NGL)+n,1)
+
+end do
+end do
+end IF
+
+
+IF(IST==NSPLTx-1) then
+do k=0,ncz; kk= (ncy+1)*k
+do j=0,ncy; n = j+kk
+  jb  = JST*Ncelly + j
+  kbb = KST*Ncellz + k
+  if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
+  if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
+  if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+  if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+
+  Phi(0,j,k)= bphi2(pointb2(NGL)+n,2)
+
+end do
+end do
+end IF
+
+
+
+
 
 !close(30)
 !close(560)
@@ -4250,7 +4413,7 @@ end do
 !  write(3,*) JST*Ncelly+j,KST*Ncellz+k,bphi2(pointb2(NGL)+n,2)
 !end do;write(3,*) ' '; end do
 !close(3)
-
+goto 4589
 
 DEALLOCATE(data,speq)
 DEALLOCATE(dat1,spe1,dat2,spe2)
@@ -4347,13 +4510,13 @@ do lc=NGL-1,NGcr-1,-1
    write(lcRANK,'(i2.2)') lc
    do l=1,2
       if(l==1) then
-         open(211,file='bpl'//lcRANK//fn//'.dat')
+         !open(211,file='bpl'//lcRANK//fn//'.dat')
          do i=1,nx*nx
             write(211,*) bphi2(pointb2(lc)+i,l)
          end do
       end if
       if(l==2) then
-         open(201,file='bpr'//lcRANK//fn//'.dat')
+         !open(201,file='bpr'//lcRANK//fn//'.dat')
          do i=1,nx*nx
             write(201,*) bphi2(pointb2(lc)+i,l)
          end do
@@ -4495,7 +4658,7 @@ do lc=NGcr-1,1,-1
   end do
 end do
 
-
+4589 continue
 
 
 END SUBROUTINE PB
