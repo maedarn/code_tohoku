@@ -712,6 +712,7 @@ if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
   !call SELFGRAVWAVE(0.0d0,1)
+  call SELFGRAVWAVE(0.d0,10) !for PB
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   call SELFGRAVWAVE(0.0d0,6) !calculate cg
   call SELFGRAVWAVE(0.0d0,4) !INITAL
@@ -858,7 +859,7 @@ do in10 = 1, maxstp
     endif
 
  !---------------debug-------------------
- !write(*,*) '-------------1-----------',NRANK
+ write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
@@ -958,7 +959,7 @@ do in10 = 1, maxstp
     !---------------------------skip-----------------------------
 
     !---------------debug-------------------
-    !write(*,*) '-------------10-----------',NRANK
+    write(*,*) '-------------10-----------',NRANK
     !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
@@ -973,7 +974,7 @@ do in10 = 1, maxstp
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
        !---------------debug-------------------
-       !write(*,*) '-------------13-----------',NRANK
+       write(*,*) '-------------13-----------',NRANK
        !---------------debug-------------------
 
 
@@ -3630,9 +3631,9 @@ if(mode==2) then
   N_MPI(20)=1; N_MPI(1)=1
   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
 
-
-  call PB()
-
+  write(*,*) '------pb1-------' ,Nrank
+  Call PB()
+  write(*,*) '------pb2-------' ,Nrank
 
   !*********use phi exact**********
   !if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
@@ -3647,6 +3648,7 @@ if(mode==2) then
 
   !call mglin(Nmem1,Nmem2,2,5,5)
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
+  write(*,*) '------gr1-------' ,Nrank
   call gravslv(dt)
   !DEALLOCATE(bphi1,bphi2)
   if(NRANK==0) then
@@ -3980,7 +3982,64 @@ if(mode==9) then
    dt = sourcedt
 end if
 !***************SABILITY-exa**************
+
+
+!***************pointerforPB**************
+if(mode.eq.10) then
+  call pinter(Nmem1,Nmem2,Ncellx,Ncelly,Ncellz)
+end if
+!***************pointerforPB**************
 end subroutine SELFGRAVWAVE
+
+
+
+SUBROUTINE pinter(Need1,Need2,Ncellx,Ncelly,Ncellz)
+USE slfgrv
+USE mpivar
+
+!***  finest grid pointer : point(NGL) ***
+!*** coasest grid pointer : point(0)   ***
+
+NGL = min0(Ncellx*NSPLTx,Ncelly*NSPLTy,Ncellz*NSPLTz)
+NGL = int(dlog(dble(NGL))/dlog(2.d0)+1.d-3)
+
+
+!*** Unsplit Pointer ***!
+NGcr = max0(NSPLTx,NSPLTy,NSPLTz)
+NGcr = int(dlog(dble(NGcr))/dlog(2.d0)+1.d-3) + 1
+
+point1(1) = 1
+nl = 1
+nx=3; ny=3; nz=3
+2 continue
+point1(nl+1)=point1(nl)+(nx)*(ny)*(nz)
+nx=nx*2-1; ny=ny*2-1; nz=nz*2-1
+nl = nl+1
+if(nl.ne.NGcr+1) goto 2
+
+Need1 = point1(NGcr+1)
+
+!*** MPI Split Pointer ***!
+nl = NGcr-1
+!nl = NGcr !===================????==================
+point2(nl) = 1
+nx=(2**NGcr)/NSPLTx+2; ny=(2**NGcr)/NSPLTy+2; nz=(2**NGcr)/NSPLTz+2
+3 continue
+point2(nl+1)=point2(nl)+(nx)*(ny)*(nz)
+nx=nx*2-2; ny=ny*2-2; nz=nz*2-2
+nl = nl+1
+if(nl.ne.NGL+1) goto 3
+
+Need2 = point2(NGL+1)
+
+if(NRANK.eq.0) write(*,*) 'NGL=',NGL
+if(NRANK.eq.0) write(*,*) 'NGcr=',NGcr
+if(NRANK.eq.0) write(*,*) 'need1=',Need1
+if(NRANK.eq.0) write(*,*) 'need2=',Need2
+
+END SUBROUTINE pinter
+
+
 
 subroutine STBLphi(dt)
   USE comvar
@@ -4013,11 +4072,14 @@ subroutine STBLphi(dt)
 
 
   phimax=0.0d0
+  Imax=-5
+  Jmax=-5
+  Kmax=-5
 
   do k = 1 , Ncellz
      do j = 1 , Ncelly
         do i = 1 , Ncellx
-           if(Phi(i,j,k).ne.0.0d0) then
+           if((Phi(i,j,k).ne.0.0d0) .and. (U(i,j,k,1).ne.0.0d0) ) then
               phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) + G4pi * U(i,j,k,1) * dt2)
               phimax = dmax1(phimax,phical)
               Imax=i
@@ -4028,7 +4090,7 @@ subroutine STBLphi(dt)
      end do
   end do
 
-
+  IF((Imax.ne.-5).and.(Jmax.ne.-5).and.(Kmax.ne.-5)) then
   ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) + G4pi * U(Imax,Jmax,Kmax,1) * dt2
   prephidt = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax)
   if(phimax > ratioshd .and. ratiomax > 0.0d0) then
@@ -4055,6 +4117,7 @@ subroutine STBLphi(dt)
      write(*,*) '---------------------------------'
      write(*,*)
   end if
+end IF
 
 end subroutine STBLphi
 
@@ -4428,11 +4491,15 @@ end IF
 !  write(3,*) JST*Ncelly+j,KST*Ncellz+k,bphi2(pointb2(NGL)+n,2)
 !end do;write(3,*) ' '; end do
 !close(3)
-goto 4589
+!goto 4589
 
 DEALLOCATE(data,speq)
 DEALLOCATE(dat1,spe1,dat2,spe2)
 !-----------------------------------------------------------------
+
+
+goto 4589
+
 
 ncx = Ncellx+1; ncy = Ncelly+1; ncz = Ncellz+1
 w  = 0.125d0
