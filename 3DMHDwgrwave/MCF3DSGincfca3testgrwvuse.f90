@@ -3589,11 +3589,13 @@ double precision tfluid , cs
 double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime,sourcedt
 double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
 !double precision , dimension(:,:,:) , allocatable :: stbPhi
+double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
    Phi(:,:,:)=0.0d0
    Phidt(:,:,:)=0.0d0
+   Phipregrad(:,:,:)=0.0d0
 end if
 !**************** INITIALIZEATION **************
 
@@ -3601,25 +3603,25 @@ end if
 
 !****************read INITIAL CONDITION**************
 if(mode==1) then
-      WRITE(NPENUM,'(I3.3)') NRANK
-      open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-      open(unit=18,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-      do k = -1, Ncellz+2
-         do j = -1, Ncelly+2
-            !do i = -1, Ncellx+2
-            read(8) (Phi(i,j,k),i=-1,Ncellx+2)
-      !enddo
-         end do
+   WRITE(NPENUM,'(I3.3)') NRANK
+   open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   open(unit=18,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHIDT'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   do k = -1, Ncellz+2
+      do j = -1, Ncelly+2
+         !do i = -1, Ncellx+2
+         read(8) (Phi(i,j,k),i=-1,Ncellx+2)
+         !enddo
       end do
-      close(8)
-      do k = -1, Ncellz+2
-         do j = -1, Ncelly+2
-            !do i = -1, Ncellx+2
-            read(8) (Phidt(i,j,k),i=-1,Ncellx+2)
-            !enddo
-         end do
+   end do
+   close(8)
+   do k = -1, Ncellz+2
+      do j = -1, Ncelly+2
+         !do i = -1, Ncellx+2
+         read(18) (Phidt(i,j,k),i=-1,Ncellx+2)
+         !enddo
       end do
-      close(18)
+   end do
+   close(18)
 end if
 !****************read INITIAL CONDITION**************
 
@@ -3635,13 +3637,14 @@ if(mode==2) then
   Call PB()
   write(*,*) '------pb2-------' ,Nrank
 
+
   !*********use phi exact**********
-  !if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
-  !  Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
-  !end do; end do; end if
-  !if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
-  !  Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
-  !end do; end do; end if
+  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
+  end do; end do; end if
+  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
+  end do; end do; end if
   !*********use phi exact**********
 
 
@@ -4057,6 +4060,7 @@ subroutine STBLphi(dt)
   !double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
   !double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
   double precision , dimension(1:Ncellx,1:Ncelly,1:Ncellz) :: stbPhi
+  !double precision , dimension(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2) :: Phipredt
   double precision :: phimax,phical,ratiomax,ratioshd=0.3d0,prephidt
   integer Imax,Kmax,Jmax
 
@@ -4065,7 +4069,7 @@ subroutine STBLphi(dt)
  ! do k = 1 , Ncellz
  !    do j = 1 , Ncelly
  !       do i = 1 , Ncellx
- !          stbPhi(i,j,k) = 2.0d0*Phi(i,j,k) - Phidt(i,j,k) + U(i,j,k,1) * G4pi * dt2
+ !          stbPhi(i,j,k) = 2.0d0*Phi(i,j,k) - Phidt(i,j,k) - U(i,j,k,1) * G4pi * dt2 * cg * cg
  !       end do
  !    end do
  ! end do
@@ -4079,12 +4083,14 @@ subroutine STBLphi(dt)
   do k = 1 , Ncellz
      do j = 1 , Ncelly
         do i = 1 , Ncellx
-           if((Phi(i,j,k).ne.0.0d0) .and. (U(i,j,k,1).ne.0.0d0) ) then
+           if((Phi(i,j,k).ne.0.0d0) .and. ( U(i,j,k,1).ne.0.0d0 ) ) then
               phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) - cg * cg * G4pi * U(i,j,k,1) * dt2 /Phi(i,j,k))
               phimax = dmax1(phimax,phical)
-              Imax=i
-              Kmax=k
-              Jmax=j
+              write(*,*) phimax , '-------phimax-------'
+
+!              Imax=i
+!              Kmax=k
+!              Jmax=j
            end if
         end do
      end do
