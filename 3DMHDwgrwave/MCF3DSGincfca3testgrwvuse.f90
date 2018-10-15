@@ -839,12 +839,22 @@ do in10 = 1, maxstp
 
 
     !---------------debug-------------------
-    !write(*,*) '-------------6-----------',NRANK
+    write(*,*) '-------------6-----------',NRANK
     !---------------debug-------------------
 
     if(ifgrv==2) then
        call SELFGRAVWAVE(tLMT,7)
+
+       !---------------debug-------------------
+       write(*,*) '-------------99-----------',NRANK
+       !---------------debug-------------------
+
+
        call SELFGRAVWAVE(tLMT,9)
+
+       !---------------debug-------------------
+       write(*,*) '-------------88-----------',NRANK
+       !---------------debug-------------------
     endif
 
  !---------------debug-------------------
@@ -3625,12 +3635,12 @@ if(mode==2) then
 
 
   !*********use phi exact**********
-  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
-    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
-  end do; end do; end if
-  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
-    Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
-  end do; end do; end if
+  !if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
+  !  Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
+  !end do; end do; end if
+  !if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
+  !  Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
+  !end do; end do; end if
   !*********use phi exact**********
 
 
@@ -3653,10 +3663,10 @@ if(mode==2) then
                       !count, blocklength, stride
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
-  !LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL !x exact
-  !RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL !x exact
-  LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL 周期
-  RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL 周期
+  LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL !x exact
+  RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL !x exact
+  !LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL 周期
+  !RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL 周期
   !*****  BC for the leftsides of domains  *****
   CALL MPI_SENDRECV(Phi(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
                     Phi(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
@@ -3693,12 +3703,12 @@ if(mode==2) then
   UP = UPt; DOWN = DOWNt
 
   !*********use phi exact**********
-  !if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
-  !  Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
-  !end do; end do; end if
-  !if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
-  !  Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
-  !end do; end do; end if
+  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
+  end do; end do; end if
+  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
+    Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
+  end do; end do; end if
   !*********use phi exact**********
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
 end if
@@ -3988,7 +3998,7 @@ subroutine STBLphi(dt)
   !double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
   !double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
   double precision , dimension(1:Ncellx,1:Ncelly,1:Ncellz) :: stbPhi
-  double precision phimax,phi,ratiomax,ratioshd=0.3d0,prephidt
+  double precision :: phimax,phical,ratiomax,ratioshd=0.3d0,prephidt
   integer Imax,Kmax,Jmax
 
   dt2 = dt * dt
@@ -4007,9 +4017,9 @@ subroutine STBLphi(dt)
   do k = 1 , Ncellz
      do j = 1 , Ncelly
         do i = 1 , Ncellx
-           if(Phi(i,j,k)==0.0d0) then
-              phi=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) + G4pi * U(i,j,k,1) * dt2)
-              phimax = dmax1(phimax,phi)
+           if(Phi(i,j,k).ne.0.0d0) then
+              phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) + G4pi * U(i,j,k,1) * dt2)
+              phimax = dmax1(phimax,phical)
               Imax=i
               Kmax=k
               Jmax=j
@@ -4056,12 +4066,16 @@ INCLUDE 'mpif.h'
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phidummy !, Phidtdummy
 double precision :: nu2 , w=6.0d0 , dt2 , dt
 character(3) rn
+integer iini,ilast
 
 nu2 = cg * dt / deltalength
 nu2 = nu2 * nu2
 !write(*,*) nu2,cg,dt,deltalength,'-----------???????------------' , NRANK
 dt2 = dt * dt
 write(rn,'(i3.3)') NRANK
+
+iini=1; IF(IST.eq.0) iini=2
+ilast=Ncellx; IF(IST.eq.NSPLTx-1) ilast=Ncellx-1
 
 ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
 !ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
@@ -4080,7 +4094,8 @@ end do
 close(123)
 do k = 1 , Ncellz
    do j = 1 , Ncelly
-      do i = 1 , Ncellx
+      do i = iini , ilast
+      !do i = 1 , Ncellx
          Phi(i,j,k) = 2.0d0*Phidummy(i,j,k) - Phidt(i,j,k) + nu2 * (Phidummy(i-1,j,k) + Phidummy(i+1,j,k) + &
               Phidummy(i,j-1,k) + Phidummy(i,j+1,k) + Phidummy(i,j,k-1) + Phidummy(i,j,k+1) - w * Phidummy(i,j,k)) + &
               U(i,j,k,1) * G4pi * dt2
