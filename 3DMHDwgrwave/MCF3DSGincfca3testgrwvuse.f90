@@ -4080,7 +4080,7 @@ subroutine STBLphi(dt)
      do j = 1 , Ncelly
         do i = 1 , Ncellx
            if((Phi(i,j,k).ne.0.0d0) .and. (U(i,j,k,1).ne.0.0d0) ) then
-              phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) + G4pi * U(i,j,k,1) * dt2)
+              phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) - cg * cg * G4pi * U(i,j,k,1) * dt2 /Phi(i,j,k))
               phimax = dmax1(phimax,phical)
               Imax=i
               Kmax=k
@@ -4090,14 +4090,16 @@ subroutine STBLphi(dt)
      end do
   end do
 
+  !riwtw
+
   IF((Imax.ne.-5).and.(Jmax.ne.-5).and.(Kmax.ne.-5)) then
-  ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) + G4pi * U(Imax,Jmax,Kmax,1) * dt2
+  ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) -  cg * cg * G4pi * U(Imax,Jmax,Kmax,1) * dt2 /Phi(Imax,Jmax,Kmax)
   prephidt = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax)
   if(phimax > ratioshd .and. ratiomax > 0.0d0) then
-     if((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
         write(*,*) '-----------err  /0------------'
      end if
-     dt = dsqrt((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)))
+     dt = dsqrt((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
 
      write(*,*)
      write(*,*) '---------------------------------'
@@ -4106,10 +4108,10 @@ subroutine STBLphi(dt)
      write(*,*)
   end if
   if(phimax > ratioshd .and. ratiomax < 0.0d0) then
-     if((ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
         write(*,*) '-----------err  /0------------'
      end if
-     dt = dsqrt((-ratioshd - prephidt)/(G4pi * U(Imax,Jmax,Kmax,1)))
+     dt = dsqrt((-ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
 
      write(*,*)
      write(*,*) '---------------------------------'
@@ -4160,8 +4162,8 @@ do k = 1 , Ncellz
       do i = iini , ilast
       !do i = 1 , Ncellx
          Phi(i,j,k) = 2.0d0*Phidummy(i,j,k) - Phidt(i,j,k) + nu2 * (Phidummy(i-1,j,k) + Phidummy(i+1,j,k) + &
-              Phidummy(i,j-1,k) + Phidummy(i,j+1,k) + Phidummy(i,j,k-1) + Phidummy(i,j,k+1) - w * Phidummy(i,j,k)) + &
-              U(i,j,k,1) * G4pi * dt2
+              Phidummy(i,j-1,k) + Phidummy(i,j+1,k) + Phidummy(i,j,k-1) + Phidummy(i,j,k+1) - w * Phidummy(i,j,k)) - &
+              U(i,j,k,1) * G4pi * dt2 * cg * cg
          write(122,*) Phi(i,j,k)
       end do
    end do
