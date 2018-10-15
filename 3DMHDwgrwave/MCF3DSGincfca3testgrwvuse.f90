@@ -3589,7 +3589,7 @@ double precision tfluid , cs
 double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime,sourcedt
 double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
 !double precision , dimension(:,:,:) , allocatable :: stbPhi
-double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad
+double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad,Phipregraddum
 
 !**************** INITIALIZEATION **************
 if(mode==0) then
@@ -3633,6 +3633,8 @@ if(mode==2) then
   N_MPI(20)=1; N_MPI(1)=1
   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
 
+  Phipregraddum(:,:,:)=Phi(:,:,:)
+
   write(*,*) '------pb1-------' ,Nrank
   Call PB()
   write(*,*) '------pb2-------' ,Nrank
@@ -3653,7 +3655,7 @@ if(mode==2) then
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
   write(*,*) '------gr1-------' ,Nrank
   call gravslv(dt)
-  !DEALLOCATE(bphi1,bphi2)
+  DEALLOCATE(bphi1,bphi2) !important
   if(NRANK==0) then
      write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
      write(*,*) NRANK,Phi(0,0,0),Phidt(1,1,1),Phidt(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
@@ -3716,6 +3718,20 @@ if(mode==2) then
   end do; end do; end if
   !*********use phi exact**********
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
+
+  if(NRANK==0) then
+     write(*,*) Phi(-1,10,10),Phi(0,10,10),Phi(1,10,10)
+  end if
+
+  do k = -1 , Ncellz+2
+     do j = -1 , Ncelly+2
+        do i = -1 , Ncellx+2
+           Phipregrad(i,j,k) = (Phi(i,j,k) - Phipregraddum(i,j,k))/2.0d0/dt
+        end do
+     end do
+  end do
+
+
 end if
 !****************GRAVITY SOLVER*****************
 
@@ -3899,7 +3915,7 @@ do k=1,Ncellz
       do i=1,Ncellx
          if(Phidt(i,j,k) .ne. 0.0d0) then
          ave1pre=ave1
-         ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k)) + ave1
+         ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k))! + ave1
          !ave1 = dabs((Phi(i,j,k)-Phidt(i,j,k))/Phidt(i,j,k) + 1.0d-10) + ave1
          !ave1 = dabs(Phi(i,j,k)-Phidt(i,j,k))
          ave1 = dmax1( ave1pre , ave1 )
@@ -3981,7 +3997,7 @@ end if
 if(mode==9) then
    sourcedt = dt
    !cgtime = deltalength/cg * CFL
-   call STBLphi(sourcedt)
+   call STBLphi(sourcedt,Phipregrad)
    dt = sourcedt
 end if
 !***************SABILITY-exa**************
@@ -4044,13 +4060,13 @@ END SUBROUTINE pinter
 
 
 
-subroutine STBLphi(dt)
+subroutine STBLphi(dt,Phipregrad)
   USE comvar
   USE mpivar
   USE slfgrv
   INCLUDE 'mpif.h'
   !integer :: mode,MRANK,count=0
-  DOUBLE PRECISION  :: dt,dt2
+  DOUBLE PRECISION  :: dt,dt2 ,difsgn=1.0d0 , t1,t2,tma,tmi
   !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
   !INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   !DOUBLE PRECISION  :: VECU
@@ -4059,73 +4075,112 @@ subroutine STBLphi(dt)
   !double precision tfluid , cs
   !double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime
   !double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
-  double precision , dimension(1:Ncellx,1:Ncelly,1:Ncellz) :: stbPhi
+  double precision , dimension(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2) :: stbPhi
+  double precision , dimension(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2) :: Phipregrad
   !double precision , dimension(-1:Ncellx+2,-1:Ncelly+2,-1:Ncellz+2) :: Phipredt
   double precision :: phimax,phical,ratiomax,ratioshd=0.3d0,prephidt
   integer Imax,Kmax,Jmax
 
+
   dt2 = dt * dt
 
- ! do k = 1 , Ncellz
- !    do j = 1 , Ncelly
- !       do i = 1 , Ncellx
- !          stbPhi(i,j,k) = 2.0d0*Phi(i,j,k) - Phidt(i,j,k) - U(i,j,k,1) * G4pi * dt2 * cg * cg
- !       end do
- !    end do
- ! end do
-
-
-  phimax=0.0d0
-  Imax=-5
-  Jmax=-5
-  Kmax=-5
-
-  do k = 1 , Ncellz
-     do j = 1 , Ncelly
-        do i = 1 , Ncellx
-           if((Phi(i,j,k).ne.0.0d0) .and. ( U(i,j,k,1).ne.0.0d0 ) ) then
-              phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) - cg * cg * G4pi * U(i,j,k,1) * dt2 /Phi(i,j,k))
-              phimax = dmax1(phimax,phical)
-              write(*,*) phimax , '-------phimax-------'
-
-!              Imax=i
-!              Kmax=k
-!              Jmax=j
-           end if
+  do k = -1 , Ncellz+2
+     do j = -1 , Ncelly+2
+        do i = -1 , Ncellx+2
+           !stbPhi(i,j,k) = 2.0d0*Phi(i,j,k) - Phidt(i,j,k) - U(i,j,k,1) * G4pi * dt2 * cg * cg
+           stbPhi(i,j,k) = - G4pi * 0.5d0 * cg * cg * dt2 + Phipregrad(i,j,k) * dt + Phi(i,j,k)
         end do
      end do
   end do
 
+  tma=0.d0
+  !tmi
+  if(U(i,j,k,1) .ne. 0.0d0) then
+     do k = -1 , Ncellz+2
+        do j = -1 , Ncelly+2
+           do i = -1 , Ncellx+2
+              if(dsign(difsgn,Phi(i,j,k)) == dsign(difsgn,stbPhi(i,j,k)-Phi(i,j,k))) then
+                 ratioshd=dabs(ratioshd)
+              else
+                 ratioshd=-dabs(ratioshd)
+              end if
+              t1 = (Phipregrad(i,j,k) + dsqrt(Phipregrad(i,j,k)*Phipregrad(i,j,k) - 2.d0 * G4pi * ratioshd))/(G4pi*U(i,j,k,1)) !解の公式
+              t2 = (Phipregrad(i,j,k) - dsqrt(Phipregrad(i,j,k)*Phipregrad(i,j,k) - 2.d0 * G4pi * ratioshd))/(G4pi*U(i,j,k,1))
+              if(t1 > 0.0d0) then
+                 dt = dmin1(dt,t1)
+                 write(*,*)
+                 write(*,*) '---------------------------------'
+                 write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+                 write(*,*) '---------------------------------'
+                 write(*,*)
+              end if
+              if(t2 > 0.0d0) then
+                 dt = dmin1(dt,t2)
+                 write(*,*)
+                 write(*,*) '---------------------------------'
+                 write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+                 write(*,*) '---------------------------------'
+                 write(*,*)
+              end if
+              !tma=dmax1(0.0d0,t1)
+              !tmi=dmin()
+           end do
+        end do
+     end do
+  end if
+
+
+!  phimax=0.0d0
+!  Imax=-5
+!  Jmax=-5
+!  Kmax=-5
+
+!  do k = 1 , Ncellz
+!     do j = 1 , Ncelly
+!        do i = 1 , Ncellx
+!           if((Phi(i,j,k).ne.0.0d0) .and. ( U(i,j,k,1).ne.0.0d0 ) ) then
+!              phical=dabs(1.0d0 - Phidt(i,j,k)/Phi(i,j,k) - cg * cg * G4pi * U(i,j,k,1) * dt2 /Phi(i,j,k))
+!              phimax = dmax1(phimax,phical)
+!              write(*,*) phimax , '-------phimax-------'
+
+      !        Imax=i
+      !        Kmax=k
+      !        Jmax=j
+!           end if
+!        end do
+!     end do
+!  end do
+
   !riwtw
 
-  IF((Imax.ne.-5).and.(Jmax.ne.-5).and.(Kmax.ne.-5)) then
-  ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) -  cg * cg * G4pi * U(Imax,Jmax,Kmax,1) * dt2 /Phi(Imax,Jmax,Kmax)
-  prephidt = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax)
-  if(phimax > ratioshd .and. ratiomax > 0.0d0) then
-     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
-        write(*,*) '-----------err  /0------------'
-     end if
-     dt = dsqrt((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
+!  IF((Imax.ne.-5).and.(Jmax.ne.-5).and.(Kmax.ne.-5)) then
+!  ratiomax = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax) -  cg * cg * G4pi * U(Imax,Jmax,Kmax,1) * dt2 /Phi(Imax,Jmax,Kmax)
+!  prephidt = 1.0d0 - Phidt(Imax,Jmax,Kmax)/Phi(Imax,Jmax,Kmax)
+!  if(phimax > ratioshd .and. ratiomax > 0.0d0) then
+!     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+!        write(*,*) '-----------err  /0------------'
+!     end if
+!     dt = dsqrt((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
 
-     write(*,*)
-     write(*,*) '---------------------------------'
-     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
-     write(*,*) '---------------------------------'
-     write(*,*)
-  end if
-  if(phimax > ratioshd .and. ratiomax < 0.0d0) then
-     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
-        write(*,*) '-----------err  /0------------'
-     end if
-     dt = dsqrt((-ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
+!     write(*,*)
+!     write(*,*) '---------------------------------'
+!     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+!     write(*,*) '---------------------------------'
+!     write(*,*)
+!  end if
+!  if(phimax > ratioshd .and. ratiomax < 0.0d0) then
+!     if((ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)) < 0.0d0) then
+!        write(*,*) '-----------err  /0------------'
+!     end if
+!     dt = dsqrt((-ratioshd - prephidt)/(- cg * cg * G4pi * U(Imax,Jmax,Kmax,1)))
 
-     write(*,*)
-     write(*,*) '---------------------------------'
-     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
-     write(*,*) '---------------------------------'
-     write(*,*)
-  end if
-end IF
+!     write(*,*)
+!     write(*,*) '---------------------------------'
+!     write(*,*) ' Phi change large  ' , dt , dsqrt(dt2) , NRANK
+!     write(*,*) '---------------------------------'
+!     write(*,*)
+!  end if
+!end IF
 
 end subroutine STBLphi
 
@@ -4240,6 +4295,10 @@ character(2) lcRANK
 character(1) lRANK
 iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
 
+!-----for debug------
+write(*,*) '--PB1--'
+!-----for debug------
+
 !*** Pointer for boundary ***!
 pointb1(1) = 1
 nl = 1
@@ -4264,6 +4323,10 @@ if(nl.ne.NGL+1) goto 3
 Needb = pointb2(NGL+1)
 ALLOCATE(bphi2(Needb,2))
 
+
+!-----for debug------
+write(*,*) '--PB2--'
+!-----for debug------
 
 !MIYAMA method ---------------------------------------------------
 
@@ -4412,7 +4475,9 @@ end do; end do
 
 
 
-
+!-----for debug------
+write(*,*) '--PB3--'
+!-----for debug------
 
 
 
@@ -4431,7 +4496,7 @@ do j=0,ncy; n = j+kk
   bphi2(pointb2(NGL)+n,1) = dble(data(jb,kbb,1))
   bphi2(pointb2(NGL)+n,2) = dble(data(jb,kbb,2))
   !IF(IST==0) then
-     Phi(1,j,k)= bphi2(pointb2(NGL)+n,1)
+  !   Phi(1,j,k)= bphi2(pointb2(NGL)+n,1)
   !end IF
 !  write(30,*) bphi2(pointb2(NGL)+n,1)
 !  write(560,*) bphi2(pointb2(NGL)+n,2)
@@ -4476,14 +4541,16 @@ do j=0,ncy; n = j+kk
   if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
   if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
 
-  Phi(0,j,k)= bphi2(pointb2(NGL)+n,2)
+  Phi(Ncell,j,k)= bphi2(pointb2(NGL)+n,2)
 
 end do
 end do
 end IF
 
 
-
+!-----for debug------
+write(*,*) '--PB4--'
+!-----for debug------
 
 
 !close(30)

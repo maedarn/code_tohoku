@@ -20,7 +20,7 @@ program computeraw
   core=64
   mesh=32+2
   val=1
-  lasttime=30
+  lasttime=300
   initime=0
   Ncellx=32
   Ncelly=32
@@ -97,7 +97,8 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
          write(*,*) IST,JST,KST,time,usecore
          write(time,'(I6.6)') times
          write(NPE,'(I3.3)') usecore
-         open(unit=150,file='/Users/maeda/Desktop/kaiseki/grwave2/INIPHI'//NPE//time//'.DAT',FORM='UNFORMATTED') !バイナリ
+    !     open(unit=150,file='/Users/maeda/Desktop/kaiseki/grwave2/INIPHI'//NPE//time//'.DAT',FORM='UNFORMATTED') !バイナリ
+         open(unit=150,file='INIPHI'//NPE//time//'.DAT',FORM='UNFORMATTED') !バイナリ
     !     open(unit=150,file=trim(data)//NPE//'.dat')
          !open(unit=150,file='2D000031.dat',FORM='UNFORMATTED') !バイナリ
          !open(unit=250,file='NEW'//time//NPE//'.dat') !バイナリ
@@ -119,7 +120,8 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
 
    end do
-   open(100,file='/Users/maeda/Desktop/kaiseki/grwave2/INIPHI'//time//'.DAT',FORM='UNFORMATTED')
+   !open(100,file='/Users/maeda/Desktop/kaiseki/grwave2/INIPHI'//time//'.DAT',FORM='UNFORMATTED')
+   open(100,file='INIPHI'//time//'.DAT',FORM='UNFORMATTED')
    do k=1,lengthz
       do j=1,lengthy
          do i=1,lengthx

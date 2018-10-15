@@ -8,7 +8,7 @@
 #define NX 128
 #define NY 128
 #define NZ 128
-#define last 30
+#define last 300
 //#define M_PI 3.1415926535897932
 
 
@@ -18,13 +18,13 @@ write_hdf5_data()
   int time;
   char filename[60];
   char filename1[60];
-  for(time=0;time<30;time++){
+  for(time=0;time<last;time++){
 
     hid_t     file_id;
     //char s1[6] = {'\0'};
     //sprintf(s1, "%6d", time);
-    sprintf(filename, "/Users/maeda/Desktop/kaiseki/grwave/INIPHI%06d.DAT", time);
-    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/grwave/INIPHI%06d.h5", time);
+    sprintf(filename, "/Users/maeda/Desktop/kaiseki/grwave3/INIPHI%06d.DAT", time);
+    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/grwave3/INIPHI%06d.h5", time);
     file_id = H5Fcreate(filename1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     // Create the coordinate data.
