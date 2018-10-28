@@ -863,7 +863,7 @@ subroutine vanalbada(fg,gradfg,iwx,iwy,iwz)
               jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
               kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
 
-              delp = fg(ixp,jyp,kzp,k)-fg(ix ,jy ,kz ,k)
+              delp = fg(ixp,jyp,kzp,k)-fg(ix ,jy ,kz ,k) !k?
               delm = fg(ix ,jy ,kz ,k)-fg(ixm,jym,kzm,k)
               flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
               !grdU(i,k) = flmt*( wave(ixp,jyp,kzp)-wave(ixm,jym,kzm) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
@@ -871,6 +871,7 @@ subroutine vanalbada(fg,gradfg,iwx,iwy,iwz)
            end do
         end do
      end do
+
 
 subroutine slvgrvsource(dt,gradPhidt)
   USE comvar

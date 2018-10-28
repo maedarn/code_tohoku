@@ -39,6 +39,7 @@ DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
 double precision :: cg  , deltalength,cgcsratio = 1.0d0 !, shusoku1=0.0d0
+DOUBLE PRECISION :: PBexatest
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
@@ -354,6 +355,8 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !rsph = ql1x-ql1x/5.0d0
   !rsph2=int(dble(Np1x)*0.8d0)
   !Hsheet = dble(Np1x) / 5.0d0
+  write(MPIname,'(i3.3)') NRANK
+  open(145,file='dkakuninin'//MPIname//'.DAT')
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    !i2 = IST*Ncellx+i
    !i2y = JST*Ncelly+j
@@ -381,6 +384,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
       ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
       Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
       Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+      write(145,*) i,x(i) - censh,x(i)
    else
       U(i,j,k,1) = 0.0d0
       U(i,j,k,2) = 0.0d0
@@ -406,33 +410,43 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
 end do
 end do
 end do
+close(145)
+
+write(*,*) NRANK,'iniden',U((ndx-2)/2-1,(ndy-2)/2-1,(ndz-2)/2-1,1),U((ndx-2)/2,(ndy-2)/2,(ndz-2)/2,1)
+
 
 !minexa = 1.0d2
 write(MPIname,'(i3.3)') NRANK
 open(142,file='phiexact'//MPIname//'.DAT')
+open(143,file='INIden'//MPIname//'.DAT')
 saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
 !saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - ql1x)  - G4pi/2.0d0 * dinit1 * Hsheet**2
 
 
 write(*,*) x_i(0) - censh , x_i(0),saexact1 ,'bcx'
 ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
-do k=1,Ncellz+1
-   do j=1,Ncelly+1
-      do i= 1,Ncellx+1
+do k=1,Ncellz
+   do j=1,Ncelly
+      do i= 1,Ncellx
          if( dabs(x(i) - censh ) .le. Hsheet ) then
             !Phiexa(i,j,k) = G4pi/2.0d0 * dinit1 * (x(i) - censh )**2
-            write(142,*) sngl(G4pi/2.0d0 * dinit1 * (x(i) - censh )**2)
+            write(142,*) sngl(x(i) - censh),sngl(x(i) - censh) , sngl(G4pi/2.0d0 * dinit1 * (x(i) - censh )**2)
          else
             !Phiexa(i,j,k) = G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
-            write(142,*) sngl(G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2)
+            write(142,*) sngl(x(i) - censh), &
+                 sngl(G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2)
          end if
 !         write(142,*) sngl(Phiexa(i,j,k))
          !minexa=dmin1(minexa,Phiexa(i,j,k))
+         write(143,*) sngl(U(1,j,k,1))
       end do
    end do
 end do
 !DEALLOCATE(Phiexa)
+PBexatest = G4pi * dinit1 * Hsheet * dabs(x(1) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+
 close(142)
+close(143)
 
 dinit1=0.0d0
 ! 6011 continue
@@ -3635,16 +3649,22 @@ if(mode==2) then
 
   Phipregraddum(:,:,:)=Phi(:,:,:)
 
-  write(*,*) '------pb1-------' ,Nrank
-  Call PB()
-  write(*,*) '------pb2-------' ,Nrank
+  !write(*,*) '------pb1-------' ,Nrank
+  !Call PB()
+  !write(*,*) '------pb2-------' ,Nrank
 
 
   !*********use phi exact**********
-  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
+  if(IST.eq.0       ) then
+     !write(*,*) NRANK,Phi(1     ,1,1),'boundary'
+     do k=1,Ncellz; do j=1,Ncelly
+        Phi(1     ,j,k)=PBexatest
     Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
   end do; end do; end if
-  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
+  if(IST.eq.NSPLTx-1) then
+     !write(*,*) NRANK,Phi(Ncellx     ,1,1),'boundary'
+     do k=1,Ncellz; do j=1,Ncelly
+        Phi(Ncellx,j,k)=PBexatest
     Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
   end do; end do; end if
   !*********use phi exact**********
@@ -3654,80 +3674,7 @@ if(mode==2) then
   !call mglin(Nmem1,Nmem2,2,5,5)
   !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33--333---33---'
   write(*,*) '------gr1-------' ,Nrank
-  call gravslv(dt)
-  DEALLOCATE(bphi1,bphi2) !important
-  if(NRANK==0) then
-     write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
-     write(*,*) NRANK,Phi(0,0,0),Phidt(1,1,1),Phidt(Ncellx,Ncelly,Ncellz),dt,'-------33-----33---'
-  end if
-  N_ol = 2
-  !*************一応***************
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-  !*************一応***************
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!PHIDT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!も
-
-                      !count, blocklength, stride
-  CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL !x exact
-  RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL !x exact
-  !LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL 周期
-  !RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL 周期
-  !*****  BC for the leftsides of domains  *****
-  CALL MPI_SENDRECV(Phi(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
-                    Phi(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  !*****  BC for the rightsides of domains *****
-  CALL MPI_SENDRECV(Phi(1            ,-1,-1),1,VECU,LEFT,1, &
-                    Phi(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_TYPE_FREE(VECU,IERR)
-  LEFT = LEFTt; RIGT = RIGTt
-
-  CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
-  TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
-  !*****  BC for the downsides of domains  ****
-  CALL MPI_SENDRECV(Phi(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
-                    Phi(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  !*****  BC for the upsides of domains  ****
-  CALL MPI_SENDRECV(Phi(-1,1            ,-1),1,VECU,BOTM,1, &
-                    Phi(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_TYPE_FREE(VECU,IERR)
-  TOP = TOPt; BOTM = BOTMt
-
-  CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
-  UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
-  !*****  BC for the downsides of domains  ****
-  CALL MPI_SENDRECV(Phi(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
-                    Phi(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  !*****  BC for the upsides of domains  ****
-  CALL MPI_SENDRECV(Phi(-1,-1,1            ),1,VECU,DOWN,1, &
-                    Phi(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_TYPE_FREE(VECU,IERR)
-  UP = UPt; DOWN = DOWNt
-
-  !*********use phi exact**********
-  if(IST.eq.0       ) then; do k=1,Ncellz; do j=1,Ncelly
-    Phi(0       ,j,k) = Phi(1     ,j,k); Phi(-1       ,j,k) = Phi(1     ,j,k) !grad=0
-  end do; end do; end if
-  if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
-    Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
-  end do; end do; end if
-  !*********use phi exact**********
-  !write(*,*) NRANK,Phi(0,0,0),Phi(1,1,1),Phi(Ncellx,Ncelly,Ncellz),'-------33-----33--66666-'
-
-  if(NRANK==0) then
-     write(*,*) Phi(-1,10,10),Phi(0,10,10),Phi(1,10,10)
-  end if
-
-  do k = -1 , Ncellz+2
-     do j = -1 , Ncelly+2
-        do i = -1 , Ncellx+2
-           Phipregrad(i,j,k) = (Phi(i,j,k) - Phipregraddum(i,j,k))/2.0d0/dt
-        end do
+  call         end do
      end do
   end do
 
@@ -3886,7 +3833,7 @@ end if
 !*****************shuusoku****************
 if(mode==8) then
 
-   ave1=1.0d2
+   ave1=1.0d2  ! これはおかしい
    ave1pre=1.0d2
 
 !do k=1,Ncellz
@@ -4541,7 +4488,7 @@ do j=0,ncy; n = j+kk
   if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
   if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
 
-  Phi(Ncell,j,k)= bphi2(pointb2(NGL)+n,2)
+  Phi(Ncellx,j,k)= bphi2(pointb2(NGL)+n,2)
 
 end do
 end do
