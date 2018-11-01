@@ -115,7 +115,7 @@ program muscl1D
         !write(*,*) 'mode1'
      end if
      if(iws==2) then
-        !call split(Phi,Phidt,Phi1step,dt,2)
+        call split(Phi,Phidt,Phi1step,dt,2)
         !call timesource(Phi1step,Phi,dt,2)
         !call timesource(Phi,rho,dt,1)
 
@@ -154,18 +154,32 @@ program muscl1D
         !----------both---------
 
         !----------both---------
+        !Phidt(:)=Phi(:)
         call BC()
 
-        !call muslcslv1D(Phi1step,rho,dt,1)
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+        call muslcslv1D(Phi1step,rho,dt,3)
+         call BC()
+        call muslcslv1D(Phi1step,rho,dt,1)
         !call muslcslv1D(Phi1step,rho,dt,3)
 
-
-        call muslcslv1D(Phi,Phi1step,dt,2)
-        call muslcslv1D(Phi,Phi1step,dt,4)
-        call muslcslv1D(Phi1step,rho,dt,1)
-        call muslcslv1D(Phi1step,rho,dt,3)
         call BC()
         Phidt(:)=Phi(:)
+        call muslcslv1D(Phi,Phi1step,dt,4)
+        call BC()
+        call muslcslv1D(Phi,Phi1step,dt,2)
+        call BC()
+        !call muslcslv1D(Phi,Phi1step,dt,4)
+
+        !call BC()
+
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+        !call muslcslv1D(Phi1step,rho,dt,1)
+        !call muslcslv1D(Phi1step,rho,dt,3)
+        !call BC()
+        !Phidt(:)=Phi(:)
         !----------both---------
         ws=2
         !write(*,*) 'mode2'
@@ -598,17 +612,26 @@ end subroutine timesource2
 subroutine muslcslv1D(Phiv,source,dt,mode)
   use comvar
   double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam !kappa -> comver  better?
-  integer direction , mode , invdt , loopmode , dloop
+  integer :: direction , mode , invdt , loopmode , dloop,cnt=0
   !DOUBLE PRECISION :: fluxf(-1:ndx,-1:ndy,-1:ndz),fluxg(-1:ndx,-1:ndy,-1:ndz)
   DOUBLE PRECISION, dimension(-1:ndx) :: Phigrad,Phipre,fluxphi,Phiv,source,Phi2dt,Phiu,sourcepre,sourcepri
+  character(5) name
 
   nu2 = cg * dt / dx
   Phipre(:) = Phiv(:)
+  !write(name,'(i5.5)') cnt
 
 
 
   !------------ul.solver.+cg-------------
   if(mode==1) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/1modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/1modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10)
      !------------calcurate dt/2------------
      do i=ist-1,ndx-ien+1 !一次なので大丈夫
@@ -616,10 +639,14 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
      end do
      !------------calcurate dt/2------------
      call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1)
-
+     !write(*,*) Phiu(127),'127-2'
      do i = ist , ndx-ien
         Phiv(i) = Phipre(i) - nu2 * (Phiu(i) - Phiu(i-1))
      end do
+     !write(*,*) Phiv(127),'127-3'
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
   !------------ul.solver.+cg-------------
 
@@ -627,6 +654,13 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
 
   !------------ul.solver.-cg-------------
   if(mode==2) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/2modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/2modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
 
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11)
      !------------calcurate dt/2------------
@@ -640,23 +674,49 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
         Phiv(i) = Phipre(i) + nu2 * (Phiu(i+1) - Phiu(i))
      end do
 
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
   end if
   !------------ul.solver.-cg-------------
 
 
   !--------------source------------------
   if(mode==3) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/3modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/3modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
      !write(*,*) 'in1'
      do i=ist,ndx-ien
         Phiv(i) =  -cg * G4pi * source(i) * dt + Phipre(i)
      end do
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
 
   if(mode==4) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/4modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/4modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
     !write(*,*) source(ndx-ien), dt , Phipre(ndx-ien),cg * source(ndx-ien) * dt + Phipre(ndx-ien),'mode4'
      do i=ist,ndx-ien
         Phiv(i) = cg * source(i) * dt + Phipre(i)
      end do
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
   !--------------source------------------
 
@@ -683,6 +743,9 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
      sourcepre(:)=0.0d0
   end if
 
+  close(201)
+  close(202)
+  cnt=cnt+2
 end subroutine muslcslv1D
 
 !subroutine vanalbada(fg,gradfg,iwx,iwy,iwz)
@@ -741,6 +804,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
              * ((1.0d0-slop(i)*kappa)*(pre(i)-pre(i-1)) + (1.0d0+slop(i)*kappa)*(pre(i+1) - pre(i))) !i+1/2
         u(i)=ul(i)
      end do
+     write(*,*) slop(127),'127slop'
      !u(:)=ul(:)
   end if
 
@@ -751,6 +815,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
              * ((1.0d0+slop(i)*kappa)*(pre(i)-pre(i-1)) + (1.0d0-slop(i)*kappa)*(pre(i+1) - pre(i))) !i-1/2
         u(i)=ur(i)
      end do
+     !write(*,*) slop(127),'127slop'
      !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
      !write(*,*) u(2)
      !u(:)=ur(:)
@@ -766,6 +831,13 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
   if(mode==11) then
      do i = ist-2,ndx-ien+2
         ur(i) = preuse(i)
+        u(i)=ur(i)
+     end do
+  end if
+
+  if(mode==12) then
+     do i = ist-1,ndx-ien+1
+        ur(i) = preuse(i+1)
         u(i)=ur(i)
      end do
   end if
@@ -830,32 +902,45 @@ end subroutine dfi2
 
 subroutine split(Phiv,Phidt,Phi1step,dt,mode)
   use comvar
-  integer i,mode
+  integer :: i,mode,cnt=0
   double precision :: dt,dtpre !前の
   DOUBLE PRECISION, dimension(-1:ndx) :: Phiv,Phi1step,Phidt
+  character(5) name
+
+  write(name,'(i5.5)') cnt
+  !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
 
   !----------- +cg -----------
   if(mode==1) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
      do i=ist,ndx-ien
 !     do i=ist+2,ndx-ien-2
-        Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt - (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx !wind up?
+        Phi1step(i)= ((Phiv(i) - Phidt(i)) / cg / dt + (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx) !wind up?
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),Phiv(i) - Phidt(i)
      end do
 !     Phi1step(ist+1)=Phi1step(ist)
 !     Phi1step(ndx-ien-1)=Phi1step(ndx-ien)
-
-     write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
+     close(201)
+     !write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
   end if
   !----------- +cg -----------
 
   !----------- -cg -----------
   if(mode==2) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/mcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
      do i=ist,ndx-ien
-        Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt + (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx
+        Phi1step(i)= ((Phiv(i) - Phidt(i)) / cg / dt - (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx)
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),&
+             Phiv(i) - Phidt(i),(Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx,(Phiv(i) - Phidt(i)) / cg / dt
      end do
+     close(201)
   end if
   !----------- -cg -----------
+  cnt=cnt+1
   !dtpre=dt
 end subroutine split
 

@@ -5,9 +5,9 @@
 #include <hdf5.h>
 
 // The number of cells in the X, Y dimensions
-#define NX 128
-#define NY 128
-#define NZ 128
+#define NX 64
+#define NY 64
+#define NZ 64
 #define last 300
 //#define M_PI 3.1415926535897932
 

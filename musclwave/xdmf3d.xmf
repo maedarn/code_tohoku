@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="2.0">
+ <Domain>
+   <Grid Name="mesh1" GridType="Uniform">
+     <Topology TopologyType="3DCoRectMesh" NumberOfElements="64 64 64"/>
+     <Geometry GeometryType="VXVYVZ">
+     <Attribute Name="Phir" AttributeType="Scalar" Center="Node">
+       <DataItem Dimensions="64 64 64" NumberType="Float" Precision="4" Format="HDF">
+        xdmf3d.h5:/Phir
+       </DataItem>
+     </Attribute>
+     <Attribute Name="Phil" AttributeType="Scalar" Center="Node">
+       <DataItem Dimensions="64 64 64" NumberType="Float" Precision="4" Format="HDF">
+        xdmf3d.h5:/Phil
+       </DataItem>
+     </Attribute>
+     <Attribute Name="Phim" AttributeType="Scalar" Center="Node">
+       <DataItem Dimensions="64 64 64" NumberType="Float" Precision="4" Format="HDF">
+        xdmf3d.h5:/Phim
+       </DataItem>
+     </Attribute>
+   </Grid>
+ </Domain>
+</Xdmf>

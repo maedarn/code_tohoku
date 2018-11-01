@@ -1,6 +1,6 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=130,laststep=5000,ist=1,ien=2 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3
+  integer, parameter :: ndx=1026,laststep=25000,ist=2,ien=3 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 :: ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   DOUBLE PRECISION :: cg = 1.0d0 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
@@ -11,7 +11,7 @@ end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=130 !パラメータ属性必要
+  integer, parameter :: ndx2=1026 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho, Phi1step
   DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
 end module grvvar
@@ -26,7 +26,7 @@ program muscl1D
 
 
   call INITIAL()
-  call BC()
+  call BC(1)
   !call muslcslv1D(Phi,Phi1step,dt,13)
 
   do i=1,laststep
@@ -47,42 +47,12 @@ program muscl1D
         !call timesource(Phi1step,rho,dt,1)
 
 
-        !call split(Phi,Phidt,Phi1step,dt,1)
-        !call BC()
-
-
-        !---------------------------------
-        !Phidt(:)=Phi(:)
-        !call BC()
-
-        !------source-------
-        !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,4)
-        !call  muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-        !------source-------
-
-        !call BC()
-
-        !call  muslcslv1D(Phi,Phi1step,dt,1)
-        !call  muslcslv1D(Phi1step,rho,dt,2)
-
-
-        !call BC()
-        !------source-------
-        !call  muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-        !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,4)
-        !call  muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-        !------source-------
-
-
-        !call BC()
-        !---------------------------------
-
-
 
         !----------both---------
         !goto 230
         Phidt(:)=Phi(:)
-        call BC()
+        call BC(1)
+        call BC(3)
         !call  muslcslv1D(Phi,Phi1step,dt,4)
         !ien=2
 
@@ -91,15 +61,7 @@ program muscl1D
         !Phidt(:)=Phi(:)
         call  muslcslv1D(Phi,Phi1step,dt,1)
         call  muslcslv1D(Phi,Phi1step,dt,4)
-        !Phidt(:)=Phi(:)
-        !ien=3
-        !ist=1
-        !call  muslcslv1D(Phi1step,rho,dt,2)
-        !call  muslcslv1D(Phi1step,rho,dt,3)
-        !ist=2
-        !call  muslcslv1D(Phi,Phi1step,dt,1)
-        call BC()
-        !Phidt(:)=Phi(:)
+        !call BC()
         !230 continue
         !----------both---------
 
@@ -112,89 +74,48 @@ program muscl1D
 
 
         ws=1
-        !write(*,*) 'mode1'
      end if
      if(iws==2) then
         !call split(Phi,Phidt,Phi1step,dt,2)
-        !call timesource(Phi1step,Phi,dt,2)
-        !call timesource(Phi,rho,dt,1)
 
         call timesource(Phi,Phi1step,dt,2)
         call timesource(Phi1step,rho,dt,1)
 
-        !call split(Phi,Phidt,Phi1step,dt,2)
-        !call BC()
-
-        !------source-------
-        !call  muslcslv1D(Phi1step,Phi,0.5d0*dt,4)
-        !call  muslcslv1D(Phi,rho,0.5d0*dt,3)
-        !------source-------
 
         !call BC()
-
-       ! call  muslcslv1D(Phi1step,Phi,dt,1)
-       ! call  muslcslv1D(Phi,rho,dt,2)
-
-
-        !call BC()
-        !------source-------
-        !call  muslcslv1D(Phi,rho,0.5d0*dt,3)
-        !call  muslcslv1D(Phi1step,Phi,0.5d0*dt,4)
-        !call  muslcslv1D(Phi,rho,0.5d0*dt,3)
-        !------source-------
-
-
-        !----------both---------
-        !call BC()
-        !call  muslcslv1D(Phi,rho,dt,2)
-        !call  muslcslv1D(Phi,rho,dt,4)
-        !call  muslcslv1D(Phi1step,Phi,dt,1)
-        !call  muslcslv1D(Phi1step,Phi,dt,3)
-        !call BC()
-        !----------both---------
-
-        !----------both---------
-        call BC()
-
         !call muslcslv1D(Phi1step,rho,dt,1)
-        !call muslcslv1D(Phi1step,rho,dt,3)
-
-
-        call muslcslv1D(Phi,Phi1step,dt,2)
-        call muslcslv1D(Phi,Phi1step,dt,4)
-        call muslcslv1D(Phi1step,rho,dt,1)
+        call BC(4)
         call muslcslv1D(Phi1step,rho,dt,3)
-        call BC()
-        Phidt(:)=Phi(:)
-        !----------both---------
-        ws=2
-        !write(*,*) 'mode2'
-     end if
-!500  continue
-     !call timesource(Phi,Phi1step,dt,2)
-     !call timesource(Phi1step,rho,dt,1)
+        !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
+        call BC(4)
+        call muslcslv1D(Phi1step,rho,dt,1)
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
 
-     !----------both---------
-     !call BC()
-     !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,2)
-     !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,4)
-     !call  muslcslv1D(Phi1step,rho,0.5d0*dt,1)
-     !call  muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     !call BC()
-     !call  muslcslv1D(Phi,Phi1step,dt,1)
-     !call  muslcslv1D(Phi,Phi1step,dt,4)
-     !call  muslcslv1D(Phi1step,rho,dt,2)
-     !call  muslcslv1D(Phi1step,rho,dt,3)
-     !call BC()
-     !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,2)
-     !call  muslcslv1D(Phi,Phi1step,0.5d0*dt,4)
-     !call  muslcslv1D(Phi1step,rho,0.5d0*dt,1)
-     !call  muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     !----------both---------
+        call BC(4)
+        call BC(1)
+        Phidt(:)=Phi(:)
+        call muslcslv1D(Phi,Phi1step,dt,4)
+        call BC(1)
+        call muslcslv1D(Phi,Phi1step,dt,2)
+        call BC(1)
+
+        !call BC(4)
+        !call muslcslv1D(Phi1step,rho,dt,3)
+        !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
+        !call BC(4)
+        !call muslcslv1D(Phi1step,rho,dt,1)
+        !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
+
+        !call BC(4)
+
+        ws=2
+     end if
      call saveu(sv)
   end do
 
+
 end program muscl1D
+
 
 subroutine INITIAL()
   use comvar
@@ -266,7 +187,7 @@ subroutine INITIAL()
   Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
   Phigrd(ndx)=(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
 
-   do i=-1,ndx
+   do i=1,ndx-2
      write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
   end do
 
@@ -331,189 +252,215 @@ end subroutine INITIAL
 
 
 
-subroutine BC()
+subroutine BC(mode)
   use comvar
   use grvvar
-  integer :: i
+  integer :: i,mode
   double precision , dimension(1:2) :: pl,pr
 
-  !---------kotei-----------
-  !goto 100
-  !---------Phi-------------
-  !Phi(1)= bcphi1(1)
-  !Phi(0)= bcphi1(2)
-  !Phi(-1)= bcphi1(3)
-  !Phi(ndx-2)= bcphi2(1)
-  !Phi(ndx-1)= bcphi2(2)
-  !Phi(ndx)= bcphi2(3)
+  if(mode==1) then
+     !---------kotei-----------
+     !goto 100
+     !---------Phi-------------
+     Phi(1)= bcphi1(1)
+     Phi(0)= bcphi1(2)
+     Phi(-1)= bcphi1(3)
+     Phi(ndx-2)= bcphi2(1)
+     Phi(ndx-1)= bcphi2(2)
+     Phi(ndx)= bcphi2(3)
 
-  !---------Phi-------------
+     !---------Phi-------------
 
-  Phi(1)= bcphi1(1)
-  Phi(0)= bcphi1(1)
-  Phi(-1)= bcphi1(1)
-  Phi(ndx-2)= bcphi2(1)
-  Phi(ndx-1)= bcphi2(1)
-  Phi(ndx)= bcphi2(1)
-  !---------Phi-------------
+     !Phi(1)= bcphi1(1)
+     !Phi(0)= bcphi1(1)
+     !Phi(-1)= bcphi1(1)
+     !Phi(ndx-2)= bcphi2(1)
+     !Phi(ndx-1)= bcphi2(1)
+     !Phi(ndx)= bcphi2(1)
+     !---------Phi-------------
+  end if
 
+  if(mode==2) then
+     !-------Phi1step-----------
+     !Phi1step(1)= bcphi1(1)
+     !Phi1step(0)= bcphi1(2)
+     !Phi1step(-1)= bcphi1(3)
+     !Phi1step(ndx-2)= bcphi2(1)
+     !Phi1step(ndx-1)= bcphi2(2)
+     !Phi1step(ndx)= bcphi2(3)
+     !-------Phi1step-----------
+     !100 continue
+     !---------kotei-----------
 
-  !-------Phi1step-----------
-  !Phi1step(1)= bcphi1(1)
-  !Phi1step(0)= bcphi1(2)
-  !Phi1step(-1)= bcphi1(3)
-  !Phi1step(ndx-2)= bcphi2(1)
-  !Phi1step(ndx-1)= bcphi2(2)
-  !Phi1step(ndx)= bcphi2(3)
-  !-------Phi1step-----------
-  !100 continue
-  !---------kotei-----------
+  end if
 
-  !-------Phi1step+cg-----------
-  goto 700
-  Phi1step(1)= Phigrd(1)
-  Phi1step(0)= Phigrd(0)
-  Phi1step(-1)=Phigrd(-1)
-  Phi1step(ndx-2)= Phigrd(ndx-2)
-  Phi1step(ndx-1)= Phigrd(ndx-1)
-  Phi1step(ndx)= Phigrd(ndx)
-  !Phi1step(ndx/2)=0.0d0
-  !Phi1step(ndx/2-1)=0.0d0
-  700 continue
-  !-------Phi1step-----------
+  if(mode==3)then
+     !-------Phi1step+cg-----------
+     !goto 700
+     Phi1step(1)= Phigrd(1)
+     Phi1step(0)= Phigrd(0)
+     Phi1step(-1)=Phigrd(-1)
+     Phi1step(ndx-2)= Phigrd(ndx-2)
+     Phi1step(ndx-1)= Phigrd(ndx-1)
+     Phi1step(ndx)= Phigrd(ndx)
+     !Phi1step(ndx/2)=0.0d0
+     !Phi1step(ndx/2-1)=0.0d0
+     !700 continue
+     !-------Phi1step-----------
+  end if
 
-  !-------Phi1step-cg-----------
-  !goto 701
-  Phi1step(1)= -Phigrd(1)
-  Phi1step(0)= -Phigrd(0)
-  Phi1step(-1)=-Phigrd(-1)
-  Phi1step(ndx-2)= -Phigrd(ndx-2)
-  Phi1step(ndx-1)= -Phigrd(ndx-1)
-  Phi1step(ndx)= -Phigrd(ndx)
-  !Phi1step(ndx/2)=0.0d0
-  !Phi1step(ndx/2-1)=0.0d0
-  !701 continue
-  !-------Phi1step-----------
+  if(mode==4) then
+     !-------Phi1step-cg-----------
+     !goto 701
+     !Phi1step(1)= -Phigrd(1)
+     !Phi1step(0)= -Phigrd(1)
+     !Phi1step(-1)=-Phigrd(1)
+     !Phi1step(ndx-2)= -Phigrd(ndx-2)
+     !Phi1step(ndx-1)= -Phigrd(ndx-2)
+     !Phi1step(ndx)= -Phigrd(ndx-2)
+     Phi1step(1)= -Phigrd(1)
+     Phi1step(0)= -Phigrd(2)
+     Phi1step(-1)=-Phigrd(3)
+     Phi1step(ndx-2)= -Phigrd(ndx-2)
+     Phi1step(ndx-1)= -Phigrd(ndx-1)
+     Phi1step(ndx)= -Phigrd(ndx)
+     !Phi1step(ndx/2)=0.0d0
+     !Phi1step(ndx/2-1)=0.0d0
+     !701 continue
+     !-------Phi1step-----------
+  end if
 
-  !--------free--------------
-  goto 112
-  !-------Phi1step-----------
-  Phi1step(1)= Phi1step(2)
-  Phi1step(0)= Phi1step(1)
-  Phi1step(-1)=Phi1step(0)
-  Phi1step(ndx-2)= Phi1step(ndx-3)
-  Phi1step(ndx-1)= Phi1step(ndx-2)
-  Phi1step(ndx)= Phi1step(ndx-1)
-  !-------Phi1step-----------
-  112 continue
-  !--------free--------------
-
-
-  !---------kotei2-----------
-  goto 105
-  !---------Phi-------------
-  Phi(0)= Phi(1)
-  Phi(-1)= Phi(-1)
-  Phi(ndx-1)=Phi(ndx-2)
-  Phi(ndx)= Phi(ndx-1)
-  !---------Phi-------------
-
-  !-------Phi1step-----------
-  Phi1step(1)= bcphi1(1)
-  Phi1step(0)= bcphi1(2)
-  Phi1step(-1)= bcphi1(3)
-  Phi1step(ndx-2)= bcphi2(1)
-  Phi1step(ndx-1)= bcphi2(2)
-  Phi1step(ndx)= bcphi2(3)
-  !-------Phi1step-----------
-  105 continue
-  !---------kotei2-----------
+  if(mode==5) then
+     !--------free--------------
+     goto 112
+     !-------Phi1step-----------
+     Phi1step(1)= Phi1step(2)
+     Phi1step(0)= Phi1step(1)
+     Phi1step(-1)=Phi1step(0)
+     Phi1step(ndx-2)= Phi1step(ndx-3)
+     Phi1step(ndx-1)= Phi1step(ndx-2)
+     Phi1step(ndx)= Phi1step(ndx-1)
+     !-------Phi1step-----------
+112  continue
+     !--------free--------------
+  end if
 
 
-  !---------perio-----------
-  goto 101
-  !---------Phi-------------
-  Phi(0)= Phi(ndx-2)
-  Phi(-1)= Phi(ndx-3)
-  Phi(ndx-1)= Phi(1)
-  Phi(ndx)= Phi(2)
-  !---------Phi-------------
+  if(mode==6) then
+     !---------kotei2-----------
+     goto 105
+     !---------Phi-------------
+     Phi(0)= Phi(1)
+     Phi(-1)= Phi(-1)
+     Phi(ndx-1)=Phi(ndx-2)
+     Phi(ndx)= Phi(ndx-1)
+     !---------Phi-------------
 
-  !-------Phi1step-----------
-  Phi1step(0)= Phi1step(ndx-2)
-  Phi1step(-1)= Phi1step(ndx-3)
-  Phi1step(ndx-1)= Phi1step(1)
-  Phi1step(ndx)= Phi1step(2)
-  !-------Phi1step-----------
-  101 continue
-  !---------perio-----------
+     !-------Phi1step-----------
+     Phi1step(1)= bcphi1(1)
+     Phi1step(0)= bcphi1(2)
+     Phi1step(-1)= bcphi1(3)
+     Phi1step(ndx-2)= bcphi2(1)
+     Phi1step(ndx-1)= bcphi2(2)
+     Phi1step(ndx)= bcphi2(3)
+     !-------Phi1step-----------
+105  continue
+     !---------kotei2-----------
+  end if
 
 
+  if(mode==7) then
+     !---------perio-----------
+     goto 101
+     !---------Phi-------------
+     Phi(0)= Phi(ndx-2)
+     Phi(-1)= Phi(ndx-3)
+     Phi(ndx-1)= Phi(1)
+     Phi(ndx)= Phi(2)
+     !---------Phi-------------
 
-  !-------period2-----------
-  goto 102
-  !---------Phi-------------
-  pr(2)= Phi(ndx-2)
-  pr(1)= Phi(ndx-3)
-  pl(1)= Phi(1)
-  pl(2)= Phi(2)
-  Phi(1)=pr(1)
-  Phi(2)=pr(2)
-  Phi(ndx-2)=pl(1)
-  Phi(ndx-3)=pr(2)
-  !---------Phi-------------
-  !-------Phi1step-----------
-  pr(2)= Phi1step(ndx-2)
-  pr(1)= Phi1step(ndx-3)
-  pl(1)= Phi1step(1)
-  pl(2)= Phi1step(2)
-  Phi1step(1)=pr(1)
-  Phi1step(2)=pr(2)
-  Phi1step(ndx-2)=pl(1)
-  Phi1step(ndx-3)=pr(2)
-  !-------Phi1step-----------
-  102 continue
-  !-------period2-----------
+     !-------Phi1step-----------
+     Phi1step(0)= Phi1step(ndx-2)
+     Phi1step(-1)= Phi1step(ndx-3)
+     Phi1step(ndx-1)= Phi1step(1)
+     Phi1step(ndx)= Phi1step(2)
+     !-------Phi1step-----------
+101  continue
+     !---------perio-----------
+  end if
 
 
 
+  if(mode==8) then
+     !-------period2-----------
+     goto 102
+     !---------Phi-------------
+     pr(2)= Phi(ndx-2)
+     pr(1)= Phi(ndx-3)
+     pl(1)= Phi(1)
+     pl(2)= Phi(2)
+     Phi(1)=pr(1)
+     Phi(2)=pr(2)
+     Phi(ndx-2)=pl(1)
+     Phi(ndx-3)=pr(2)
+     !---------Phi-------------
+     !-------Phi1step-----------
+     pr(2)= Phi1step(ndx-2)
+     pr(1)= Phi1step(ndx-3)
+     pl(1)= Phi1step(1)
+     pl(2)= Phi1step(2)
+     Phi1step(1)=pr(1)
+     Phi1step(2)=pr(2)
+     Phi1step(ndx-2)=pl(1)
+     Phi1step(ndx-3)=pr(2)
+     !-------Phi1step-----------
+102  continue
+     !-------period2-----------
+  end if
 
 
-  !-------katagawa-----
-  goto 130
-  !---------Phi-------------
-  Phi(1)= bcphi1(1)
-  Phi(0)= bcphi1(2)
-  Phi(-1)= bcphi1(3)
-  Phi(ndx-2)= Phi(ndx-3)
-  Phi(ndx-1)= Phi(ndx-2)
-  Phi(ndx)= Phi(ndx-1)
-  !---------Phi-------------
 
 
-  !-------Phi1step-----------
-  !Phi1step(1)= bcphi1(1)
-  !Phi1step(0)= bcphi1(2)
-  !Phi1step(-1)= bcphi1(3)
-  !Phi1step(ndx-2)= bcphi2(1)
-  !Phi1step(ndx-1)= bcphi2(2)
-  !Phi1step(ndx)= bcphi2(3)
-  !-------Phi1step-----------
-  !100 continue
-  !---------kotei-----------
 
-  !--------free--------------
-  !goto 112
-  !-------Phi1step-----------
-  Phi1step(1)= Phi1step(2)
-  Phi1step(0)= Phi1step(1)
-  Phi1step(-1)=Phi1step(0)
-  Phi1step(ndx-2)= bcphi2(1)
-  Phi1step(ndx-1)= bcphi2(2)
-  Phi1step(ndx)= bcphi2(3)
-  !-------Phi1step-----------
-  130 continue
-  !--------free--------------
+  if(mode==9) then
+     !-------katagawa-----
+     !goto 130
+     !---------Phi-------------
+     Phi(1)= bcphi1(1)
+     Phi(0)= bcphi1(2)
+     Phi(-1)= bcphi1(3)
+     Phi(ndx-2)= Phi(ndx-3)
+     Phi(ndx-1)= Phi(ndx-2)
+     Phi(ndx)= Phi(ndx-1)
+     !---------Phi-------------
+  end if
+
+
+  if(mode==10) then
+     !-------Phi1step-----------
+     !Phi1step(1)= bcphi1(1)
+     !Phi1step(0)= bcphi1(2)
+     !Phi1step(-1)= bcphi1(3)
+     !Phi1step(ndx-2)= bcphi2(1)
+     !Phi1step(ndx-1)= bcphi2(2)
+     !Phi1step(ndx)= bcphi2(3)
+     !-------Phi1step-----------
+     !100 continue
+     !---------kotei-----------
+
+     !--------free--------------
+     !goto 112
+     !-------Phi1step-----------
+     Phi1step(1)= Phi1step(2)
+     Phi1step(0)= Phi1step(1)
+     Phi1step(-1)=Phi1step(0)
+     Phi1step(ndx-2)= bcphi2(1)
+     Phi1step(ndx-1)= bcphi2(2)
+     Phi1step(ndx)= bcphi2(3)
+     !-------Phi1step-----------
+!130  continue
+     !--------free--------------
+  end if
 end subroutine BC
 
 
@@ -598,28 +545,43 @@ end subroutine timesource2
 subroutine muslcslv1D(Phiv,source,dt,mode)
   use comvar
   double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam !kappa -> comver  better?
-  integer direction , mode , invdt , loopmode , dloop
+  integer :: direction , mode , invdt , loopmode , dloop,cnt=0
   !DOUBLE PRECISION :: fluxf(-1:ndx,-1:ndy,-1:ndz),fluxg(-1:ndx,-1:ndy,-1:ndz)
   DOUBLE PRECISION, dimension(-1:ndx) :: Phigrad,Phipre,fluxphi,Phiv,source,Phi2dt,Phiu,sourcepre,sourcepri
+  character(5) name
 
   nu2 = cg * dt / dx
   Phipre(:) = Phiv(:)
+  !write(name,'(i5.5)') cnt
 
 
 
   !------------ul.solver.+cg-------------
   if(mode==1) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/1modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/1modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
      !------------calcurate dt/2------------
      do i=ist-1,ndx-ien+1 !一次なので大丈夫
         Phi2dt(i) = Phipre(i) - 0.5d0 * nu2 * ( Phiu(i) - Phiu(i-1))
      end do
      !------------calcurate dt/2------------
      call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1)
-
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
      do i = ist , ndx-ien
         Phiv(i) = Phipre(i) - nu2 * (Phiu(i) - Phiu(i-1))
      end do
+     !write(*,*) Phiv(127),'127-3'
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
   !------------ul.solver.+cg-------------
 
@@ -627,18 +589,31 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
 
   !------------ul.solver.-cg-------------
   if(mode==2) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/2modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/2modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
 
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
      !------------calcurate dt/2------------
      do i=ist-1,ndx-ien+1
         Phi2dt(i) = Phipre(i) + 0.5d0 * nu2 * ( Phiu(i+1) - Phiu(i))
      end do
      !------------calcurate dt/2------------
      call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
 
      do i = ist , ndx-ien
         Phiv(i) = Phipre(i) + nu2 * (Phiu(i+1) - Phiu(i))
      end do
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
 
   end if
   !------------ul.solver.-cg-------------
@@ -646,17 +621,39 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
 
   !--------------source------------------
   if(mode==3) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/3modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/3modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
      !write(*,*) 'in1'
      do i=ist,ndx-ien
         Phiv(i) =  -cg * G4pi * source(i) * dt + Phipre(i)
      end do
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
 
   if(mode==4) then
+     !write(name,'(i5.5)') cnt
+     !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/4modepre'//name//'.dat')
+     !write(name,'(i5.5)') cnt+1
+     !open(202,file='/Users/maeda/Desktop/kaiseki/testcode2/4modepos'//name//'.dat')
+     !do i=-1,ndx
+     !   write(201,*) i, Phiv(i)
+     !end do
     !write(*,*) source(ndx-ien), dt , Phipre(ndx-ien),cg * source(ndx-ien) * dt + Phipre(ndx-ien),'mode4'
      do i=ist,ndx-ien
         Phiv(i) = cg * source(i) * dt + Phipre(i)
      end do
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
   end if
   !--------------source------------------
 
@@ -683,6 +680,9 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
      sourcepre(:)=0.0d0
   end if
 
+  close(201)
+  close(202)
+  cnt=cnt+2
 end subroutine muslcslv1D
 
 !subroutine vanalbada(fg,gradfg,iwx,iwy,iwz)
@@ -741,6 +741,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
              * ((1.0d0-slop(i)*kappa)*(pre(i)-pre(i-1)) + (1.0d0+slop(i)*kappa)*(pre(i+1) - pre(i))) !i+1/2
         u(i)=ul(i)
      end do
+     write(*,*) slop(127),'127slop'
      !u(:)=ul(:)
   end if
 
@@ -751,6 +752,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
              * ((1.0d0+slop(i)*kappa)*(pre(i)-pre(i-1)) + (1.0d0-slop(i)*kappa)*(pre(i+1) - pre(i))) !i-1/2
         u(i)=ur(i)
      end do
+     !write(*,*) slop(127),'127slop'
      !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
      !write(*,*) u(2)
      !u(:)=ur(:)
@@ -766,6 +768,13 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
   if(mode==11) then
      do i = ist-2,ndx-ien+2
         ur(i) = preuse(i)
+        u(i)=ur(i)
+     end do
+  end if
+
+  if(mode==12) then
+     do i = ist-1,ndx-ien+1
+        ur(i) = preuse(i+1)
         u(i)=ur(i)
      end do
   end if
@@ -830,32 +839,52 @@ end subroutine dfi2
 
 subroutine split(Phiv,Phidt,Phi1step,dt,mode)
   use comvar
-  integer i,mode
+  integer :: i,mode,cnt=0
   double precision :: dt,dtpre !前の
   DOUBLE PRECISION, dimension(-1:ndx) :: Phiv,Phi1step,Phidt
+  character(5) name
+
+  write(name,'(i5.5)') cnt
+  !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
 
   !----------- +cg -----------
   if(mode==1) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
      do i=ist,ndx-ien
 !     do i=ist+2,ndx-ien-2
-        Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt - (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx !wind up?
+        Phi1step(i)= ((Phiv(i) - Phidt(i)) / cg / dt + (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx) !wind up?
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),Phiv(i) - Phidt(i)
      end do
 !     Phi1step(ist+1)=Phi1step(ist)
 !     Phi1step(ndx-ien-1)=Phi1step(ndx-ien)
-
-     write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
+     close(201)
+     !write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
   end if
   !----------- +cg -----------
 
   !----------- -cg -----------
   if(mode==2) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/mcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
      do i=ist,ndx-ien
-        Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt + (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx
+        Phi1step(i)= ((Phiv(i) - Phidt(i)) / cg / dt - (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx)
+
+        !Phi1step(i)= ((Phiv(i) - Phidt(i) ) / cg / dt -&
+        !     (3.0d0*Phiv(i) - 4.0d0*Phiv(i-1)+Phiv(i-2)) * 0.5d0 /dx)
+        !cal(i)= ((3.0d0*Phidt(i) -4.0d0* Phi2dt(i) + Phi3dt(i) )*0.5d0 / cg / dt +&
+        !     (3.0d0*Phidt(i) - 4.0d0*Phidt(i+1)+Phidt(i+2)) * 0.5d0 /dx)
+        !cal(i)= ((3.0d0*Phidt(i) -4.0d0* Phi2dt(i) + Phi3dt(i) )*0.5d0 / cg / dt -&
+        !(3.0d0*Phidt(i) - 4.0d0*Phidt(i-1)+Phidt(i-2)) * 0.5d0 /dx)
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),&
+             Phiv(i) - Phidt(i),(Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx,(Phiv(i) - Phidt(i)) / cg / dt
      end do
+     close(201)
   end if
   !----------- -cg -----------
+  cnt=cnt+1
   !dtpre=dt
 end subroutine split
 

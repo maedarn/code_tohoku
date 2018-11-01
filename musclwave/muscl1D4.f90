@@ -6,13 +6,16 @@ module comvar
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.1d0 !,  kappa=1.0d0/3.0d0
-  DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
+  DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2
+  !DOUBLE PRECISION , dimension(-1:ndx2) :: x
 end module comvar
 
 module grvvar
   implicit none
   integer, parameter :: ndx2=130 !パラメータ属性必要
-  DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho, Phi1step
+  !DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho,Phiexa, Phi1step,Phi2step
+  !DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt
+  DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho, Phi1step,Phi2step
   DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
 end module grvvar
 
@@ -22,7 +25,7 @@ program muscl1D
   use grvvar
   implicit none
   DOUBLE PRECISION :: dt=0.0d0
-  integer :: i,sv=0,iws,ws=2
+  integer :: i,sv=0,iws,ws=2,j
 
 
   call INITIAL()
@@ -30,9 +33,10 @@ program muscl1D
   !call muslcslv1D(Phi,Phi1step,dt,13)
 
   do i=1,laststep
+     !do j=1,2
      call time(dt)
      iws=3-ws
-     iws=2
+     !iws=2
      !iws=1
 
 
@@ -40,11 +44,11 @@ program muscl1D
 
      !goto 500
      if(iws==1) then
-        !call BC()
-        !call split(Phi,Phidt,Phi1step,dt,1)
+        call BC()
+        call split(Phi,Phidt,Phi1step,dt,1)
 
-        !call timesource(Phi,Phi1step,dt,2)
-        !call timesource(Phi1step,rho,dt,1)
+        call timesource(Phi,Phi1step,dt,2)
+        call timesource(Phi1step,rho,dt,1)
 
 
         !call split(Phi,Phidt,Phi1step,dt,1)
@@ -81,21 +85,31 @@ program muscl1D
 
         !----------both---------
         !goto 230
-        Phidt(:)=Phi(:)
+        !Phidt(:)=Phi(:)
         call BC()
+        Phidt(:)=Phi(:)
         !call  muslcslv1D(Phi,Phi1step,dt,4)
         !ien=2
-
-        call  muslcslv1D(Phi1step,rho,dt,2)
-        call  muslcslv1D(Phi1step,rho,dt,3)
         !Phidt(:)=Phi(:)
-        call  muslcslv1D(Phi,Phi1step,dt,1)
-        call  muslcslv1D(Phi,Phi1step,dt,4)
+        !call  muslcslv1D(Phi,Phi1step,dt,1)
+        !call  muslcslv1D(Phi,Phi1step,dt,4)
         !Phidt(:)=Phi(:)
         !ien=3
         !ist=1
-        !call  muslcslv1D(Phi1step,rho,dt,2)
-        !call  muslcslv1D(Phi1step,rho,dt,3)
+        !call muslcslv1D2(Phi,Phi1step,Phi2step,dt)
+        call  muslcslv1D(Phi1step,rho,dt,2)
+        call  muslcslv1D(Phi1step,rho,dt,3)
+
+        call BC()
+
+        call  muslcslv1D(Phi,Phi1step,dt,1)
+        call  muslcslv1D(Phi,Phi1step,dt,4)
+
+
+        !-------new---
+        !call  muslcslv1D(Phi2step,rho,dt,1)
+        !call  muslcslv1D(Phi2step,rho,dt,3)
+        !-------new---
         !ist=2
         !call  muslcslv1D(Phi,Phi1step,dt,1)
         call BC()
@@ -115,12 +129,12 @@ program muscl1D
         !write(*,*) 'mode1'
      end if
      if(iws==2) then
-        !call split(Phi,Phidt,Phi1step,dt,2)
+        call split(Phi,Phidt,Phi2step,dt,2)
         !call timesource(Phi1step,Phi,dt,2)
         !call timesource(Phi,rho,dt,1)
 
-        call timesource(Phi,Phi1step,dt,2)
-        call timesource(Phi1step,rho,dt,1)
+        call timesource(Phi,Phi2step,dt,2)
+        call timesource(Phi2step,rho,dt,1)
 
         !call split(Phi,Phidt,Phi1step,dt,2)
         !call BC()
@@ -155,21 +169,31 @@ program muscl1D
 
         !----------both---------
         call BC()
-
-        !call muslcslv1D(Phi1step,rho,dt,1)
-        !call muslcslv1D(Phi1step,rho,dt,3)
-
-
-        call muslcslv1D(Phi,Phi1step,dt,2)
-        call muslcslv1D(Phi,Phi1step,dt,4)
-        call muslcslv1D(Phi1step,rho,dt,1)
-        call muslcslv1D(Phi1step,rho,dt,3)
-        call BC()
         Phidt(:)=Phi(:)
+        !call muslcslv1D(Phi,Phi2step,dt,2)
+        !call muslcslv1D(Phi,Phi2step,dt,4)
+        !call muslcslv1D2(Phi,Phi1step,Phi2step,dt)
+        call muslcslv1D(Phi2step,rho,dt,1)
+        call muslcslv1D(Phi2step,rho,dt,3)
+
+        call BC()
+
+        call muslcslv1D(Phi,Phi2step,dt,2)
+        call muslcslv1D(Phi,Phi2step,dt,4)
+
+        !-------new---
+        !call  muslcslv1D(Phi1step,rho,dt,2)
+        !call  muslcslv1D(Phi1step,rho,dt,3)
+        !-------new---
+
+        call BC()
+        !Phidt(:)=Phi(:)
         !----------both---------
         ws=2
         !write(*,*) 'mode2'
      end if
+     !call muslcslv1D2(Phi,Phi1step,Phi2step,2.0d0*dt)
+  !end do
 !500  continue
      !call timesource(Phi,Phi1step,dt,2)
      !call timesource(Phi1step,rho,dt,1)
@@ -196,6 +220,8 @@ program muscl1D
 
 end program muscl1D
 
+
+
 subroutine INITIAL()
   use comvar
   use grvvar
@@ -221,6 +247,10 @@ subroutine INITIAL()
   Phi1step(:)=0.0d0
   !-------Phi1step-----------
 
+  !-------Phi2step-----------
+  Phi2step(:)=0.0d0
+  !-------Phi2step-----------
+
   !-------Phidt-----------
   Phidt(:)=0.0d0
   !-------Phdt-----------
@@ -235,7 +265,6 @@ subroutine INITIAL()
         !rho(i) = 0.0d0
      else
         rho(i) = 0.0d0
-        !rho(i) = dinit1*1.d-2
      end if
   end do
   !---------rho-------------
@@ -266,7 +295,7 @@ subroutine INITIAL()
   Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
   Phigrd(ndx)=(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
 
-   do i=-1,ndx
+  do i=-1,ndx
      write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
   end do
 
@@ -283,7 +312,6 @@ subroutine INITIAL()
   close(144)
   !200 continue
   !--------Phiexa-----------
-
 
   !---------wave--------
   goto 201
@@ -367,10 +395,7 @@ subroutine BC()
   !Phi1step(ndx)= bcphi2(3)
   !-------Phi1step-----------
   !100 continue
-  !---------kotei-----------
-
   !-------Phi1step+cg-----------
-  goto 700
   Phi1step(1)= Phigrd(1)
   Phi1step(0)= Phigrd(0)
   Phi1step(-1)=Phigrd(-1)
@@ -379,21 +404,19 @@ subroutine BC()
   Phi1step(ndx)= Phigrd(ndx)
   !Phi1step(ndx/2)=0.0d0
   !Phi1step(ndx/2-1)=0.0d0
-  700 continue
   !-------Phi1step-----------
 
-  !-------Phi1step-cg-----------
-  !goto 701
-  Phi1step(1)= -Phigrd(1)
-  Phi1step(0)= -Phigrd(0)
-  Phi1step(-1)=-Phigrd(-1)
-  Phi1step(ndx-2)= -Phigrd(ndx-2)
-  Phi1step(ndx-1)= -Phigrd(ndx-1)
-  Phi1step(ndx)= -Phigrd(ndx)
+  !-------Phi2step-cg-----------
+  Phi2step(1)= -Phigrd(1)
+  Phi2step(0)= -Phigrd(0)
+  Phi2step(-1)=-Phigrd(-1)
+  Phi2step(ndx-2)= -Phigrd(ndx-2)
+  Phi2step(ndx-1)= -Phigrd(ndx-1)
+  Phi2step(ndx)= -Phigrd(ndx)
   !Phi1step(ndx/2)=0.0d0
   !Phi1step(ndx/2-1)=0.0d0
-  !701 continue
-  !-------Phi1step-----------
+  !-------Phi2step-----------
+  !---------kotei-----------
 
   !--------free--------------
   goto 112
@@ -405,6 +428,15 @@ subroutine BC()
   Phi1step(ndx-1)= Phi1step(ndx-2)
   Phi1step(ndx)= Phi1step(ndx-1)
   !-------Phi1step-----------
+
+  !-------Phi2step-----------
+  Phi2step(1)= Phi2step(2)
+  Phi2step(0)= Phi2step(1)
+  Phi2step(-1)=Phi2step(0)
+  Phi2step(ndx-2)= Phi2step(ndx-3)
+  Phi2step(ndx-1)= Phi2step(ndx-2)
+  Phi2step(ndx  )= Phi2step(ndx-1)
+  !-------Phi2step-----------
   112 continue
   !--------free--------------
 
@@ -594,6 +626,19 @@ subroutine timesource2(Phiv,Phidt,source,dt)
   write(*,*) 'time source2' , dt
 end subroutine timesource2
 
+subroutine muslcslv1D2(Phiv,source,source2,dt)
+  use comvar
+  double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam !kappa -> comver  better?
+  integer direction , mode , invdt , loopmode , dloop
+  !DOUBLE PRECISION :: fluxf(-1:ndx,-1:ndy,-1:ndz),fluxg(-1:ndx,-1:ndy,-1:ndz)
+  DOUBLE PRECISION, dimension(-1:ndx) :: Phigrad,Phipre,fluxphi,Phiv,source,Phi2dt,Phiu,sourcepre,sourcepri,source2
+
+  Phipre(:) = Phiv(:)
+  do i=ist,ndx-ien
+     Phiv(i) = cg * 0.5d0 * (source(i)+source2(i)) * dt + Phipre(i)
+  end do
+end subroutine muslcslv1D2
+
 
 subroutine muslcslv1D(Phiv,source,dt,mode)
   use comvar
@@ -720,7 +765,7 @@ subroutine saveu(in1)
   write(name,'(i5.5)') in1
   open(21,file='/Users/maeda/Desktop/kaiseki/testcode2/phi'//name//'.dat')
   do i=1,ndx-2
-     write(21,*) x(i), Phi(i),Phi1step(i)
+     write(21,*) x(i), Phi(i),Phi1step(i),Phi2step(i)
   end do
   close(21)
   in1=in1+1
@@ -830,32 +875,44 @@ end subroutine dfi2
 
 subroutine split(Phiv,Phidt,Phi1step,dt,mode)
   use comvar
-  integer i,mode
+  integer :: i,mode,cnt=0
   double precision :: dt,dtpre !前の
   DOUBLE PRECISION, dimension(-1:ndx) :: Phiv,Phi1step,Phidt
+  character(5) name
+
+  write(name,'(i5.5)') cnt
+  !open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
 
   !----------- +cg -----------
   if(mode==1) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/pcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
-     do i=ist,ndx-ien
+     do i=ist+1,ndx-ien-1
 !     do i=ist+2,ndx-ien-2
         Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt - (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx !wind up?
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),Phiv(i) - Phidt(i)
      end do
 !     Phi1step(ist+1)=Phi1step(ist)
 !     Phi1step(ndx-ien-1)=Phi1step(ndx-ien)
-
-     write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
+     close(201)
+     !write(*,*) Phi1step(ndx-ien),Phidt(ndx-ien),Phiv(ndx-ien-1),'???'
   end if
   !----------- +cg -----------
 
   !----------- -cg -----------
   if(mode==2) then
+     open(201,file='/Users/maeda/Desktop/kaiseki/testcode2/mcg'//name//'.dat')
      !do i=ist-1,ndx-ien+1
-     do i=ist,ndx-ien
+     do i=ist+1,ndx-ien-1
         Phi1step(i)= (Phiv(i) - Phidt(i)) / cg / dt + (Phiv(i+1) - Phiv(i-1)) * 0.5d0 /dx
+        !write(201,*) sngl(x(i)) , Phi1step(i)
+        write(201,*) i , Phi1step(i),Phiv(i) , Phidt(i),Phiv(i+1) , Phiv(i-1),Phiv(i+1) - Phiv(i-1),Phiv(i) - Phidt(i)
      end do
+     close(201)
   end if
   !----------- -cg -----------
+  cnt=cnt+1
   !dtpre=dt
 end subroutine split
 

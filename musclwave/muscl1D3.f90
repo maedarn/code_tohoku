@@ -6,14 +6,14 @@ module comvar
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.1d0 !,  kappa=1.0d0/3.0d0
-  DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
+  DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2
 end module comvar
 
 module grvvar
   implicit none
   integer, parameter :: ndx2=130 !パラメータ属性必要
-  DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho, Phi1step
-  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
+  DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phi,rho,Phiexa, Phi1step,Phi2step
+  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt
 end module grvvar
 
 program muscl1D
@@ -32,8 +32,8 @@ program muscl1D
   do i=1,laststep
      call time(dt)
      iws=3-ws
-     iws=2
-     !iws=1
+     !iws=2
+     iws=1
 
 
 
@@ -81,21 +81,24 @@ program muscl1D
 
         !----------both---------
         !goto 230
-        Phidt(:)=Phi(:)
+        !Phidt(:)=Phi(:)
         call BC()
         !call  muslcslv1D(Phi,Phi1step,dt,4)
         !ien=2
-
-        call  muslcslv1D(Phi1step,rho,dt,2)
-        call  muslcslv1D(Phi1step,rho,dt,3)
         !Phidt(:)=Phi(:)
         call  muslcslv1D(Phi,Phi1step,dt,1)
         call  muslcslv1D(Phi,Phi1step,dt,4)
         !Phidt(:)=Phi(:)
         !ien=3
         !ist=1
-        !call  muslcslv1D(Phi1step,rho,dt,2)
-        !call  muslcslv1D(Phi1step,rho,dt,3)
+        call  muslcslv1D(Phi1step,rho,dt,2)
+        call  muslcslv1D(Phi1step,rho,dt,3)
+
+
+        !-------new---
+        call  muslcslv1D(Phi2step,rho,dt,1)
+        call  muslcslv1D(Phi2step,rho,dt,3)
+        !-------new---
         !ist=2
         !call  muslcslv1D(Phi,Phi1step,dt,1)
         call BC()
@@ -155,15 +158,16 @@ program muscl1D
 
         !----------both---------
         call BC()
-
-        !call muslcslv1D(Phi1step,rho,dt,1)
-        !call muslcslv1D(Phi1step,rho,dt,3)
-
-
         call muslcslv1D(Phi,Phi1step,dt,2)
         call muslcslv1D(Phi,Phi1step,dt,4)
-        call muslcslv1D(Phi1step,rho,dt,1)
-        call muslcslv1D(Phi1step,rho,dt,3)
+        call muslcslv1D(Phi2step,rho,dt,1)
+        call muslcslv1D(Phi2step,rho,dt,3)
+
+        !-------new---
+        call  muslcslv1D(Phi1step,rho,dt,2)
+        call  muslcslv1D(Phi1step,rho,dt,3)
+        !-------new---
+
         call BC()
         Phidt(:)=Phi(:)
         !----------both---------
@@ -221,6 +225,10 @@ subroutine INITIAL()
   Phi1step(:)=0.0d0
   !-------Phi1step-----------
 
+  !-------Phi2step-----------
+  Phi2step(:)=0.0d0
+  !-------Phi2step-----------
+
   !-------Phidt-----------
   Phidt(:)=0.0d0
   !-------Phdt-----------
@@ -235,7 +243,6 @@ subroutine INITIAL()
         !rho(i) = 0.0d0
      else
         rho(i) = 0.0d0
-        !rho(i) = dinit1*1.d-2
      end if
   end do
   !---------rho-------------
@@ -246,30 +253,16 @@ subroutine INITIAL()
   !goto 200
   open(142,file='/Users/maeda/Desktop/kaiseki/testcode2/phiexact.DAT')
   open(143,file='/Users/maeda/Desktop/kaiseki/testcode2/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/kaiseki/testcode2/phigrd.DAT')
-  do i= -1,ndx
+  do i= 1,ndx-2
      if( dabs(x(i) - hcen) .le. h ) then
-        Phiexa(i) = G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
+        !Phiexa(i,j,k) = G4pi/2.0d0 * dinit1 * (x(i) - censh )**2
         write(142,*) sngl(x(i)) ,  sngl(G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2)
      else
-        Phiexa(i) = G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
+        !Phiexa(i,j,k) = G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
         write(142,*) sngl(x(i)) , sngl(G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2)
      end if
      write(143,*) sngl(rho(i))
   end do
-
-
-  do i=0,ndx-1
-     Phigrd(i)=(-Phiexa(i-1)+Phiexa(i+1))*0.5d0/dx
-     !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
-  end do
-  Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
-  Phigrd(ndx)=(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
-
-   do i=-1,ndx
-     write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
-  end do
-
   bcphi1(1) = G4pi * dinit1 * h * dabs(x(1) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
   bcphi2(1) = G4pi * dinit1 * h * dabs(x(ndx-2) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
 
@@ -280,7 +273,6 @@ subroutine INITIAL()
   bcphi2(3) = G4pi * dinit1 * h * dabs(x(ndx) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
   close(142)
   close(143)
-  close(144)
   !200 continue
   !--------Phiexa-----------
 
@@ -369,34 +361,8 @@ subroutine BC()
   !100 continue
   !---------kotei-----------
 
-  !-------Phi1step+cg-----------
-  goto 700
-  Phi1step(1)= Phigrd(1)
-  Phi1step(0)= Phigrd(0)
-  Phi1step(-1)=Phigrd(-1)
-  Phi1step(ndx-2)= Phigrd(ndx-2)
-  Phi1step(ndx-1)= Phigrd(ndx-1)
-  Phi1step(ndx)= Phigrd(ndx)
-  !Phi1step(ndx/2)=0.0d0
-  !Phi1step(ndx/2-1)=0.0d0
-  700 continue
-  !-------Phi1step-----------
-
-  !-------Phi1step-cg-----------
-  !goto 701
-  Phi1step(1)= -Phigrd(1)
-  Phi1step(0)= -Phigrd(0)
-  Phi1step(-1)=-Phigrd(-1)
-  Phi1step(ndx-2)= -Phigrd(ndx-2)
-  Phi1step(ndx-1)= -Phigrd(ndx-1)
-  Phi1step(ndx)= -Phigrd(ndx)
-  !Phi1step(ndx/2)=0.0d0
-  !Phi1step(ndx/2-1)=0.0d0
-  !701 continue
-  !-------Phi1step-----------
-
   !--------free--------------
-  goto 112
+  !goto 112
   !-------Phi1step-----------
   Phi1step(1)= Phi1step(2)
   Phi1step(0)= Phi1step(1)
@@ -405,7 +371,16 @@ subroutine BC()
   Phi1step(ndx-1)= Phi1step(ndx-2)
   Phi1step(ndx)= Phi1step(ndx-1)
   !-------Phi1step-----------
-  112 continue
+
+  !-------Phi2step-----------
+  Phi2step(1)= Phi2step(2)
+  Phi2step(0)= Phi2step(1)
+  Phi2step(-1)=Phi2step(0)
+  Phi2step(ndx-2)= Phi2step(ndx-3)
+  Phi2step(ndx-1)= Phi2step(ndx-2)
+  Phi2step(ndx  )= Phi2step(ndx-1)
+  !-------Phi2step-----------
+  !112 continue
   !--------free--------------
 
 
