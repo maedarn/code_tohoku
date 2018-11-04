@@ -51,11 +51,24 @@ program err
         open(30,file='/Users/maeda/Desktop/kaiseki/testcode6/katamuki.dat')
         ll=Lbox/(dx(5)-2.0d0)/2.0d0
         do i=2,ndx-3
-           ll=ll+Lbox/(dx(5)-2.0d0)
-           write(30,*) ll, (-Phi2(i-1)+Phi2(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),-Phi2(i-1),Phi2(i+1),&
-                (-Phi2(i-1)+Phiexa(i-1)+Phi2(i+1)-Phiexa(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),&
-                Phi2(i)-Phiexa(i)!-Phiexa(i)
-           !ll=ll+Lbox/(dx(5)-2.0d0)
+           !if(i==2) then
+           !   ll=ll+Lbox/(dx(5)-2.0d0)
+           !   write(30,*) ll, (-Phi2(i)+Phi2(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),-Phi2(i),Phi2(i+1),&
+           !        (-Phi2(i)+Phiexa(i-1)+Phi2(i+1)-Phiexa(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),&
+           !        Phi2(i)-Phiexa(i),-Phi2(i)+Phi2(i+1)!-Phiexa(i)
+           !elseif(i== ndx-3) then
+           !   ll=ll+Lbox/(dx(5)-2.0d0)
+           !   write(30,*) ll, (-Phi2(i-1)+Phi2(i))/2.0d0/(Lbox/(dx(5)-2.0d0)),-Phi2(i-1),Phi2(i),&
+           !        (-Phi2(i-1)+Phiexa(i-1)+Phi2(i)-Phiexa(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),&
+           !        Phi2(i)-Phiexa(i),-Phi2(i-1)+Phi2(i)!-Phiexa(i)
+              !ll=ll+Lbox/(dx(5)-2.0d0)
+           !else
+              ll=ll+Lbox/(dx(5)-2.0d0)
+              write(30,*) ll, (-Phi2(i-1)+Phi2(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),-Phi2(i-1),Phi2(i+1),&
+                   (-Phi2(i-1)+Phiexa(i-1)+Phi2(i+1)-Phiexa(i+1))/2.0d0/(Lbox/(dx(5)-2.0d0)),&
+                   Phi2(i)-Phiexa(i),-Phi2(i-1)+Phi2(i+1)!-Phiexa(i)
+              !ll=ll+Lbox/(dx(5)-2.0d0)
+           !end if
         end do
         close(30)
      end if

@@ -1305,9 +1305,9 @@ do i1=1,nn1/4+1
     endif
   enddo
   wtemp=wr
-  wr=wr*wpr-wi*wpi+wr 
-  wi=wi*wpr+wtemp*wpi+wi 
-  w=cmplx(wr,wi) 
+  wr=wr*wpr-wi*wpi+wr
+  wi=wi*wpr+wtemp*wpi+wi
+  w=cmplx(wr,wi)
 enddo
 
 if(isign.eq.-1) call fourn(data,nn,2,isign)

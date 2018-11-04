@@ -274,6 +274,27 @@ subroutine BC(mode)
      Phicgm(ndx)= bcphi2(3)
 
 
+     !Phicgp(1)= bcphi1(1)
+     !Phicgp(0)= bcphi1(1)
+     !Phicgp(-1)= bcphi1(1)
+     !Phicgp(ndx-2)= bcphi2(1)
+     !Phicgp(ndx-1)= bcphi2(1)
+     !Phicgp(ndx)= bcphi2(1)
+     !Phicgp(ndx)=Phicgp(ndx-1)
+     !Phicgp(ndx-1)= Phicgp(ndx-2)
+     !Phicgp(ndx-2)= Phicgp(ndx-3)
+
+     !Phicgm(1)= bcphi1(1)
+     !Phicgm(0)= bcphi1(1)
+     !Phicgm(-1)= bcphi1(1)
+     !Phicgm(-1)= Phicgm(0)
+     !Phicgm(0)= Phicgm(1)
+     !Phicgm(1)= Phicgm(2)
+     !Phicgm(ndx-2)= bcphi2(1)
+     !Phicgm(ndx-1)= bcphi2(1)
+     !Phicgm(ndx)= bcphi2(1)
+
+
      !---------Phi-------------
 
      !Phi(1)= bcphi1(1)
@@ -314,6 +335,21 @@ subroutine BC(mode)
      !Phi1step(ndx/2)=0.0d0
      !Phi1step(ndx/2-1)=0.0d0
      !700 continue
+
+
+     !goto 700
+     !Phi1step(1)= Phigrd(1)
+     !Phi1step(0)= Phigrd(1)
+     !Phi1step(-1)=Phigrd(1)
+     !Phi1step(-1)= Phi1step(0)
+     !Phi1step(0)= Phi1step(1)
+     !Phi1step(1)=Phi1step(2)
+     !Phi1step(ndx-2)= Phigrd(ndx-2)
+     !Phi1step(ndx-1)= Phigrd(ndx-2)
+     !Phi1step(ndx)= Phigrd(ndx-2)
+     !Phi1step(ndx/2)=0.0d0
+     !Phi1step(ndx/2-1)=0.0d0
+     !700 continue
      !-------Phi1step-----------
   end if
 
@@ -338,6 +374,15 @@ subroutine BC(mode)
      !Phi1step(ndx/2)=0.0d0
      !Phi1step(ndx/2-1)=0.0d0
      !701 continue
+
+
+     !Phi1step(ndx)= -Phigrd(ndx-2)
+     !Phi2step(1)= -Phigrd(1)
+     !Phi2step(0)= -Phigrd(1)
+     !Phi2step(-1)=-Phigrd(1)
+     !Phi2step(ndx-2)= -Phigrd(ndx-2)
+     !Phi2step(ndx-1)= -Phigrd(ndx-2)
+     !Phi2step(ndx)= -Phigrd(ndx-2)
      !-------Phi1step-----------
   end if
 
@@ -732,11 +777,11 @@ subroutine saveu(in1)
 
   write(name,'(i5.5)') in1
   open(21,file='/Users/maeda/Desktop/kaiseki/testcode6/phi'//name//'.dat')
-  do i=1,ndx-2
-     if(i==1 .or. i==ndx-2) then
-        write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
-             (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&
-             (Phicgp(i)+Phicgm(i))*0.5d0+dabs(Phicgp(i)-Phicgm(i)),&
+  do i=2,ndx-3
+     !if(i==1 .or. i==ndx-2) then
+     !   write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
+     !        (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&
+     !        (Phicgp(i)+Phicgm(i))*0.5d0+dabs(Phicgp(i)-Phicgm(i)),&
                                 !-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
                                 !(Phicgp(i)+Phicgm(i))*0.5d0-Phiexa(i),&
                                 !-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx-Phigrd(i),&
@@ -745,9 +790,9 @@ subroutine saveu(in1)
                                 !-((Phicgp(i)+Phicgp(i))*0.5d0 - (Phicgp(i)+Phicgp(i))*0.5d0)*0.5d0/dx,&
                                 !-((Phicgm(i)+Phicgm(i))*0.5d0 - (Phicgm(i)+Phicgm(i))*0.5d0)*0.5d0/dx
                                 !Phigrd(i),Phigrd(i)
-             Phi1step(i),-Phi2step(i)
-        write(*,*) Phi1step(i),-Phi2step(i),i,Phigrd(i)
-     else
+     !        Phi1step(i),-Phi2step(i),-Phicgp(i)+Phicgp(i),-Phicgm(i)+Phicgm(i)
+     !   write(*,*) Phi1step(i),-Phi2step(i),i,Phigrd(i)
+     !else
         write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
              (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&
              (Phicgp(i)+Phicgm(i))*0.5d0+(Phicgp(i)-Phicgm(i)),&
@@ -756,9 +801,16 @@ subroutine saveu(in1)
                                 !-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx-Phigrd(i),&
                                 !(-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx-Phigrd(i))/&
                                 !((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
-             -((Phicgp(i-1)+Phicgp(i-1))*0.5d0 - (Phicgp(i+1)+Phicgp(i+1))*0.5d0)*0.5d0/dx,&
-             -((Phicgm(i-1)+Phicgm(i-1))*0.5d0 - (Phicgm(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx
-     end if
+             -((Phicgp(i-1)+Phicgp(i-1))*0.5d0)*0.5d0/dx + ((Phicgp(i+1)+Phicgp(i+1))*0.5d0)*0.5d0/dx,&
+             -((Phicgm(i-1)+Phicgm(i-1))*0.5d0)*0.5d0/dx + ((Phicgm(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
+             !-((Phicgp(i-1)+Phicgp(i-1))*0.5d0)/dx + ((Phicgp(i+1)+Phicgp(i+1))*0.5d0)/dx,&
+             !-((Phicgm(i-1)+Phicgm(i-1))*0.5d0)/dx + ((Phicgm(i+1)+Phicgm(i+1))*0.5d0)/dx,&
+             -Phicgp(i-1)+Phicgp(i+1),-Phicgm(i-1)+Phicgm(i+1),&!-Phicgp(i-1)+Phicgp(i),-Phicgm(i)+Phicgm(i+1)
+             (3.0d0*Phicgp(i)-4.0d0*Phicgp(i-1)+Phicgp(i-2))*0.5d0/dx,&
+             -(3.0d0*Phicgp(i)-4.0d0*Phicgp(i+1)+Phicgp(i+2))*0.5d0/dx,&
+             (3.0d0*Phicgm(i)-4.0d0*Phicgm(i-1)+Phicgm(i-2))*0.5d0/dx,&
+             -(3.0d0*Phicgm(i)-4.0d0*Phicgm(i+1)+Phicgm(i+2))*0.5d0/dx
+     !end if
   end do
   close(21)
    !i=1
