@@ -953,7 +953,7 @@ do i=1,Ncellx
   data(jy,kz,i) = U(i,j,k,1)
 end do;end do;end do
 
-                    !count, blocklength, stride
+                    !count,blocklength,stride
 CALL MPI_TYPE_VECTOR(Ncellz,Ncelly,Ncelly*NSPLTy,MPI_REAL8,VECU,IERR)
 CALL MPI_TYPE_COMMIT(VECU,IERR)
 

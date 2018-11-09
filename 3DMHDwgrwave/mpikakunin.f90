@@ -1,13 +1,14 @@
 program main
   integer NRANK,NPE,NSPLTx,NSPLTy,NSPLTz,Ncellx
-  NRANK=63
-  NPE=8
-  NSPLTx=2
-  NSPLTy=2
-  NSPLTz=2
+  !NRANK=63
+  NN=19
+  NPE=63
+  NSPLTx=4
+  NSPLTy=4
+  NSPLTz=4
   Ncellx=32
 
-  do NN=0,NRANK
+  !do NN=0,NRANK
 
   KST = NN/(NSPLTx*NSPLTy); JST = NN/NSPLTx-NSPLTy*KST
 
@@ -35,9 +36,9 @@ program main
         irecv = -1
         klr = Ncellx+1
      end if
-     write(*,*)isend,irecv,kls,klr,Nis,Nir,JSr,KSr
+     write(*,*)isend,irecv,kls,klr,Nis,Nir,JSr,KSr,KSs,JSs
   end do
-  write(*,*)
-end do
+ ! write(*,*)
+!end do
 
 end program main

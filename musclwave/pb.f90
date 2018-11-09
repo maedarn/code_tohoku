@@ -59,11 +59,16 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   irecv = NRANK - NSPLTx*Nlp; if(irecv.lt.0  ) irecv = irecv + NPE !x=const面 逆から
   KSr = irecv/(NSPLTx*NSPLTy); JSr = irecv/NSPLTx-NSPLTy*KSr !その面の y,z 位置
 
-  Nis = JSs + NSPLTy*KSs !JST = NRANK/NSPLTx-NSPLTy*KST x位置の逆とき
+  Nis = JSs + NSPLTy*KSs !× JST = NRANK/NSPLTx-NSPLTy*KST x位置の逆とき   ○ 位置の指定(0-NSPLTy*NSPLTz-1)
   kls = Nis + 1
+  !kls1 = Nis + 0
+  !kls2 = Nis - 1
+
   !Nir = JSr + NSPLTy*KSr
   Nir = JST + NSPLTy*KST
   klr = Nir + 1
+  !klr1 = Nir + 0
+  !klr2 = Nir - 1
 
   !***************fordebug*****************
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -76,6 +81,7 @@ do Nlp = 1,NSPLTy*NSPLTz-1
 end do
 
 CALL MPI_TYPE_FREE(VECU,IERR)
+
 
 
 dxx = dy(1); dyy = dz(1); dzz = dx(1)

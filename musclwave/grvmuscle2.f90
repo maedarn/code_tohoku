@@ -3,8 +3,18 @@ subroutine SELFGRAVWAVE(dt,mode)
   USE mpivar
   USE slfgrv
   INCLUDE 'mpif.h'
-  integer mode
-  double precision dt
+  integer :: mode,MRANK,count=0
+  DOUBLE PRECISION  :: dt,dxi
+  !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
+  INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+  DOUBLE PRECISION  :: VECU
+  character(3) NPENUM
+  character(6) countcha
+  double precision tfluid , cs
+  double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime,sourcedt
+  double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
+  !double precision , dimension(:,:,:) , allocatable :: stbPhi
+  !double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad,Phipregraddum
   !**************** INITIALIZEATION **************
   if(mode==0) then
      Phicgp(:,:,:)=0.0d0
@@ -64,12 +74,13 @@ subroutine SELFGRAVWAVE(dt,mode)
      N_MPI(20)=1; N_MPI(1)=1
      iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
 
-
      !write(*,*) '------pb1-------' ,Nrank
-     !Call PB()
+     Call PB(0)
+     Call PB(-1)
+     Call PB(-2)
+     call pbstep()
      !write(*,*) '------pb2-------' ,Nrank
-
-     
+     call slvmuscle(dt)
   end if
 
   !****************GRAVITY SOLVER*****************
@@ -79,8 +90,14 @@ subroutine SELFGRAVWAVE(dt,mode)
 
   !**********acceraration because of gravity******
   if(mode==3) then !acceraration because of gravity
+     iwx = 1; iwy = 1; iwz = 1
+     call BCgrv(101)
+     call BCgrv(102)
      dxi = 1.d0/(12.d0*dx(0))
      do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+        !U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
+        !U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
+        !U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
         U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
         U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
         U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
@@ -353,6 +370,9 @@ if(mode.eq.10) then
 end if
 !***************pointerforPB**************
 
+if(mode==11) then
+   call cllsub(2,dt)
+end if
 end subroutine SELFGRAVWAVE
 
 
@@ -369,22 +389,28 @@ subroutine slvmuscle(dt)
      rho(n,m,l) = U(n,m,l,1)
   end do;end do;end do
 
-  call cllsub(2,dt)
-  call cllsub(3,dt)
+  !call cllsub(2,dt)
+  !call cllsub(3,dt)
+  iwx=1; iwy=1; iwz=1
+  call BCgrv(102)
   call muslcslv1D(Phi1step,rho,dt*0.5d0,3,2)
   call muslcslv1D(Phi2step,rho,dt*0.5d0,3,2)
-  call cllsub(3,dt)
+  !iwx=1; iwy=1; iwz=1
+  !call BCgrv(102)
+  !call cllsub(3,dt)
   call cllsub(4,dt)
-  call cllsub(3,dt)
-  call cllsub(1,dt)
+  !call cllsub(3,dt)
+  !call cllsub(1,dt)
   call muslcslv1D(Phicgp,Phi1step,dt,4,2)
   call muslcslv1D(Phicgm,Phi2step,dt,4,2)
-  call cllsub(1,dt)
+  !call cllsub(1,dt)
   call cllsub(5,dt)
-  call cllsub(3,dt)
+  !call cllsub(3,dt)
+  iwx=1; iwy=1; iwz=1
+  call BCgrv(102)
   call muslcslv1D(Phi1step,rho,dt*0.5d0,3,2)
   call muslcslv1D(Phi2step,rho,0.5d0*dt,3,2)
-  call cllsub(3,dt)
+  !call cllsub(3,dt)
   call cllsub(4,dt)
   ifEVOgrv=1+mod(i,6)
   ifEVOgrv2=1+mod(i,6)
@@ -425,113 +451,96 @@ subroutine cllsub(mode,dt)
   if(mode==4) then
      if(ifEVOgrv.eq.1) then
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
-        call BCgrv(4)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         !ifEVOgrv = 2
         goto 1470
      end if
      if(ifEVOgrv.eq.2) then
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
-        call BCgrv(4)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         !ifEVOgrv = 3
         goto 1470
      end if
      if(ifEVOgrv.eq.3) then
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         !ifEVOgrv = 4
         goto 1470
      end if
      if(ifEVOgrv.eq.4) then
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
-        call BCgrv(4)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         !ifEVOgrv = 5
         goto 1470
      end if
      if(ifEVOgrv.eq.5) then
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
-        call BCgrv(4)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         !ifEVOgrv = 6
         goto 1470
      end if
      if(ifEVOgrv.eq.6) then
         iwx=0; iwy=0; iwz=1
-        call BCgrv(19)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(39)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(18)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,2)
-        call BCgrv(38)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(3)
+        call BCgrv(102)
         call muslcslv1D(Phi1step,rho,dt*0.5d0,2,1)
-        call BCgrv(4)
         call muslcslv1D(Phi2step,rho,dt*0.5d0,1,1)
         !ifEVOgrv = 1
         goto 1470
@@ -543,114 +552,108 @@ subroutine cllsub(mode,dt)
   if(mode==5) then
      if(ifEVOgrv2.eq.1) then
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         !ifEVOgrv2 = 2
         goto 1788
      end if
      if(ifEVOgrv2.eq.2) then
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         !ifEVOgrv2 = 3
         goto 1788
      end if
      if(ifEVOgrv2.eq.3) then
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         !ifEVOgrv2 = 4
         goto 1788
      end if
      if(ifEVOgrv2.eq.4) then
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         !ifEVOgrv2 = 5
         goto 1788
      end if
      if(ifEVOgrv2.eq.5) then
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         !ifEVOgrv2 = 6
         goto 1788
      end if
      if(ifEVOgrv2.eq.6) then
         iwx=0; iwy=0; iwz=1
-        call BCgrv(9)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(29)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=0; iwy=1; iwz=0
-        call BCgrv(8)
+        call BCgrv(101)
         call muslcslv1D(Phicgp,Phi1step,dt,1,2)
-        call BCgrv(28)
         call muslcslv1D(Phicgm,Phi2step,dt,2,2)
         iwx=1; iwy=0; iwz=0
-        call BCgrv(1)
+        call BCgrv(101)
+        call BCgrv(102)
         call muslcslv1D(Phicgp,Phi1step,dt,1,1)
-        call BCgrv(1)
         call muslcslv1D(Phicgm,Phi2step,dt,2,1)
         !ifEVOgrv2 = 1
         goto 1788
@@ -661,226 +664,13 @@ end subroutine cllsub
 
 subroutine BCgrv(mode)
   use comvar
+  use mpivar
   use grvvar
   integer ::  N_ol,i,mode,j,k
   double precision , dimension(1:2) :: pl,pr
 
-  if(mode==1) then
-     !---------kotei-x-----------
-     !goto 100
-     !---------Phi-------------
-     Phicgp(1,:,:)= bcphi1(1,:,:)
-     Phicgp(0,:,:)= bcphi1(2,:,:)
-     Phicgp(-1,:,:)= bcphi1(3,:,:)
-     Phicgp(ndx-2,:,:)= bcphi2(1,:,:)
-     Phicgp(ndx-1,:,:)= bcphi2(2,:,:)
-     Phicgp(ndx,:,:)= bcphi2(3,:,:)
 
-     Phicgm(1,:,:)= bcphi1(1,:,:)
-     Phicgm(0,:,:)= bcphi1(2,:,:)
-     Phicgm(-1,:,:)= bcphi1(3,:,:)
-     Phicgm(ndx-2,:,:)= bcphi2(1,:,:)
-     Phicgm(ndx-1,:,:)= bcphi2(2,:,:)
-     Phicgm(ndx,:,:)= bcphi2(3,:,:)
-
-     !---------Phi-------------
-
-  end if
-
-  if(mode==3)then
-     !---------kotei-x-----------
-     !-------Phi1step+cg-----------
-     !goto 700
-     Phi1step(1,:,:)= Phigrd(1,:,:)
-     Phi1step(0,:,:)= Phigrd(0,:,:)
-     Phi1step(-1,:,:)=Phigrd(-1,:,:)
-     Phi1step(ndx-2,:,:)= Phigrd(ndx-2,:,:)
-     Phi1step(ndx-1,:,:)= Phigrd(ndx-1,:,:)
-     Phi1step(ndx,:,:)= Phigrd(ndx,:,:)
-     !700 continue
-     !-------Phi1step-----------
-     !---------kotei-x-----------
-  end if
-
-  if(mode==4) then
-     !---------kotei-x-----------
-     !-------Phi1step-cg-----------
-     !goto 701
-     Phi2step(1,:,:)= -Phigrd(1,:,:)
-     Phi2step(0,:,:)= -Phigrd(2,:,:)
-     Phi2step(-1,:,:)=-Phigrd(3,:,:)
-     Phi2step(ndx-2,:,:)= -Phigrd(ndx-2,:,:)
-     Phi2step(ndx-1,:,:)= -Phigrd(ndx-1,:,:)
-     Phi2step(ndx,:,:)= -Phigrd(ndx,:,:)
-     !701 continue
-     !-------Phi1step-----------
-     !---------kotei-x-----------
-  end if
-
-
-  !----- y-periodic ------
-  if(mode==8) then
-     !-------period2-----------
-     !     goto 102
-     do k=-1,ndz
-        do i=-1,ndx
-           !---------Phi-------------
-           pr(2)= Phicgp(i,ndx-2,k)
-           pr(1)= Phicgp(i,ndx-3,k)
-           pl(1)= Phicgp(i,1,k)
-           pl(2)= Phicgp(i,2,k)
-           Phicgp(i,-1,k)=pr(1)
-           Phicgp(i,0,k)=pr(2)
-           Phicgp(i,ndx-1,k)=pl(1)
-           Phicgp(i,ndx,k)=pl(2)
-           !---------Phi-------------
-        end do
-     end do
-  end if
-  if(mode==18) then
-     do k=-1,ndz
-        do i=-1,ndx
-           !-------Phi1step-----------
-           pr(2)= Phi1step(i,ndx-2,k)
-           pr(1)= Phi1step(i,ndx-3,k)
-           pl(1)= Phi1step(i,1,k)
-           pl(2)= Phi1step(i,2,k)
-           Phi1step(i,-1,k)=pr(1)
-           Phi1step(i,0,k)=pr(2)
-           Phi1step(i,ndx-1,k)=pl(1)
-           Phi1step(i,ndx,k)=pl(2)
-           !-------Phi1step-----------
-!102  continue
-           !-------period2-----------
-        end do
-     end do
-  end if
-
-
-
-
-  if(mode==28) then
-     !-------period2-----------
-     !     goto 102
-     do k=-1,ndz
-        do i=-1,ndx
-           !---------Phi-------------
-           pr(2)= Phicgm(i,ndx-2,k)
-           pr(1)= Phicgm(i,ndx-3,k)
-           pl(1)= Phicgm(i,1,k)
-           pl(2)= Phicgm(i,2,k)
-           Phicgm(i,-1,k)=pr(1)
-           Phicgm(i,0,k)=pr(2)
-           Phicgm(i,ndx-1,k)=pl(1)
-           Phicgm(i,ndx,k)=pl(2)
-           !---------Phi-------------
-        end do
-     end do
-  end if
-  if(mode==38) then
-     do k=-1,ndz
-        do i=-1,ndx
-           !-------Phi1step-----------
-           pr(2)= Phi2step(i,ndx-2,k)
-           pr(1)= Phi2step(i,ndx-3,k)
-           pl(1)= Phi2step(i,1,k)
-           pl(2)= Phi2step(i,2,k)
-           Phi2step(i,-1,k)=pr(1)
-           Phi2step(i,0,k)=pr(2)
-           Phi2step(i,ndx-1,k)=pl(1)
-           Phi2step(i,ndx,k)=pl(2)
-           !-------Phi1step-----------
-!102  continue
-           !-------period2-----------
-        end do
-     end do
-  end if
-
-
-  !----- y-periodic ------
-
-
-  !----- z-periodic ------
-  if(mode==9) then
-     !-------period2-----------
-     !     goto 102
-     do j=-1,ndy
-        do i=-1,ndx
-           !---------Phi-------------
-           pr(2)= Phicgp(i,j,ndx-2)
-           pr(1)= Phicgp(i,j,ndx-3)
-           pl(1)= Phicgp(i,j,1)
-           pl(2)= Phicgp(i,j,2)
-           Phicgp(i,j,-1)=pr(1)
-           Phicgp(i,j,0)=pr(2)
-           Phicgp(i,j,ndx-1)=pl(1)
-           Phicgp(i,j,ndx)=pl(2)
-           !---------Phi-------------
-        end do
-     end do
-  end if
-  if(mode==19) then
-     do j=-1,ndy
-        do i=-1,ndx
-           !-------Phi1step-----------
-           pr(2)= Phi1step(i,j,ndx-2)
-           pr(1)= Phi1step(i,j,ndx-3)
-           pl(1)= Phi1step(i,j,1)
-           pl(2)= Phi1step(i,j,2)
-           Phi1step(i,j,-1)=pr(1)
-           Phi1step(i,j,0)=pr(2)
-           Phi1step(i,j,ndx-1)=pl(1)
-           Phi1step(i,j,ndx)=pl(2)
-           !-------Phi1step-----------
-!102  continue
-           !-------period2-----------
-        end do
-     end do
-  end if
-
-
-
-
-  if(mode==29) then
-     !-------period2-----------
-     !     goto 102
-     do j=-1,ndy
-        do i=-1,ndx
-           !---------Phi-------------
-           pr(2)= Phicgm(i,j,ndx-2)
-           pr(1)= Phicgm(i,j,ndx-3)
-           pl(1)= Phicgm(i,j,1)
-           pl(2)= Phicgm(i,j,2)
-           Phicgm(i,j,-1)=pr(1)
-           Phicgm(i,j,0)=pr(2)
-           Phicgm(i,j,ndx-1)=pl(1)
-           Phicgm(i,j,ndx)=pl(2)
-           !---------Phi-------------
-        end do
-     end do
-  end if
-  if(mode==39) then
-     do j=-1,ndy
-        do i=-1,ndx
-           !-------Phi1step-----------
-           pr(2)= Phi2step(i,j,ndx-2)
-           pr(1)= Phi2step(i,j,ndx-3)
-           pl(1)= Phi2step(i,j,1)
-           pl(2)= Phi2step(i,j,2)
-           Phi2step(i,j,-1)=pr(1)
-           Phi2step(i,j,0)=pr(2)
-           Phi2step(i,j,ndx-1)=pl(1)
-           Phi2step(i,j,ndx)=pl(2)
-           !-------Phi1step-----------
-!102  continue
-           !-------period2-----------
-        end do
-     end do
-  end if
-
-
-  !----- z-periodic ------
-
+if(mode==101) then
 
 IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
@@ -894,20 +684,8 @@ IF(iwx.EQ.1) THEN
 
   IF(IST.eq.0) THEN
    DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 1
-     Phicgp(IX,JY,KZ)= bphi1l(JY,KZ,-IX)
-     !Phicgp(0,:,:)= bphi1(2,:,:)
-     !Phicgp(-1,:,:)= bphi1(3,:,:)
-     !Phicgp(ndx-2,:,:)= bphi2(1,:,:)
-     !Phicgp(ndx-1,:,:)= bphi2(2,:,:)
-     !Phicgp(ndx,:,:)= bphi2(3,:,:)
-
-     Phicgm(IX,JY,KZ)= bcphi2l(JY,KZ,-IX)
-     !Phicgm(1,:,:)= bcphi1(1,:,:)
-     !Phicgm(0,:,:)= bcphi1(2,:,:)
-     !Phicgm(-1,:,:)= bcphi1(3,:,:)
-     !Phicgm(ndx-2,:,:)= bcphi2(1,:,:)
-     !Phicgm(ndx-1,:,:)= bcphi2(2,:,:)
-     !Phicgm(ndx,:,:)= bcphi2(3,:,:)
+     Phicgp(IX,JY,KZ)= bphi1l(JY,KZ,IX)
+     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
   END DO;END DO;END DO
   END IF
  !END DO
@@ -920,19 +698,7 @@ IF(iwx.EQ.1) THEN
   IF(IST.eq.NSPLTx-1) THEN
       DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx, Ncellx+N_ol
      Phicgp(IX,JY,KZ)= bphi1r(JY,KZ,IX)
-     !Phicgp(0,:,:)= bphi1(2,:,:)
-     !Phicgp(-1,:,:)= bphi1(3,:,:)
-     !Phicgp(ndx-2,:,:)= bphi2(1,:,:)
-     !Phicgp(ndx-1,:,:)= bphi2(2,:,:)
-     !Phicgp(ndx,:,:)= bphi2(3,:,:)
-
-     Phicgm(IX,JY,KZ)= bcphi2r(JY,KZ,IX)
-     !Phicgm(1,:,:)= bcphi1(1,:,:)
-     !Phicgm(0,:,:)= bcphi1(2,:,:)
-     !Phicgm(-1,:,:)= bcphi1(3,:,:)
-     !Phicgm(ndx-2,:,:)= bcphi2(1,:,:)
-     !Phicgm(ndx-1,:,:)= bcphi2(2,:,:)
-     !Phicgm(ndx,:,:)= bcphi2(3,:,:)
+     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
   END DO;END DO;END DO
 END IF
   !END DO
@@ -983,6 +749,92 @@ IF(iwz.EQ.1) THEN
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
 END IF
+endif
+
+
+
+
+
+if(mode==102) then
+
+IF(iwx.EQ.1) THEN
+  CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+  CALL MPI_TYPE_COMMIT(VECU,IERR)
+!********************************  BC for the leftsides of domains  *****
+  !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
+       Phi1step(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
+       Phi2step(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+
+  IF(IST.eq.0) THEN
+   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 1
+     Phi1step(IX,JY,KZ)= bstep1l(JY,KZ,IX)
+     Phi2step(IX,JY,KZ)= bstep2l(JY,KZ,IX)
+  END DO;END DO;END DO
+  END IF
+ !END DO
+ !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(1            ,-1,-1),1,VECU,LEFT,1, &
+       Phi1step(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(1            ,-1,-1),1,VECU,LEFT,1, &
+       Phi2step(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+
+  IF(IST.eq.NSPLTx-1) THEN
+      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx, Ncellx+N_ol
+     Phi1step(IX,JY,KZ)= bstep1r(JY,KZ,IX)
+     Phi2step(IX,JY,KZ)= bstep2r(JY,KZ,IX)
+  END DO;END DO;END DO
+END IF
+  !END DO
+!************************************************************************
+  CALL MPI_TYPE_FREE(VECU,IERR)
+END IF
+
+
+IF(iwy.EQ.1) THEN
+  CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+  CALL MPI_TYPE_COMMIT(VECU,IERR)
+!*************************************  BC for the downsides of domains  ****
+  !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
+       Phi1step(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
+       Phi2step(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  !END DO
+!**************************************  BC for the upsides of domains  ****
+  !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(-1,1            ,-1),1,VECU,BOTM,1, &
+       Phi1step(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(-1,1            ,-1),1,VECU,BOTM,1, &
+       Phi2step(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  !END DO
+!***************************************************************************
+  CALL MPI_TYPE_FREE(VECU,IERR)
+END IF
+
+
+IF(iwz.EQ.1) THEN
+  CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+  CALL MPI_TYPE_COMMIT(VECU,IERR)
+!*************************************  BC for the downsides of domains  ****
+  !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
+       Phi1step(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
+       Phi2step(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  !END DO
+!**************************************  BC for the upsides of domains  ****
+  !DO K = 1, N_MPI(20)
+  CALL MPI_SENDRECV(Phi1step(-1,-1,1            ),1,VECU,DOWN,1, &
+       Phi1step(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phi2step(-1,-1,1            ),1,VECU,DOWN,1, &
+       Phi2step(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  !END DO
+!***************************************************************************
+  CALL MPI_TYPE_FREE(VECU,IERR)
+END IF
+endif
 end subroutine BCgrv
 
 
@@ -1297,6 +1149,35 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode,is,ie)
 
 end subroutine fluxcal
 
+subroutine pbstep()
+USE comvar
+!USE mpivar
+USE slfgrv
+integer i,j,k
+double precision dxx
+dxx=dx(1)
+
+do k=1,Ncellz
+do j=1,Ncelly
+
+bstep1l(j,k,1)=(3.0d0*bphi1l(j,k,1)-4.0d0*bphi1l(j,k,0)+bphi1l(j,k,-1))*0.5d0/dxx
+bstep1l(j,k,0)=(bphi1l(j,k,-1)+bphi1l(j,k,1))*0.5d0/dxx
+bstep1l(j,k,-1)=-(3.0d0*bphi1l(j,k,-1)-4.0d0*bphi1l(j,k,0)+bphi1l(j,k,1))*0.5d0/dxx
+bstep1r(j,k,Ncell+2)=(3.0d0*bphi1r(j,k,Ncellx+2)-4.0d0*bphi1r(j,k,Ncellx+1)+bphi1r(j,k,Ncellx))*0.5d0/dxx
+bstep1r(j,k,Ncellx+1)=(bphi1r(j,k,Ncellx)+bphi1r(j,k,Ncellx+2))*0.5d0/dxx
+bstep1r(j,k,Ncellx)=-(3.0d0*bphi1r(j,k,Ncellx)-4.0d0*bphi1r(j,k,Ncellx+1)+bphi1r(j,k,Ncellx+2))*0.5d0/dxx
+
+bstep2l(j,k,1)=-(3.0d0*bphi2l(j,k,1)-4.0d0*bphi2l(j,k,0)+bphi2l(j,k,-1))*0.5d0/dxx
+bstep2l(j,k,0)=-(bphi2l(j,k,-1)+bphi2l(j,k,1))*0.5d0/dxx
+bstep2l(j,k,-1)=(3.0d0*bphi2l(j,k,-1)-4.0d0*bphi2l(j,k,0)+bphi2l(j,k,1))*0.5d0/dxx
+bstep2r(j,k,Ncell+2)=-(3.0d0*bphi2r(j,k,Ncellx+2)-4.0d0*bphi2r(j,k,Ncellx+1)+bphi2r(j,k,Ncellx))*0.5d0/dxx
+bstep2r(j,k,Ncellx+1)=-(bphi2l(j,k,Ncellx)+bphi2l(j,k,Ncellx+2))*0.5d0/dxx
+bstep2r(j,k,Ncellx)=(3.0d0*bphi2r(j,k,Ncellx)-4.0d0*bphi2r(j,k,Ncellx+1)+bphi2r(j,k,Ncellx+2))*0.5d0/dxx
+
+end do
+end do
+
+end subroutine pbstep
 
 
 SUBROUTINE PB(pls)
@@ -1473,8 +1354,10 @@ do j=1,ncy!; n = j+kk
   !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
   !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
 
-  bphi1(j,k,1+abs(pls)) = dble(data(jb,kbb,1))
-  bphi2(j,k,1+abs(pls)) = dble(data(jb,kbb,2))
+  bphi1l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  bphi1r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
+  bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 end do
 end do
 
@@ -1605,3 +1488,55 @@ do idim=1,ndim
   nprev=n*nprev 
 enddo 
 END SUBROUTINE fourn
+
+subroutine timesource(Phiv,source,dt,mode)
+  use comvar
+  !use grvver
+  integer i,mode,j,k
+  double precision :: dt,sdt,mindt,maxdt , epsl = 1.0d-4
+  DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phiv,source
+
+  !mindt=1000.0d0
+  maxdt=0.0d0
+
+  if(mode==1) then
+     do k=1,ndx-2
+        do j=1,ndx-2
+           do i=1,ndx-2
+              if((source(i,j,k) .ne. 0.0d0) .and. (Phiv(i,j,k) .ne. 0.0d0))then
+                 sdt = sourratio*dabs(Phiv(i,j,k)) / (cg * G4pi * source(i,j,k) )
+                 !sdt = 0.2d0*dabs(Phiv(i)) / (cg * G4pi * source(i) )
+                 !mindt=dmin1(mindt,sdt)
+                 maxdt=dmax1(maxdt,sdt)
+              end if
+           end do
+        end do
+     end do
+     if( (maxdt < dt) .and. (maxdt .ne. 0.0d0)) then
+        dt = sdt
+     end if
+  end if
+
+
+  if(mode==2) then
+     do k=1,ndx-2
+        do j=1,ndx-2
+           do i=1,ndx-2
+              if((source(i,j,k) .ne. 0.0d0) .and. (Phiv(i,j,k) .ne. 0.0d0))then
+                 sdt = sourratio*dabs(Phiv(i,j,k)) / ( cg * source(i,j,k) )
+                 !sdt = 0.05d0*dabs(Phiv(i)) / ( cg * source(i) )
+                 !mindt=dmin1(mindt,sdt)
+                 maxdt=dmax1(maxdt,sdt)
+              end if
+           end do
+        end do
+     end do
+     write(*,*) maxdt,'maxdt'
+     if( (maxdt < dt) .and. (maxdt .ne. 0.0d0)) then
+        dt = sdt
+     end if
+  end if
+
+
+  write(*,*) 'time source' , dt
+end subroutine timesource
