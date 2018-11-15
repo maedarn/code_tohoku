@@ -19,7 +19,7 @@ program computeraw
   !******parameter********
   core=64
   mesh=32+2
-  val=1
+  val=5
   lasttime=300
   initime=0
   Ncellx=32
@@ -92,21 +92,21 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
       write(time,'(I6.6)') times
 
-      open(100,file='/Users/maeda/Desktop/kaiseki/grwave6/INIPHI'//time//'.DAT',FORM='UNFORMATTED')
+      open(100,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI'//time//'.DAT',FORM='UNFORMATTED')
       do k=1,lengthz
          do j=1,lengthy
             do i=1,lengthx
-               read(100) v(i,j,k,1)
+               read(100) v(i,j,k,1),v(i,j,k,2),v(i,j,k,3),v(i,j,k,4),v(i,j,k,5)
             end do
          end do
          write(*,*) k,times
       end do
       close(100)
-      open(110,file='/Users/maeda/Desktop/kaiseki/grwave6/INIPHI'//time//'.dat',FORM='FORMATTED')
+      open(110,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI'//time//'.dat',FORM='FORMATTED')
       do k=1,lengthz
          do j=1,lengthy
             do i=1,lengthx
-               write(110,*) v(i,j,k,1)
+               write(110,*) v(i,j,k,1),v(i,j,k,2),v(i,j,k,3),v(i,j,k,4),v(i,j,k,5)
             end do
          end do
          write(*,*) k,times

@@ -1351,7 +1351,7 @@ iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
 ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:Ncellx+3),speq(Ncellz*NSPLTz,-1:Ncellx+2))
 ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
      dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
-allocate(bcsend(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:1,0:NPE-1))
+!allocate(bcsend(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:1,0:NPE-1))
 
 !nccy = Ncelly/NSPLTy; nccz = Ncellz/NSPLTz
 nccy = Ncelly; nccz = Ncellz
@@ -1373,9 +1373,9 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   KSr = irecv/(NSPLTx*NSPLTy); JSr = irecv/NSPLTx-NSPLTy*KSr
 
   Nis = JSs + NSPLTy*KSs
-  kls = Nis + 1 + pls
+  kls = Nis + 1 !+ pls
   Nir = JST + NSPLTy*KST
-  klr = Nir + 1 + pls
+  klr = Nir + 1 !+ pls
 
   !***************fordebug*****************
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -1386,9 +1386,7 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   CALL MPI_SENDRECV(data(JST*Ncelly+1,KST*Ncellz+1,kls),1,VECU,isend,1, & !send
                     data(JSr*Ncelly+1,KSr*Ncellz+1,klr),1,VECU,irecv,1, MPI_COMM_WORLD,MSTATUS,IERR) !recv
 end do
-
 CALL MPI_TYPE_FREE(VECU,IERR)
-
 
 dxx = dy(1); dyy = dz(1); dzz = dx(1)
 facG = -G4pi*dzz
@@ -1483,11 +1481,11 @@ end do; end do
 !do k=0,ncz; kk= (ncy+1)*k
 !do j=0,ncy; n = j+kk
 !ncx=Ncellx-2
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-if(NRANK==0) then
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!if(NRANK==0) then
 ncy=Ncelly; ncz=Ncellz
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-do Nroot=0,NPE-1
+!do Nroot=0,NPE-1
 do k=1,ncz!; kk= (ncy+1)*k
 do j=1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
@@ -1497,11 +1495,11 @@ do j=1,ncy!; n = j+kk
   !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
   !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
 
-  !bphi1l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
-  !bphi1r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
-  !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  bcsend(j,k,1-abs(pls),Nroot)=dble(data(jb,kbb,1))
+  bphi1l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  bphi1r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
+  bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
+  !bcsend(j,k,1-abs(pls),Nroot)=dble(data(jb,kbb,1))
   !  write(12,*) bphi1l(j,k,1-abs(pls)),bphi1r(j,k,Ncellx+abs(pls)),bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
   !CALL MPI_BCAST(bcsend(1,1,1,Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
@@ -1509,81 +1507,13 @@ end do
 !close(12)
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !do Nroot=0,NPE-1
-CALL MPI_BCAST(bcsend(1,1,1-abs(pls),Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(bcsend(1,1,1-abs(pls),Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 !  CALL MPI_BCAST(tMPI(0,0,0,Nroot),(nx2+1)*(ny2+1)*(nz2+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-end if
-
-do k=1,ncz!; kk= (ncy+1)*k
-do j=1,ncy!; n = j+kk
-  jb  = JST*Ncelly + j
-  kbb = KST*Ncellz + k
-  !if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
-  !if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
-  !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
-  !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
-
-  bphi1l(j,k,1-abs(pls)) =bcsend(j,k,1-abs(pls),NRANK) !dble(data(jb,kbb,1))
-  !bphi1r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  bphi2l(j,k,1-abs(pls)) =bcsend(j,k,1-abs(pls),NRANK) !dble(data(jb,kbb,1))
-  !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  !bcsend(j,k,1-abs(pls),Nroot)!dble(data(jb,kbb,1))
-  !  write(12,*) bphi1l(j,k,1-abs(pls)),bphi1r(j,k,Ncellx+abs(pls)),bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
-  !CALL MPI_BCAST(bcsend(1,1,1,Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-end do
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-if(NRANK==NPE-1) then
-ncy=Ncelly; ncz=Ncellz
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-do Nroot=0,NPE-1
-do k=1,ncz!; kk= (ncy+1)*k
-do j=1,ncy!; n = j+kk
-  jb  = JST*Ncelly + j
-  kbb = KST*Ncellz + k
-  !if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
-  !if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
-  !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
-  !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
-
-  !bphi1l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
-  !bphi1r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
-  !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  bcsend(j,k,1-abs(pls),Nroot)=dble(data(jb,kbb,2))!dble(data(jb,kbb,1))
-  !  write(12,*) bphi1l(j,k,1-abs(pls)),bphi1r(j,k,Ncellx+abs(pls)),bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
-  !CALL MPI_BCAST(bcsend(1,1,1,Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-end do
-!close(12)
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!do Nroot=0,NPE-1
-CALL MPI_BCAST(bcsend(1,1,1-abs(pls),Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-!  CALL MPI_BCAST(tMPI(0,0,0,Nroot),(nx2+1)*(ny2+1)*(nz2+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-end if
-
-do k=1,ncz!; kk= (ncy+1)*k
-do j=1,ncy!; n = j+kk
-  jb  = JST*Ncelly + j
-  kbb = KST*Ncellz + k
-  !if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
-  !if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
-  !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
-  !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
-
-  !bphi1l(j,k,1-abs(pls)) =bcsend(j,k,1-abs(pls),NRANK) !dble(data(jb,kbb,1))
-  bphi1r(j,k,Ncellx+abs(pls)) =bcsend(j,k,1-abs(pls),NRANK)! dble(data(jb,kbb,2))
-  !bphi2l(j,k,1-abs(pls)) =bcsend(j,k,1-abs(pls),NRANK) !dble(data(jb,kbb,1))
-  bphi2r(j,k,Ncellx+abs(pls)) =bcsend(j,k,1-abs(pls),NRANK)! dble(data(jb,kbb,2))
-  !bcsend(j,k,1-abs(pls),Nroot)!dble(data(jb,kbb,1))
-  !  write(12,*) bphi1l(j,k,1-abs(pls)),bphi1r(j,k,Ncellx+abs(pls)),bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
-  !CALL MPI_BCAST(bcsend(1,1,1,Nroot),(Ncelly)*(Ncellz)*(1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-end do
+!end do
+!end if
 
 DEALLOCATE(data,speq)
-DEALLOCATE(bcsend)
+!DEALLOCATE(bcsend)
 DEALLOCATE(dat1,spe1,dat2,spe2)
 !-----------------------------------------------------------------
 

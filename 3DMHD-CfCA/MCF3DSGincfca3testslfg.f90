@@ -379,7 +379,7 @@ end do; end do; end do
 
 
 !***************pointsourse-gravity**************
-!goto 1334
+goto 1334
 
 U(:,:,:,:) = 0.0d0
 
@@ -409,7 +409,7 @@ if(NRANK==42) then
    U(1    ,1    ,1    ,1) = 5.0d3
 endif
 
-!1334 continue
+1334 continue
 !***************sourse-gravity**************
 
 

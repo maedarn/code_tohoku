@@ -76,7 +76,7 @@ subroutine INITIAL()
   use comvar
   use grvvar
   integer :: i,j,k
-  double precision :: amp,pi=3.1415926535d0,haba
+  double precision :: amp,pi=3.1415926535d0,haba,r,rcen
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)
@@ -127,10 +127,29 @@ subroutine INITIAL()
 
 
   !---------rho-------------
+  goto 2011
   do k=-1,ndz
      do j=-1,ndy
         do i = -1,ndx
            if( dabs(x(i) - hcen) .le. h) then
+              !if( dabs(y(i) - hcen) .le. h) then
+              !if( dabs(z(i) - hcen) .le. h) then
+              rho(i,j,k) = dinit1
+              !rho(i) = 0.0d0
+           else
+              rho(i,j,k) = 0.0d0
+              !rho(i) = dinit1*1.d-2
+           end if
+        end do
+     end do
+  end do
+2011 continue
+  rcen=10.d0
+  do k=-1,ndz
+     do j=-1,ndy
+        do i = -1,ndx
+           r=dsqrt((x(i)-Lbox/2.0d0)**2 + (y(k)-Lbox/2.0d0)**2 + (z(j)-Lbox/2.0d0)**2)
+           if(r .le. rcen) then
               !if( dabs(y(i) - hcen) .le. h) then
               !if( dabs(z(i) - hcen) .le. h) then
               rho(i,j,k) = dinit1
@@ -148,9 +167,9 @@ subroutine INITIAL()
 
   !--------Phiexa-----------
   !goto 200
-  open(142,file='/Users/maeda/Desktop/kaiseki/testcode5/phiexact.DAT')
-  open(143,file='/Users/maeda/Desktop/kaiseki/testcode5/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/kaiseki/testcode5/phigrd.DAT')
+  open(142,file='/Users/maeda/Desktop/kaiseki/testcode7/phiexact.DAT')
+  open(143,file='/Users/maeda/Desktop/kaiseki/testcode7/INIden.DAT')
+  open(144,file='/Users/maeda/Desktop/kaiseki/testcode7/phigrd.DAT')
 
   do k=-1,ndz
      do j=-1,ndy
@@ -760,7 +779,7 @@ subroutine saveu(in1)
   character(5) name
 
   write(name,'(i5.5)') in1
-  open(21,file='/Users/maeda/Desktop/kaiseki/testcode5/phi'//name//'.dat')
+  open(21,file='/Users/maeda/Desktop/kaiseki/testcode7/phi'//name//'.dat')
   !open(23,file='/Users/maeda/Desktop/kaiseki/testcode5/phix'//name//'.dat')
   !open(24,file='/Users/maeda/Desktop/kaiseki/testcode5/phiy'//name//'.dat')
   !open(25,file='/Users/maeda/Desktop/kaiseki/testcode5/phiz'//name//'.dat')

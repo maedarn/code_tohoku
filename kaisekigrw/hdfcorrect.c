@@ -5,9 +5,9 @@
 #include <hdf5.h>
 
 // The number of cells in the X, Y dimensions
-#define NX 64
-#define NY 64
-#define NZ 64
+#define NX 256
+#define NY 256
+#define NZ 256
 #define last 300
 //#define M_PI 3.1415926535897932
 
@@ -23,8 +23,8 @@ write_hdf5_data()
     hid_t     file_id;
     //char s1[6] = {'\0'};
     //sprintf(s1, "%6d", time);
-    sprintf(filename, "/Users/maeda/Desktop/kaiseki/grwave6/INIPHI%06d.DAT", time);
-    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/grwave6/INIPHI%06d.h5", time);
+    sprintf(filename, "/Users/maeda/Desktop/kaiseki/testcode8/INIPHI%06d.dat", time);
+    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/testcode8/INIPHI%06d.h5", time);
     file_id = H5Fcreate(filename1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     // Create the coordinate data.

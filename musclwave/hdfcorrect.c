@@ -5,9 +5,9 @@
 #include <hdf5.h>
 
 // The number of cells in the X, Y dimensions
-#define NX 64
-#define NY 64
-#define NZ 64
+#define NX 256
+#define NY 256
+#define NZ 256
 #define last 300
 //#define M_PI 3.1415926535897932
 
@@ -23,12 +23,12 @@ write_hdf5_data()
     hid_t     file_id;
     //char s1[6] = {'\0'};
     //sprintf(s1, "%6d", time);
-    sprintf(filename, "/Users/maeda/Desktop/kaiseki/testcode5/phi%05d.dat", time);
-    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/testcode5/INIPHI%05d.h5", time);
+    sprintf(filename, "/Users/maeda/Desktop/kaiseki/testcode8/INIPHI%06d.dat", time);
+    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/testcode8/INIPHI%05d.h5", time);
     file_id = H5Fcreate(filename1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     // Create the coordinate data.
-    
+
 
     //mesh
     FILE *fp; // FILE型構造体
@@ -66,7 +66,9 @@ write_hdf5_data()
               //&(velocityy[n][j][k]),&(velocityz[n][j][k]),&(pressure[n][j][k]),&(Bfieldx[n][j][k]),&(Bfieldy[n][j][k]),&(Bfieldz[n][j][k])) //,&(rho[i][j][k]));  // 読み込む個数
               //        n++; }
 
-                    fscanf(fp,"%f %f %f %f %f %f %f %f",&(a[tot]),&(b[tot]),&(c[tot]),&(Phir[tot]),&(d[tot]),&(Phil[tot]),&(e[tot]),&(Phim[tot])); //%f,%f,%f,%f,%f,%f,%f",\  点で区切らない
+
+		    fscanf(fp,"%f %f %f %f %f",&(Phir[tot]),&(Phil[tot]),&(d[tot]),&(e[tot]),&(Phim[tot]));
+                    //fscanf(fp,"%f %f %f %f %f %f %f %f",&(a[tot]),&(b[tot]),&(c[tot]),&(Phir[tot]),&(d[tot]),&(Phil[tot]),&(e[tot]),&(Phim[tot])); //%f,%f,%f,%f,%f,%f,%f",\  点で区切らない
                             //&(rho[tot]),&(velocityx[tot]),&(velocityy[tot]),&(velocityz[tot]),&(pressure[tot]),&(Bfieldx[tot]),&(Bfieldy[tot]),&(Bfieldz[tot]));
                     //printf("%f,%f,%f,%f,%f\n",a[i], b[i], Phir[i], Phil[i], Phim[i]);
                     //printf("%d,%d,%d\n",n,j,k);
@@ -95,7 +97,7 @@ write_hdf5_data()
     //Phi
         dims[0] = (NZ);
         dims[1] = (NY);
-        dims[2] = (NX);
+        dims[2] = (NX);                /**/
         dataspace_id = H5Screate_simple(3, dims, NULL);
 
         dataset_id = H5Dcreate(file_id, "/Phir", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);

@@ -1040,6 +1040,7 @@ if(klr.le.Ncellx) then
   dat2(1,1) = temp2r
   dat2(2,1) = temp2i
 
+
 end if
 
 CALL MPI_ALLREDUCE(dat1(1,1),data(1,1,1),Ncelly*NSPLTy*Ncellz*NSPLTz,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,IERR)
@@ -1281,15 +1282,15 @@ nn(2)=nn2
 
 if(isign.eq.1) then
   call fourn(data,nn,2,isign)
-    do i2=1,nn2 
-      speq(i2)=data(1,i2) 
-    enddo 
+    do i2=1,nn2
+      speq(i2)=data(1,i2)
+    enddo
 endif
 wr=1.0d0
 wi=0.0d0
-do i1=1,nn1/4+1 
-  j1=nn1/2-i1+2 
-  do i2=1,nn2 
+do i1=1,nn1/4+1
+  j1=nn1/2-i1+2
+  do i2=1,nn2
     j2=1
     if(i2.ne.1) j2=nn2-i2+2 
     if(i1.eq.1) then
@@ -1313,9 +1314,9 @@ enddo
 if(isign.eq.-1) call fourn(data,nn,2,isign)
 END SUBROUTINE
 
-SUBROUTINE fourn(data,nn,ndim,isign) 
-INTEGER isign,ndim,nn(ndim) 
-DOUBLE PRECISION data(*) 
+SUBROUTINE fourn(data,nn,ndim,isign)
+INTEGER isign,ndim,nn(ndim)
+DOUBLE PRECISION data(*)
 INTEGER i1,i2,i2rev,i3,i3rev,ibit,idim,ifp1,ifp2,ip1,ip2,ip3,k1,k2,n,nprev,nrem,ntot 
 DOUBLE PRECISION tempi,tempr
 DOUBLE PRECISION theta,wi,wpi,wpr,wr,wtemp
