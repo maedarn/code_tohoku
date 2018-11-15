@@ -18,13 +18,13 @@ program computeraw
 
   !******parameter********
   core=64
-  mesh=32+2
+  mesh=16+2
   val=5
   lasttime=300
   initime=0
-  Ncellx=32
-  Ncelly=32
-  Ncellz=32
+  Ncellx=16
+  Ncelly=16
+  Ncellz=16
   !***********************
 
 if(core.eq.4)    then; NSPLTx = 2; NSPLTy = 2; NSPLTz = 1; end if
@@ -92,7 +92,7 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
       write(time,'(I6.6)') times
 
-      open(100,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI'//time//'.DAT',FORM='UNFORMATTED')
+      open(100,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI'//time//'.dat',FORM='UNFORMATTED')
       do k=1,lengthz
          do j=1,lengthy
             do i=1,lengthx
@@ -102,7 +102,7 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
          write(*,*) k,times
       end do
       close(100)
-      open(110,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI'//time//'.dat',FORM='FORMATTED')
+      open(110,file='/Users/maeda/Desktop/kaiseki/testcode8/INIPHI2'//time//'.DAT',FORM='FORMATTED')
       do k=1,lengthz
          do j=1,lengthy
             do i=1,lengthx

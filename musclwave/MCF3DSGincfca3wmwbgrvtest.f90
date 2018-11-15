@@ -135,7 +135,7 @@ ALLOCATE(bstep2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
 !write(*,*) 'OK3'
 
 call INITIA
-write(*,*) 'OK'
+!write(*,*) 'OK'
 call EVOLVE
 
 !write(*,*) 'OK'
@@ -368,7 +368,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   close(2)
 
 
-  write(*,*) 'sheet1'
+  !write(*,*) 'sheet1'
    !********************sheet***********************
   !goto 6011
   DTF(:,:,:) = 0.0d0
@@ -447,7 +447,7 @@ saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - censh)  - G4pi/2.0d0 * dinit1
 !saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - ql1x)  - G4pi/2.0d0 * dinit1 * Hsheet**2
 
 
-write(*,*) x_i(0) - censh , x_i(0),saexact1 ,'bcx'
+!write(*,*) x_i(0) - censh , x_i(0),saexact1 ,'bcx'
 !ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
 do k=-1,Ncellz+2
    do j=-1,Ncelly+2
@@ -482,7 +482,7 @@ close(142)
 dinit1=0.0d0
 ! 6011 continue
 !********************sheet***********************
-write(*,*) 'sheet2'
+!write(*,*) 'sheet2'
 
   !********************sphere***********************
   goto 6001
@@ -721,7 +721,7 @@ end do; end do; end do
 
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 
-   write(*,*) 'pregrv1'
+   !write(*,*) 'pregrv1'
 if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
@@ -729,7 +729,7 @@ if(ifgrv.eq.2) then
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
 end if
- write(*,*) 'posgrv1'
+ !write(*,*) 'posgrv1'
 END SUBROUTINE INITIA
 
 
@@ -811,7 +811,7 @@ do in10 = 1, maxstp
   !call SAVEU(nunit,dt,stb,st,t,0)
 
   do in20 = 1, nitera
-     write(*,*) '---top---'
+     !write(*,*) '---top---'
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     !tsave2D = dtsave2D * nunit2D
     !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
@@ -837,7 +837,7 @@ do in10 = 1, maxstp
 
 
     !---------------debug-------------------
-    write(*,*) '-------------5-----------',NRANK,in20,in10
+    !write(*,*) '-------------5-----------',NRANK,in20,in10
     !---------------debug-------------------
 
 
@@ -849,26 +849,26 @@ do in10 = 1, maxstp
 
 
     !---------------debug-------------------
-    write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
+    !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
     !---------------debug-------------------
 
     if(ifgrv==2) then
        call SELFGRAVWAVE(tLMT,7)
 
        !---------------debug-------------------
-       write(*,*) '-------------99-----------',NRANK,in20,in10
+       !write(*,*) '-------------99-----------',NRANK,in20,in10
        !---------------debug-------------------
 
 
        call SELFGRAVWAVE(tLMT,11)
 
        !---------------debug-------------------
-       write(*,*) '-------------88-----------',NRANK
+       !write(*,*) '-------------88-----------',NRANK
        !---------------debug-------------------
     endif
 
  !---------------debug-------------------
- write(*,*) '-------------1-----------',NRANK
+ !write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
@@ -968,7 +968,7 @@ do in10 = 1, maxstp
     !---------------------------skip-----------------------------
 
     !---------------debug-------------------
-    write(*,*) '-------------10-----------',NRANK
+    !write(*,*) '-------------10-----------',NRANK
     !---------------debug-------------------
 
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
@@ -985,7 +985,7 @@ do in10 = 1, maxstp
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
        !---------------debug-------------------
-       write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
+       !write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
        !---------------debug-------------------
 
 
@@ -1002,7 +1002,7 @@ do in10 = 1, maxstp
     !*********************************!収束判定
 
     !---------------debug-------------------
-    write(*,*) '-------------12-----------',NRANK
+    !write(*,*) '-------------12-----------',NRANK
     !---------------debug-------------------
     !call DISSIP()
     !time = time + dt
@@ -1043,7 +1043,7 @@ do in10 = 1, maxstp
 end do
 
 !---------------debug-------------------
-write(*,*) '-------------22-----------',NRANK
+!write(*,*) '-------------22-----------',NRANK
 !---------------debug-------------------
 !**********************!収束判定
 !if(ifgrv.eq.2) then !if文中には飛べない
