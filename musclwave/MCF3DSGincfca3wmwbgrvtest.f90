@@ -19,6 +19,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
 DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
+double precision :: deltalength
 !integer ifevogrv,ifevogrv2
 END MODULE comvar
 
@@ -43,7 +44,8 @@ INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
-double precision :: deltalength , cgcsratio= 1.0d0 !, shusoku1=0.0d0
+!double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
+double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
 
 DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
 DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
@@ -113,23 +115,23 @@ ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz))
 ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz))
 ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz))
 ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(bphi1l(1:ndy-2,1:ndz-2,-1:1))
-ALLOCATE(bphi2l(1:ndy-2,1:ndz-2,-1:1))
-ALLOCATE(bstep1l(1:ndy-2,1:ndz-2,-1:1))
-ALLOCATE(bstep2l(1:ndy-2,1:ndz-2,-1:1))
-ALLOCATE(bphi1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-ALLOCATE(bphi2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-ALLOCATE(bstep1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-ALLOCATE(bstep2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bphi1l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bphi2l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bstep1l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bstep2l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bphi1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bphi2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bstep1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bstep2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
 
-!ALLOCATE(bphi1l(-1:ndy,-1:ndz,-1:1))
-!ALLOCATE(bphi2l(-1:ndy,-1:ndz,-1:1))
-!ALLOCATE(bstep1l(-1:ndy,-1:ndz,-1:1))
-!ALLOCATE(bstep2l(-1:ndy,-1:ndz,-1:1))
-!ALLOCATE(bphi1r(-1:ndy,-1:ndz,ndx-2:ndx))
-!ALLOCATE(bphi2r(-1:ndy,-1:ndz,ndx-2:ndx))
-!ALLOCATE(bstep1r(-1:ndy,-1:ndz,ndx-2:ndx))
-!ALLOCATE(bstep2r(-1:ndy,-1:ndz,ndx-2:ndx))
+ALLOCATE(bphi1l(-1:ndy,-1:ndz,-1:1))
+ALLOCATE(bphi2l(-1:ndy,-1:ndz,-1:1))
+ALLOCATE(bstep1l(-1:ndy,-1:ndz,-1:1))
+ALLOCATE(bstep2l(-1:ndy,-1:ndz,-1:1))
+ALLOCATE(bphi1r(-1:ndy,-1:ndz,ndx-2:ndx))
+ALLOCATE(bphi2r(-1:ndy,-1:ndz,ndx-2:ndx))
+ALLOCATE(bstep1r(-1:ndy,-1:ndz,ndx-2:ndx))
+ALLOCATE(bstep2r(-1:ndy,-1:ndz,ndx-2:ndx))
 !*********grvwave*********
 
 !write(*,*) 'OK3'
@@ -180,7 +182,7 @@ double precision :: ampn(2048),ampn0(2048)
 character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
-integer i3,i4,i2y,i2z,rsph2
+integer i3,i4,i2y,i2z,rsph2,pls
 double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
 
 open(8,file='/work/maedarn/3DMHD/test/INPUT3D.DAT')
@@ -353,6 +355,8 @@ do k = -1, Ncellz+2
   dz(k) =  dz_i(kz)
 end do
 
+write(*,*) 'check-dx' ,dx(1),deltalength
+
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
   open(4,file='/work/maedarn/3DMHD/test/cdnt.DAT')
@@ -373,7 +377,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !goto 6011
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
-  dinit1=2.0d0/G4pi/90.d0
+  dinit1 = 2.0d0/G4pi/90.d0
   censh = ql1x + dx(1)/2.0d0 !x=serfase
   Hsheet = 1.0d1
   !rsph = ql1x-ql1x/5.0d0
@@ -465,6 +469,18 @@ do k=-1,Ncellz+2
    end do
 end do
 
+do k=-1,Ncellz+2
+   do j=-1,Ncelly+2
+      do pls = 0,2,1
+         bphi1l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+         bphi1r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+         bphi2l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+         bphi2r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+      end do
+   end do
+end do
+
+
 do k=-1,ndz
 do j=-1,ndy
 do i=0,ndx-1
@@ -476,6 +492,7 @@ Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx(1)
 end do
 end do
 
+write(*,*) NRANK,Phigrd(0,1,1),Phigrd(Ncellx-1,1,1),dinit1
 !DEALLOCATE(Phiexa)
 close(142)
 
@@ -818,22 +835,22 @@ do in10 = 1, maxstp
     !if(time.ge.tfinal) goto 9000
     !if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
-    dt_mpi(NRANK) = tfinal
+    !dt_mpi(NRANK) = tfinal
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
-    call Couran(tLMT)
+    !call Couran(tLMT)
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
-    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
-    st_mpi(NRANK) = 1
-    stt= dt_mpi(NRANK)
+    !dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
+    !st_mpi(NRANK) = 1
+    !stt= dt_mpi(NRANK)
 
     !---------------debug-------------------
     write(*,*) '-------------4-----------',NRANK,in20,in10
     !---------------debug-------------------
 
 
-    if(ifgrv==2) then
-    call SELFGRAVWAVE(stt,5)
-    end if
+    !if(ifgrv==2) then
+    !call SELFGRAVWAVE(stt,5)
+    !end if
 
 
     !---------------debug-------------------
@@ -843,7 +860,7 @@ do in10 = 1, maxstp
 
 
     !--------for INIT---------------
-    call Stblty(tLMT)
+    !call Stblty(tLMT)
     !--------for INIT---------------
 
 
@@ -851,26 +868,26 @@ do in10 = 1, maxstp
     !---------------debug-------------------
     !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
     !---------------debug-------------------
-
-    if(ifgrv==2) then
-       call SELFGRAVWAVE(tLMT,7)
+    dt=dx(1)/cg*0.1d0
+    !if(ifgrv==2) then
+    !   call SELFGRAVWAVE(tLMT,7)
 
        !---------------debug-------------------
        !write(*,*) '-------------99-----------',NRANK,in20,in10
        !---------------debug-------------------
 
 
-       call SELFGRAVWAVE(tLMT,11)
+     !  call SELFGRAVWAVE(tLMT,11)
 
        !---------------debug-------------------
        !write(*,*) '-------------88-----------',NRANK
        !---------------debug-------------------
-    endif
+    !endif
 
  !---------------debug-------------------
  !write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
-
+goto 342
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -912,7 +929,7 @@ do in10 = 1, maxstp
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
     !***** Godunov parts *****
 
-
+342 continue
 
 
     !---------------------------skip-----------------------------

@@ -1,6 +1,6 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=514,laststep=28000,ist=1,ien=2 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=64,laststep=12000,ist=1,ien=2 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   DOUBLE PRECISION :: cg = 1.0d0 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
@@ -11,7 +11,7 @@ end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=514 !パラメータ属性必要
+  integer, parameter :: ndx2=64 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1:ndx2) :: x , Phicgm ,rho, Phi1step , Phi2step ,Phicgp
   DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
 end module grvvar
@@ -49,7 +49,7 @@ program muscl1D
      !call muslcslv1D(Phi1step,rho,dt,1)
      call BC(4)
      call BC(3)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+     !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
      call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
      call BC(4)
@@ -84,7 +84,7 @@ program muscl1D
      !call BC(1)
 
 
-     !call saveu(sv)
+     call saveu(sv)
   end do
   call BC(3)
   call BC(4)
@@ -109,6 +109,8 @@ subroutine INITIAL()
   use grvvar
   integer :: i
   double precision :: amp,pi=3.1415926535d0,haba
+
+  dinit1 = 2.0d0/G4pi/90.d0
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)
@@ -154,9 +156,9 @@ subroutine INITIAL()
 
   !--------Phiexa-----------
   !goto 200
-  open(142,file='/Users/maeda/Desktop/kaiseki/testcode6/phiexact.DAT')
-  open(143,file='/Users/maeda/Desktop/kaiseki/testcode6/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/kaiseki/testcode6/phigrd.DAT')
+  open(142,file='/Users/maeda/Desktop/kaiseki/testcode10/phiexact.DAT')
+  open(143,file='/Users/maeda/Desktop/kaiseki/testcode10/INIden.DAT')
+  open(144,file='/Users/maeda/Desktop/kaiseki/testcode10/phigrd.DAT')
   do i= -1,ndx
      if( dabs(x(i) - hcen) .le. h ) then
         Phiexa(i) = G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
@@ -168,13 +170,31 @@ subroutine INITIAL()
      write(143,*) sngl(rho(i))
   end do
 
+  !do i= -1,ndx
+  !   if( dabs(x(i) - hcen) .le. h ) then
+  !      Phiexa(i) = -G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
+  !      write(142,*) sngl(x(i)) ,  sngl(G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2)
+  !   else
+  !      Phiexa(i) = -G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
+  !      write(142,*) sngl(x(i)) , sngl(G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2)
+  !   end if
+  !   write(143,*) sngl(rho(i))
+  !end do
+
+
+  !do i=0,ndx-1
+  !   Phigrd(i)=(-Phiexa(i-1)+Phiexa(i+1))*0.5d0/dx
+     !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
+  !end do
+  !Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
+  !Phigrd(ndx)=(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
 
   do i=0,ndx-1
-     Phigrd(i)=(-Phiexa(i-1)+Phiexa(i+1))*0.5d0/dx
+     Phigrd(i)=-(-Phiexa(i-1)+Phiexa(i+1))*0.5d0/dx
      !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
   end do
-  Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
-  Phigrd(ndx)=(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
+  Phigrd(-1)=-(-Phiexa(0)+Phiexa(1))/dx
+  Phigrd(ndx)=-(Phiexa(ndx-1)-Phiexa(ndx-2))/dx
 
   do i=-1,ndx
      write(144,*) sngl(x(i)) , Phigrd(i) !, Phiexa(i-1),Phiexa(i+1)
@@ -236,6 +256,8 @@ subroutine INITIAL()
   !-------Phdt-----------
   !-------Phi1step-----------
   !Phi1step(:)=bcphi1
+  Phi1step(:)= Phigrd(-1)
+  Phi2step(:)= Phigrd(-1)
   !-------Phi1step-----------
   !--------const------------
 end subroutine INITIAL
@@ -688,7 +710,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
      !end do
      !write(*,*) 'in1'
      do i=ist,ndx-ien
-        Phiv(i) =  -cg * G4pi * source(i) * dt + Phipre(i)
+        Phiv(i) =  cg * G4pi * source(i) * dt + Phipre(i)
      end do
 
      !do i=-1,ndx
@@ -706,7 +728,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode)
      !end do
     !write(*,*) source(ndx-ien), dt , Phipre(ndx-ien),cg * source(ndx-ien) * dt + Phipre(ndx-ien),'mode4'
      do i=ist,ndx-ien
-        Phiv(i) = cg * source(i) * dt + Phipre(i)
+        Phiv(i) = -cg * source(i) * dt + Phipre(i)
      end do
 
      !do i=-1,ndx
@@ -776,8 +798,8 @@ subroutine saveu(in1)
   character(5) name
 
   write(name,'(i5.5)') in1
-  open(21,file='/Users/maeda/Desktop/kaiseki/testcode6/phi'//name//'.dat')
-  do i=2,ndx-3
+  open(21,file='/Users/maeda/Desktop/kaiseki/testcode10/phi'//name//'.dat')
+  do i=1,ndx-2
      !if(i==1 .or. i==ndx-2) then
      !   write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
      !        (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&

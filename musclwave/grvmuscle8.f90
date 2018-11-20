@@ -199,7 +199,7 @@ if(mode==7) then
    tcool = dt
    !cgtime = deltalength/cg * CFL
    !cgtime = deltalength/cg * 0.2d0 !3D
-   cgtime = dx(1)/cg * 0.2d0 !3D-isotropic
+   cgtime = dx(1)/cg * cgratio1 !3D-isotropic
    if(dt > cgtime) then
       write(*,*)
       write(*,*) '---------------------------------'
@@ -399,7 +399,7 @@ subroutine slvmuscle(dt)
 
   ifEVOgrv=1+mod(i,6)
   ifEVOgrv2=1+mod(i,6)
-
+  write(*,*) ifEVOgrv,ifEVOgrv2,dt,'calcu'
   do l=-1,ndz
   do m=-1,ndy
   do n=-1,ndx
@@ -795,6 +795,7 @@ IF(iwx.EQ.1) THEN
      Phicgp(IX,JY,KZ)= bphi1r(JY,KZ,IX)
      Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
   END DO;END DO;END DO
+  write(*,*) NRANK,Phicgp(-1,1,1),Phicgm(-1,1,1),Phicgp(Ncellx+2,1,1),Phicgm(Ncellx+2,1,1),'---bcc1---'
 END IF
   !END DO
 !************************************************************************
@@ -891,7 +892,7 @@ END IF
   END DO;END DO;END DO
 END IF
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*) '--bc--5--'
+write(*,*) '--bc--5--',Phi1step(0,1,1),Phi2step(0,1,1),Phi1step(Ncellx+1,1,1),Phi2step(Ncellx,1,1)
   !END DO
 !************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -1621,8 +1622,6 @@ DEALLOCATE(data,speq)
 !DEALLOCATE(bcsend)
 DEALLOCATE(dat1,spe1,dat2,spe2)
 DEALLOCATE(bcspel1,bcspel2,bcl1,bcr2)
-!-----------------------------------------------------------------
-
 END SUBROUTINE PB
 
 
@@ -1762,7 +1761,7 @@ subroutine timesource(Phiv,source,dt,mode)
         do j=1,ndx-2
            do i=1,ndx-2
               if((source(i,j,k) .ne. 0.0d0) .and. (Phiv(i,j,k) .ne. 0.0d0))then
-                 sdt = sourratio*dabs(Phiv(i,j,k)) / (cg * G4pi * source(i,j,k) )
+                 sdt = sourratio*dabs(Phiv(i,j,k) / (cg * G4pi * source(i,j,k) ))
                  !sdt = 0.2d0*dabs(Phiv(i)) / (cg * G4pi * source(i) )
                  !mindt=dmin1(mindt,sdt)
                  maxdt=dmax1(maxdt,sdt)
@@ -1781,7 +1780,7 @@ subroutine timesource(Phiv,source,dt,mode)
         do j=1,ndx-2
            do i=1,ndx-2
               if((source(i,j,k) .ne. 0.0d0) .and. (Phiv(i,j,k) .ne. 0.0d0))then
-                 sdt = sourratio*dabs(Phiv(i,j,k)) / ( cg * source(i,j,k) )
+                 sdt = sourratio*dabs(Phiv(i,j,k) / ( cg * source(i,j,k) ))
                  !sdt = 0.05d0*dabs(Phiv(i)) / ( cg * source(i) )
                  !mindt=dmin1(mindt,sdt)
                  maxdt=dmax1(maxdt,sdt)

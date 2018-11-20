@@ -3,7 +3,7 @@ module comvar
   integer, parameter :: ndx=66,ndy=66,ndz=66,laststep=2000,ist=2,ien=3 , istp=1,ienp=2!preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 :: ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   DOUBLE PRECISION :: cg = 1.0d0 , dx ,dy,dz!= Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  integer :: iwx,iwy,iwz,ifEVO,ifEVO2 , svv=15
+  integer :: iwx,iwy,iwz,ifEVO,ifEVO2 , svv=10
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.1d0 !,  kappa=1.0d0/3.0d0
@@ -77,6 +77,7 @@ subroutine INITIAL()
   use grvvar
   integer :: i,j,k
   double precision :: amp,pi=3.1415926535d0,haba,r,rcen
+  dinit1 = 2.0d0/G4pi/90.d0
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)
@@ -167,9 +168,9 @@ subroutine INITIAL()
 
   !--------Phiexa-----------
   !goto 200
-  open(142,file='/Users/maeda/Desktop/kaiseki/testcode7/phiexact.DAT')
-  open(143,file='/Users/maeda/Desktop/kaiseki/testcode7/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/kaiseki/testcode7/phigrd.DAT')
+  open(142,file='/Users/maeda/Desktop/kaiseki/testcode10/phiexact.DAT')
+  open(143,file='/Users/maeda/Desktop/kaiseki/testcode10/INIden.DAT')
+  open(144,file='/Users/maeda/Desktop/kaiseki/testcode10/phigrd.DAT')
 
   do k=-1,ndz
      do j=-1,ndy
@@ -193,11 +194,11 @@ subroutine INITIAL()
   do k=-1,ndz
      do j=-1,ndy
         do i=0,ndx-1
-           Phigrd(i,j,k)=(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx
+           Phigrd(i,j,k)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx
            !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
         end do
-        Phigrd(-1,j,k)=(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx
-        Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx
+        Phigrd(-1,j,k)=-(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx
+        Phigrd(ndx,j,k)=-(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx
      end do
   end do
         !Phigrd(-1)=(-Phiexa(0)+Phiexa(1))/dx
@@ -779,7 +780,7 @@ subroutine saveu(in1)
   character(5) name
 
   write(name,'(i5.5)') in1
-  open(21,file='/Users/maeda/Desktop/kaiseki/testcode7/phi'//name//'.dat')
+  open(21,file='/Users/maeda/Desktop/kaiseki/testcode10/phi'//name//'.dat')
   !open(23,file='/Users/maeda/Desktop/kaiseki/testcode5/phix'//name//'.dat')
   !open(24,file='/Users/maeda/Desktop/kaiseki/testcode5/phiy'//name//'.dat')
   !open(25,file='/Users/maeda/Desktop/kaiseki/testcode5/phiz'//name//'.dat')
@@ -834,7 +835,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode,is,ie)
            if(mode==1) then
               DO Lnum = 1, Ncl
               DO Mnum = 1, Ncm
-              call vanalbada(Ncm,Ncl,pre,slop,is,ie,Ncell)
+              call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
               do i = is-1,ie+1
               ix  = iwx*i    + iwy*Lnum + iwz*Mnum
               jy  = iwx*Mnum + iwy*i    + iwz*Lnum
@@ -862,7 +863,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode,is,ie)
            if(mode==4) then
               DO Lnum = 1, Ncl
               DO Mnum = 1, Ncm
-              call vanalbada(Ncm,Ncl,pre,slop,is,ie,Ncell)
+              call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
               do i = is-1,ie+1
               ix  = iwx*i    + iwy*Lnum + iwz*Mnum
               jy  = iwx*Mnum + iwy*i    + iwz*Lnum
