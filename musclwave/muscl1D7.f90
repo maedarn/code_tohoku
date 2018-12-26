@@ -1,9 +1,9 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=64,laststep=12000,ist=1,ien=2 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=258,laststep=20000,ist=1,ien=2 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
-  DOUBLE PRECISION :: cg = 1.0d0 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
+  DOUBLE PRECISION :: cg = 1.0d1 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0,p2dxdx
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.1d0 !,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
@@ -11,9 +11,9 @@ end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=64 !パラメータ属性必要
+  integer, parameter :: ndx2=258 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1:ndx2) :: x , Phicgm ,rho, Phi1step , Phi2step ,Phicgp
-  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
+  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa,Phi
 end module grvvar
 
 program muscl1D
@@ -31,14 +31,14 @@ program muscl1D
 
   do i=1,laststep
      call time(dt)
-     write(*,*) i ,'step'
+     write(*,*) i ,'step',dt
 
 
-     call timesource(Phicgp,Phi1step,dt,2)
-     call timesource(Phi1step,rho,dt,1)
+!     call timesource(Phicgp,Phi1step,dt,2)
+!     call timesource(Phi1step,rho,dt,1)
 
-     call timesource(Phicgm,Phi2step,dt,2)
-     call timesource(Phi2step,rho,dt,1)
+!     call timesource(Phicgm,Phi2step,dt,2)
+!     call timesource(Phi2step,rho,dt,1)
 
      !call BC(1)
      !call cnbn(Phicgp,Phicgm)
@@ -47,48 +47,49 @@ program muscl1D
 
      !call BC()
      !call muslcslv1D(Phi1step,rho,dt,1)
-     call BC(4)
-     call BC(3)
+!     call BC(4)
+!     call BC(3)
      !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
-     call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
+!     call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+!     call BC(4)
+!     call BC(3)
+!     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
+!     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
      !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
 
-     call BC(4)
-     call BC(3)
-     call BC(1)
+!     call BC(4)
+!     call BC(3)
+!     call BC(1)
      !Phidt(:)=Phi(:)
-     call muslcslv1D(Phicgp,Phi1step,dt,4)
-     call muslcslv1D(Phicgm,Phi2step,dt,4)
-     call BC(1)
-     call muslcslv1D(Phicgp,Phi1step,dt,1)
-     call muslcslv1D(Phicgm,Phi2step,dt,2)
+!     call muslcslv1D(Phicgp,Phi1step,dt,4)
+!     call muslcslv1D(Phicgm,Phi2step,dt,4)
+!     call BC(1)
+!     call muslcslv1D(Phicgp,Phi1step,dt,1)
+!     call muslcslv1D(Phicgm,Phi2step,dt,2)
      !call BC(1)
 
-     call BC(4)
-     call BC(3)
+!     call BC(4)
+!     call BC(3)
      !call muslcslv1D(Phi1step,rho,dt,3)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
-     call muslcslv1D(Phi2step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
+!     call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+!     call muslcslv1D(Phi2step,rho,0.5d0*dt,3)
+!     call BC(4)
+!     call BC(3)
      !call muslcslv1D(Phi1step,rho,dt,1)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+!     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
+!     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
      !call BC(3)
      !call BC(4)
      !call BC(1)
 
-
+     call gravslv(dt)
+     call BC(9)
      call saveu(sv)
   end do
-  call BC(3)
-  call BC(4)
-  call BC(1)
+!  call BC(3)
+!  call BC(4)
+!  call BC(1)
   call saveu(sv)
 end program muscl1D
 
@@ -126,6 +127,7 @@ subroutine INITIAL()
   !---------Phi-------------
   Phicgp(:)=0.0d0
   Phicgm(:)=0.0d0
+  Phi(:)=0.0d0
   !---------Phi-------------
 
   !-------Phi1step-----------
@@ -156,9 +158,9 @@ subroutine INITIAL()
 
   !--------Phiexa-----------
   !goto 200
-  open(142,file='/Users/maeda/Desktop/kaiseki/testcode10/phiexact.DAT')
-  open(143,file='/Users/maeda/Desktop/kaiseki/testcode10/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/kaiseki/testcode10/phigrd.DAT')
+  open(142,file='/Users/maeda/Desktop/kaiseki/testcode14/phiexact.DAT')
+  open(143,file='/Users/maeda/Desktop/kaiseki/testcode14/INIden.DAT')
+  open(144,file='/Users/maeda/Desktop/kaiseki/testcode14/phigrd.DAT')
   do i= -1,ndx
      if( dabs(x(i) - hcen) .le. h ) then
         Phiexa(i) = G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
@@ -170,6 +172,7 @@ subroutine INITIAL()
      write(143,*) sngl(rho(i))
   end do
 
+  p2dxdx=G4pi * dinit1 * h * dabs(x(-1)-dx - hcen)  - G4pi/2.0d0 * dinit1 * h**2
   !do i= -1,ndx
   !   if( dabs(x(i) - hcen) .le. h ) then
   !      Phiexa(i) = -G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
@@ -216,7 +219,7 @@ subroutine INITIAL()
 
 
   !---------wave--------
-  goto 201
+  !goto 201
   !do i = -1, ndx
   !   amp = 1.d-3
   !   Phi(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
@@ -227,10 +230,11 @@ subroutine INITIAL()
   do i = -1, ndx
      amp = 1.d-3
      haba=10.0d0
-     !Phi(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
-     Phi1step(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     Phi(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     Phidt(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     !Phi1step(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
   end do
-  201 continue
+  !201 continue
   !---------wave--------
 
 
@@ -252,8 +256,14 @@ subroutine INITIAL()
   !---------Phi-------------
 
   !-------Phidt-----------
-  Phidt(:)=bcphi1(1)
+  !Phidt(:)=bcphi1(1)
+  Phi(:)=bcphi1(1)
+  !Phi(:)=0.0d0
+  !Phidt(:)=0.0d0
+  Phidt(:)=0.0d0
   !-------Phdt-----------
+
+
   !-------Phi1step-----------
   !Phi1step(:)=bcphi1
   Phi1step(:)= Phigrd(-1)
@@ -504,13 +514,29 @@ subroutine BC(mode)
      !-------katagawa-----
      !goto 130
      !---------Phi-------------
-!     Phi(1)= bcphi1(1)
-!     Phi(0)= bcphi1(2)
-!     Phi(-1)= bcphi1(3)
-!     Phi(ndx-2)= Phi(ndx-3)
-!     Phi(ndx-1)= Phi(ndx-2)
-!     Phi(ndx)= Phi(ndx-1)
+     Phi(1)= bcphi1(1)
+     Phi(0)= bcphi1(2)
+     Phi(-1)= bcphi1(3)
+     !Phi(ndx-2)= Phi(ndx-3)
+     !Phi(ndx-1)= Phi(ndx-2)
+     !Phi(ndx)= Phi(ndx-1)
+     !Phidt(0)=Phidt(1)
+     !Phidt(ndx-1)=Phidt(ndx-2)
+     Phidt(0)=0.d0
+     Phidt(ndx-1)=0.d0
      !---------Phi-------------
+     !Phi(1)= bcphi1(1)
+     !Phi(0)= bcphi1(2)
+     !Phi(-1)= bcphi1(3)
+     Phi(ndx-2)= bcphi2(1)
+     Phi(ndx-1)= bcphi2(2)
+     Phi(ndx)= bcphi2(3)
+     !Phi(1)= bcphi1(1)
+     !Phi(0)= Phi(ndx-4)
+     !Phi(-1)= Phi(ndx-3)
+     !Phi(ndx-2)= bcphi2(1)
+     !Phi(ndx-1)= Phi(2)
+     !Phi(ndx)= Phi(1)
   end if
 
 
@@ -784,7 +810,7 @@ subroutine vanalbada(Phipre,Phigrad)
      !if(i==58) then
      !   write(*,*) delp , delm ,Phipre(ip),Phipre(i),Phipre(im) , flmt
      !end if
-     !flmt = (2.d0*delp*delm+eps)/(delp**2+delm**2+eps)
+     flmt = (2.d0*delp*delm+eps)/(delp**2+delm**2+eps)
      Phigrad(i) = flmt
      !grdU(i,k) = flmt*( wave(ixp,jyp,kzp)-wave(ixm,jym,kzm) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
      !Phigrad(i) = flmt*( Phipre(ip)-Phipre(im) )/( 2.0d0 * dx )
@@ -798,7 +824,7 @@ subroutine saveu(in1)
   character(5) name
 
   write(name,'(i5.5)') in1
-  open(21,file='/Users/maeda/Desktop/kaiseki/testcode10/phi'//name//'.dat')
+  open(21,file='/Users/maeda/Desktop/kaiseki/testcode14/phi'//name//'.dat')
   do i=1,ndx-2
      !if(i==1 .or. i==ndx-2) then
      !   write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
@@ -815,23 +841,24 @@ subroutine saveu(in1)
      !        Phi1step(i),-Phi2step(i),-Phicgp(i)+Phicgp(i),-Phicgm(i)+Phicgm(i)
      !   write(*,*) Phi1step(i),-Phi2step(i),i,Phigrd(i)
      !else
-        write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
-             (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&
-             (Phicgp(i)+Phicgm(i))*0.5d0+(Phicgp(i)-Phicgm(i)),&
+!        write(21,*) x(i), Phicgp(i),Phi1step(i) , Phicgm(i),Phi2step(i) ,&
+!             (Phicgp(i)+Phicgm(i))*0.5d0,(Phi1step(i)-Phi2step(i))*0.5d0, (Phicgp(i)-Phicgm(i)),&
+!             (Phicgp(i)+Phicgm(i))*0.5d0+(Phicgp(i)-Phicgm(i)),&
                                 !-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
                                 !(Phicgp(i)+Phicgm(i))*0.5d0-Phiexa(i),&
                                 !-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx-Phigrd(i),&
                                 !(-((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx-Phigrd(i))/&
                                 !((Phicgp(i-1)+Phicgm(i-1))*0.5d0 - (Phicgp(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
-             -((Phicgp(i-1)+Phicgp(i-1))*0.5d0)*0.5d0/dx + ((Phicgp(i+1)+Phicgp(i+1))*0.5d0)*0.5d0/dx,&
-             -((Phicgm(i-1)+Phicgm(i-1))*0.5d0)*0.5d0/dx + ((Phicgm(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
+!             -((Phicgp(i-1)+Phicgp(i-1))*0.5d0)*0.5d0/dx + ((Phicgp(i+1)+Phicgp(i+1))*0.5d0)*0.5d0/dx,&
+!             -((Phicgm(i-1)+Phicgm(i-1))*0.5d0)*0.5d0/dx + ((Phicgm(i+1)+Phicgm(i+1))*0.5d0)*0.5d0/dx,&
              !-((Phicgp(i-1)+Phicgp(i-1))*0.5d0)/dx + ((Phicgp(i+1)+Phicgp(i+1))*0.5d0)/dx,&
              !-((Phicgm(i-1)+Phicgm(i-1))*0.5d0)/dx + ((Phicgm(i+1)+Phicgm(i+1))*0.5d0)/dx,&
-             -Phicgp(i-1)+Phicgp(i+1),-Phicgm(i-1)+Phicgm(i+1),&!-Phicgp(i-1)+Phicgp(i),-Phicgm(i)+Phicgm(i+1)
-             (3.0d0*Phicgp(i)-4.0d0*Phicgp(i-1)+Phicgp(i-2))*0.5d0/dx,&
-             -(3.0d0*Phicgp(i)-4.0d0*Phicgp(i+1)+Phicgp(i+2))*0.5d0/dx,&
-             (3.0d0*Phicgm(i)-4.0d0*Phicgm(i-1)+Phicgm(i-2))*0.5d0/dx,&
-             -(3.0d0*Phicgm(i)-4.0d0*Phicgm(i+1)+Phicgm(i+2))*0.5d0/dx
+!             -Phicgp(i-1)+Phicgp(i+1),-Phicgm(i-1)+Phicgm(i+1),&!-Phicgp(i-1)+Phicgp(i),-Phicgm(i)+Phicgm(i+1)
+!             (3.0d0*Phicgp(i)-4.0d0*Phicgp(i-1)+Phicgp(i-2))*0.5d0/dx,&
+!             -(3.0d0*Phicgp(i)-4.0d0*Phicgp(i+1)+Phicgp(i+2))*0.5d0/dx,&
+!             (3.0d0*Phicgm(i)-4.0d0*Phicgm(i-1)+Phicgm(i-2))*0.5d0/dx,&
+     !             -(3.0d0*Phicgm(i)-4.0d0*Phicgm(i+1)+Phicgm(i+2))*0.5d0/dx
+     write(21,*) x(i) , Phi(i),Phiexa(i)
      !end if
   end do
   close(21)
@@ -1005,4 +1032,169 @@ subroutine split(Phiv,Phidt,Phi1step,dt,mode)
   cnt=cnt+1
   !dtpre=dt
 end subroutine split
+
+
+subroutine gravslv(dt)
+USE comvar
+USE grvvar
+DOUBLE PRECISION, dimension(:), allocatable :: Phidummy ,slop,gslop,F,wnew,wnew2!, Phidtdummy
+double precision :: nu2 , w=2.0d0 , dt2 , dt,deltalength,r,flx,fllx,rx,rx2,rx3,rx4,eta,zta
+integer :: i,in=0
+
+deltalength=dx
+!nu2 = cg * dt / deltalength
+!nu2 = nu2 * nu2
+
+nu2 = cg * dt
+!nu2 = nu2 * nu2 / deltalength / deltalength
+nu2 = nu2 * nu2 / deltalength
+
+dt2 = dt * dt
+
+ALLOCATE(Phidummy(-1:ndx))
+ALLOCATE(slop(-1:ndx))
+ALLOCATE(wnew(-1:ndx))
+ALLOCATE(wnew2(-1:ndx))
+ALLOCATE(gslop(-1:ndx),F(-1:ndx))
+!ALLOCATE(Phidummy(-1:ndx,-1:ndy,-1:ndz))
+
+do i = -1 , ndx
+   Phidummy(i) = Phi(i)
+   !Phidtdummy(i,j,k) = Phidt(i,j,k)
+end do
+
+!do i = -1 , ndx-1
+!   slop(i) = -(-Phidummy(i)+Phidummy(i+1))/deltalength
+   !write(*,*) slop(i) , Phidummy(i),Phidummy(i+1),deltalength
+!end do
+!goto 288
+do i = 0 , ndx-1
+wnew(i)=cg*cg*(Phidummy(i+1)-2.d0*Phidummy(i)+Phidummy(i-1))/deltalength/deltalength
+end do
+
+eta=0.5d0
+zta=0.d0
+!----newmark------
+!goto 288
+do i=1,ndx-2
+Phi(i)=Phidummy(i)+dt*Phidt(i)+dt*dt*(zta*(wnew2(i)-G4pi*cg*cg*rho(i))+(0.5d0-zta)*(wnew(i)-G4pi*cg*cg*rho(i)))
+enddo
+
+do i = 0 , ndx-1
+wnew2(i)=cg*cg*(Phi(i+1)-2.d0*Phi(i)+Phi(i-1))/deltalength/deltalength
+end do
+
+do i=1,ndx-2
+Phidt(i)=Phidt(i)+dt*((1.d0-eta)*(wnew(i)-G4pi*cg*cg*rho(i))+(eta)*(wnew2(i)-G4pi*cg*cg*rho(i)))
+enddo
+
+!288 continue
+!----newmark------
+
+!---diffusion--
+goto 378
+do i=0,ndx-1
+   Phi(i)=Phidummy(i)+cg*dt*Phidt(i)
+end do
+do i = 1,ndx-2
+   Phidt(i)=Phidt(i)+cg*dt/deltalength/deltalength*(Phi(i+1)-2.d0*Phi(i)+Phi(i-1))&
+        -dt*cg*cg*G4pi*rho(i)
+end do
+378 continue
+!---diffusion--
+
+
+goto 188
+!----minmod----
+gslop(:)=1.0d0
+!if(in>500) then
+!do i=0,ndx-2
+!   gslop(i) = dsign(1.d0,Phidummy(i-1))*dmax1(0.0d0,dmin1(dabs(Phidummy(i-1)),dsign(1.0d0,Phidummy(i-1))*Phidummy(i)))
+   !r=(slop(i)-slop(i-1))/(slop(i+1)-slop(i)+1.0d-8)
+   !gslop(i) = dsign(1.0d0,slop(i))*dmin1(dabs(slop(i)),dabs(slop(i-1)))
+   !gslop(i) = dsign(1.d0,slop(i-1))*dmax1(0.0d0,dmin1(1.0d0,r))
+   !write(*,*) gslop(i),slop(i)
+!end do
+slop(-1) = Phidummy(-1)+0.25d0*(-3.d0*Phidummy(-1)+4.d0*Phidummy(0)-Phidummy(1))
+slop(-1) = (Phidummy(-1)+p2dxdx) * 0.5d0!+0.25d0*(-3.d0*Phidummy(-1)+4.d0*Phidummy(0)-Phidummy(1))
+do i=0,ndx
+   slop(i) = (Phidummy(i)+Phidummy(i-1))*0.5d0
+   !slop(i) = (Phidummy(i+1)+Phidummy(i-1))*0.5d0
+end do
+!slop(-1) = (Phidummy(0)+Phidummy(-1))
+!slop(ndx) = (Phidummy(ndx)-Phidummy(ndx-1))
+
+
+do i=0,ndx-1
+   !r = (slop(i)-slop(i-1)+1.d-10)/(slop(i+1)-slop(i)+1.d-10) !i-1/2
+   !r = (Phidummy(i)-Phidummy(i-1)+1.d-10)/(Phidummy(i+1)-Phidummy(i)+1.d-10)
+   !r = (Phidummy(i)-Phidummy(i-2)+1.d-10)/(Phidummy(i+1)-Phidummy(i-1)+1.d-10) !(i-1/2)
+   !if(i==0 .or. i==ndx-1) then
+   !   r = (Phidummy(i)-Phidummy(i-1)+1.d-10)/(Phidummy(i+1)-Phidummy(i-1)+1.d-10) !(i-1/2)
+   !end if
+   !gslop(i)=dmax1(0.0d0,dmin1(1.0d0,r)) !minmod
+   !gslop(i)=dmax1(0.0d0,dmin1(1.0d0,2.d0*r),dmin1(r,2.0d0)) !superbee
+   !gslop(i)=(2.0d0*r+1.d-10)/(r**2+1.0d0+1.d-10) !vanalbada2
+   !gslop(i)=(r**2+r+1.d-10)/(r**2+1.0d0+1.d-10) !vanalbada1
+   !gslop(i)=(r+dabs(r)+1.d-10)/(dabs(r)+1.0d0+1.d-10) !vanleer
+   !gslop(i)=dsign(1.d0,Phidummy(i))*gslop(i)
+   !gslop(i) = dsign(1.d0,Phidummy(i))*dmax1(0.0d0,dmin1(dabs(Phidummy(i)),dsign(1.0d0,Phidummy(i))*Phidummy(i+1)))
+end do
+
+!end if
+!do i=-1,ndx-2
+!if(dsign(1.0d0,slop(i))==dsign(1.0d0,slop(i-1))) then
+!   gslop(i) = dsign(1.0d0,slop(i))*dmin1(dabs(slop(i)),dabs(slop(i-1)))
+   !write(*,*) 'ooooooooooo',gslop(i)
+!else
+!   gslop(i)=0.0d0
+!end if
+!end do
+
+!gslop(:)=1.0d0
+!call vanalbada(Phidummy,gslop)
+!----minmod----
+
+do i = 0 , ndx-1
+   !F(i) = 0.5d0*(slop(i)-Phidummy(i-1))+ gslop(i) * 0.25d0 * (Phidummy(i+1)-Phidummy(i-1))
+   !F(i) = (slop(i) + gslop(i) * 0.5d0 * (slop(i+1)-slop(i)))
+end do
+
+do i = 0 , ndx-1
+   !slop(i)=(Phidummy(i)+gslop(i)*0.5d0*(Phidummy(i+1)-Phidummy(i))&
+   !     -Phidummy(i-1)-gslop(i-1)*0.5d0*(Phidummy(i)-Phidummy(i-1)))/deltalength
+   !slop(i)=(Phidummy(i)+gslop(i)*(Phidummy(i+1)-Phidummy(i)))/deltalength
+   !slop(i) = -gslop(i)*(-Phidummy(i)+Phidummy(i+1))/deltalength
+   !write(*,*) slop(i) , Phidummy(i),Phidummy(i+1),deltalength
+   !slop(i) = dsign(1.d0,Phidummy(i))*dmax1(0.0d0,dmin1(dabs(Phidummy(i)),dsign(1.0d0,Phidummy(i))*Phidummy(i+1)))
+   !F(i) = f(i-1/2) + flmt(r(i-1/2)) * 0.5d0 * (f(i+1/2)-f(i-1/2))
+   !slop(i)=(F(i+1)-F(i))/deltalength!0.5d0*(Phidummy(i)-Phidummy(i-1)) + gslop(i) * 0.25d0 * (Phidummy(i+1)-Phidummy(i-1))
+end do
+
+do i = 1 , ndx-2
+   !rx=(Phidummy(i)-Phidummy(i-1)+1.0d-20)/(Phidummy(i+1)-Phidummy(i)+1.0d-20)
+   !rx2=(Phidummy(i-1)-Phidummy(i-2)+1.0d-20)/(Phidummy(i)-Phidummy(i-1)+1.0d-20)
+   !flx=dmax1(0.0d0,dmin1(1.0d0,rx))
+   !fllx=dmax1(0.0d0,dmin1(1.0d0,rx2))
+
+   rx=(Phidummy(i)-Phidummy(i-1))*0.5d0
+   rx2=(Phidummy(i+1)-Phidummy(i))*0.5d0
+   !Phi(i) = 2.0d0*Phidummy(i) - Phidt(i) + nu2 * (Phidummy(i-1) + Phidummy(i+1) - 2.0d0 * Phidummy(i))! - &
+   Phi(i) = 2.0d0*Phidummy(i) - Phidt(i) + nu2 * (- (Phidummy(i) - Phidummy(i-1)) + Phidummy(i+1) -  Phidummy(i))
+   !Phi(i) = 2.0d0*Phidummy(i) - Phidt(i) + nu2 * gslop(i)*(slop(i-1)-slop(i)) - &
+   !Phi(i) = 2.0d0*Phidummy(i) - Phidt(i) + nu2 *(+slop(i-1)-slop(i)) - &
+   !     rho(i) * G4pi * dt2 * cg * cg
+   !Phi(i) = 2.0d0*Phidummy(i) - Phidt(i) + nu2 *(slop(i)-slop(i-1))! - &
+        !rho(i) * G4pi * dt2 * cg * cg
+end do
+
+
+!do i = -1 , ndx
+!   Phidt(i) = Phidummy(i)
+!end do
+DEALLOCATE(Phidummy,slop,gslop,F,wnew,wnew2)
+!DEALLOCATE(Phidtdummy)
+188 continue
+in=in+1
+end subroutine gravslv
 

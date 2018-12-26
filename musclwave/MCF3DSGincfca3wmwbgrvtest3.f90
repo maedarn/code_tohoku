@@ -1,7 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -12,8 +13,14 @@ DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
+double precision :: shusoku1=0.0d0 , phiratio=1.0d0/3.0d0
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
-INTEGER :: ifchem,ifthrm,ifrad,ifgrv,loopbc=2
+INTEGER :: ifchem,ifthrm,ifrad,ifgrv
+
+!DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
+double precision :: deltalength
+!integer ifevogrv,ifevogrv2
 END MODULE comvar
 
 MODULE mpivar
@@ -34,11 +41,22 @@ END MODULE chmvar
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
+double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
+!double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
+double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
+
+DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
+DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphi1l,bphi2l,bstep1l,bstep2l &
+     !,bphi1r,bphi2r,bstep1r,bstep2r
+     ,bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphixl,bphixr,bphiyl,bphiyr,bphizl,bphizr,&
+     bstepxl,bstepxr,bstepyl,bstepyr,bstepzl,bstepzr,source,sourcedt,sourcedt2!,bphil,bphir
+integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
 
 !======================================================================*
@@ -71,7 +89,9 @@ if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
 if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
-!write(*,*) 'OK1'
+   !write(*,*) 'OK1',NRANK
+   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   !write(*,*) 'OK2',NRANK
 
 IST = mod(NRANK,NSPLTx); KST = NRANK/(NSPLTx*NSPLTy); JST = NRANK/NSPLTx-NSPLTy*KST
 !write(*,*) 'OK11'
@@ -91,6 +111,57 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
 ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
 ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
+!*********grvwave*********
+ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz))
+!ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(sourcedt(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(sourcedt2(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+ALLOCATE(source(-1:ndx,-1:ndy,-1:ndz,1:Dim))
+!ALLOCATE(bphi1l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bphi2l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bstep1l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bstep2l(1:ndy-2,1:ndz-2,-1:1))
+!ALLOCATE(bphi1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bphi2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bstep1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+!ALLOCATE(bstep2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
+
+ALLOCATE(bphil(-1:ndy,-1:ndz,-1:1     ))
+ALLOCATE(bphir(-1:ndy,-1:ndz,ndx-2:ndx))
+
+!ALLOCATE(bphi1l(-1:ndy,-1:ndz,-1:1,1:Dim))
+!ALLOCATE(bphi2l(-1:ndy,-1:ndz,-1:1,1:Dim))
+!ALLOCATE(bstep1l(-1:ndy,-1:ndz,-1:1,1:Dim))
+!ALLOCATE(bstep2l(-1:ndy,-1:ndz,-1:1,1:Dim))
+!ALLOCATE(bphi1r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+!ALLOCATE(bphi2r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+!ALLOCATE(bstep1r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+!ALLOCATE(bstep2r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+
+ALLOCATE( bphixl(-1:ndy,-1:ndz,-1:1     ,1:Dim))
+ALLOCATE(bstepxl(-1:ndy,-1:ndz,-1:1     ,1:Dim))
+ALLOCATE( bphixr(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+ALLOCATE(bstepxr(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
+
+ALLOCATE( bphiyl(-1:ndz,-1:ndx,-1:1     ,1:Dim))
+ALLOCATE(bstepyl(-1:ndz,-1:ndx,-1:1     ,1:Dim))
+ALLOCATE( bphiyr(-1:ndz,-1:ndx,ndy-2:ndy,1:Dim))
+ALLOCATE(bstepyr(-1:ndz,-1:ndx,ndy-2:ndy,1:Dim))
+
+ALLOCATE( bphizl(-1:ndx,-1:ndy,-1:1     ,1:Dim))
+ALLOCATE(bstepzl(-1:ndx,-1:ndy,-1:1     ,1:Dim))
+ALLOCATE( bphizr(-1:ndx,-1:ndy,ndz-2:ndz,1:Dim))
+ALLOCATE(bstepzr(-1:ndx,-1:ndy,ndz-2:ndz,1:Dim))
+!*********grvwave*********
+
 !write(*,*) 'OK3'
 
 call INITIA
@@ -103,6 +174,19 @@ DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
 DEALLOCATE(DTF)
 DEALLOCATE(Phi)
+
+!********gravwave**********
+DEALLOCATE(Phiexa,Phigrd)
+DEALLOCATE(Phicgp)
+DEALLOCATE(Phicgm)
+DEALLOCATE(Phi1step)
+DEALLOCATE(Phi2step)
+!DEALLOCATE(bphi1l,bphi2l,bstep1l,bstep2l)
+!DEALLOCATE(bphi1r,bphi2r,bstep1r,bstep2r)
+DEALLOCATE(bphil,bphir)
+DEALLOCATE(bphixl,bphixr,bphiyl,bphiyr,bphizl,bphizr,bstepxl,bstepxr,bstepyl,bstepyr,bstepzl,bstepzr)
+DEALLOCATE(source,sourcedt,sourcedt2)
+!********gravwave**********
 
 CALL MPI_FINALIZE(IERR)
 
@@ -126,12 +210,13 @@ double precision, dimension(:), allocatable :: x_i,y_i,z_i,dx_i,dy_i,dz_i
 double precision :: theta,pi,amp,xpi,ypi,zpi,phase1,phase2,phase3,kx,ky,kzz,kw
 double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC
 double precision :: ampn(2048),ampn0(2048)
-character*3 :: NPENUM
+character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
-integer i3,i4
+integer i3,i4,i2y,i2z,rsph2,pls
+double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
 
-open(8,file='/work/maedarn/3DMHD/samplecnv2/INPUT3D.DAT')
+open(8,file='/work/maedarn/3DMHD/test/INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -268,6 +353,10 @@ do k = -1, Ncellz*NSPLTz+2
   dz_i(k) = ql1z/dble(Np1z)
 end do
 
+!dx=dy=dz
+deltalength = dx_i(0)
+!dx=dy=dz
+
 x_i(-1) = -dx_i(0)
 do i = 0, Ncellx*NSPLTx+2
    x_i(i) = x_i(i-1) + dx_i(i)
@@ -297,25 +386,226 @@ do k = -1, Ncellz+2
   dz(k) =  dz_i(kz)
 end do
 
+write(*,*) 'check-dx' ,dx(1),deltalength
+
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
-  open(4,file='/work/maedarn/3DMHD/samplecnv2/cdnt.DAT')
+  open(4,file='/work/maedarn/3DMHD/test/cdnt.DAT')
     write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
     write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
     write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
   close(4)
 END IF
 
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   read(2,'(1p1d25.17)') amp
   read(2,'(i8)') nunit
   close(2)
 
 
+  !write(*,*) 'sheet1'
+   !********************sheet***********************
+  !goto 6011
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1 = 2.0d0/G4pi/90.d0
+  censh = ql1x + dx(1)/2.0d0 !x=serfase
+  Hsheet = 1.0d1
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  !Hsheet = dble(Np1x) / 5.0d0
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   !i2 = IST*Ncellx+i
+   !i2y = JST*Ncelly+j
+   !i2z = KST*Ncellz+k
+
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if( dabs(x(i) - censh ) .le. Hsheet ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      !ndH(i,j,k)   = 0.0d0
+      !ndp(i,j,k)   = 0.0d0
+      !ndH2(i,j,k)  = 0.0d0
+      !ndHe(i,j,k)  = 0.0d0
+      !ndHep(i,j,k) = 0.0d0
+      !ndC(i,j,k)   = 0.0d0
+      !ndCO(i,j,k)  = 0.0d0
+      !ndCp(i,j,k)  = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+
+!minexa = 1.0d2
+write(MPIname,'(i3.3)') NRANK
+open(142,file='/work/maedarn/3DMHD/test/phiexact'//MPIname//'.DAT')
+saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+!saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - ql1x)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+
+
+!write(*,*) x_i(0) - censh , x_i(0),saexact1 ,'bcx'
+!ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
+do k=-1,Ncellz+2
+   do j=-1,Ncelly+2
+      do i= -1,Ncellx+2
+         if( dabs(x(i) - censh ) .le. Hsheet ) then
+            Phiexa(i,j,k) = G4pi/2.0d0 * dinit1 * (x(i) - censh )**2
+            write(142,*) sngl(G4pi/2.0d0 * dinit1 * (x(i) - censh )**2)
+         else
+            Phiexa(i,j,k) = G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+            write(142,*) sngl(G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2)
+         end if
+!         write(142,*) sngl(Phiexa(i,j,k))
+         !minexa=dmin1(minexa,Phiexa(i,j,k))
+      end do
+   end do
+end do
+
+!do k=-1,Ncellz+2
+!   do j=-1,Ncelly+2
+!      do pls = 0,2,1
+!         bphi1l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+!         bphi1r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+!         bphi2l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+!         bphi2r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+!      end do
+!   end do
+!end do
+
+
+do k=-1,ndz
+do j=-1,ndy
+do i=0,ndx-1
+   Phigrd(i,j,k)=(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx(1)
+   !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
+end do
+Phigrd(-1,j,k)=(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx(1)
+Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx(1)
+end do
+end do
+
+write(*,*) NRANK,Phigrd(0,1,1),Phigrd(Ncellx-1,1,1),dinit1
+!DEALLOCATE(Phiexa)
+close(142)
+
+dinit1=0.0d0
+ !6011 continue
+!********************sheet***********************
+!write(*,*) 'sheet2'
+
+  !********************sphere***********************
+  goto 6001
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1=3.0d0/G4pi/4.d1/4.d1
+  cenx=dble(Np1x)+0.5d0
+  ceny=dble(Np1y)+0.5d0
+  cenz=dble(Np1z)+0.5d0
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  rrsph = dble(Np1x)*0.2d0
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if(rsph .le. rrsph ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = 0.0d0
+      ndp(i,j,k)   = 0.0d0
+      ndH2(i,j,k)  = 0.0d0
+      ndHe(i,j,k)  = 0.0d0
+      ndHep(i,j,k) = 0.0d0
+      ndC(i,j,k)   = 0.0d0
+      ndCO(i,j,k)  = 0.0d0
+      ndCp(i,j,k)  = 0.0d0
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+dinit1=0.0d0
+ 6001 continue
+!********************sphere***********************
+
+
   !********purtube yz plane***********!
   goto 1333
   ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
-  open(unit=28,file='/work/maedarn/3DMHD/samplecnv2/delta2.dat',FORM='UNFORMATTED')
+  open(unit=28,file='/work/maedarn/3DMHD/test/delta2.dat',FORM='UNFORMATTED')
   do c=-1,Ncellz*NSPLTz+2
      do b=-1,Ncelly*NSPLTy+2
         read(28) plane(b,c)
@@ -379,7 +669,7 @@ end do; end do; end do
   !********purtube yz plane***********!
 
 
-!/work/maedarn/3DMHD/samplecnv2/
+!/work/maedarn/3DMHD/test/
 !***** Alfven wave propagation *****!
 goto 111
 do k = 1, Ncellz+1; do j = 1, Ncelly+1; do i = 1, Ncellx+1
@@ -399,6 +689,8 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
 end do; end do; end do
 112 continue
 
+
+
 !**** read inhomogeneous density field ****!
   DTF(:,:,:) = dinit1
   goto 119
@@ -406,7 +698,7 @@ end do; end do; end do
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
       WRITE(NPENUM,'(I3.3)') MRANK
-      open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file='/work/maedarn/3DMHD/test/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = 1, Ncellz
       do j = 1, Ncelly
         read(8) (DTF(i,j,k),i=Ncellx*IS+1,Ncellx*IS+Ncellx)
@@ -453,7 +745,7 @@ DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCAT
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
-  open(unit=8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(unit=8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     read(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -478,11 +770,15 @@ end do; end do; end do
 
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 
+   !write(*,*) 'pregrv1'
 if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
-  Lbox=ql1x+ql2x; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
+  Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
+  !call SELFGRAVWAVE(0.0d0,1)
+  call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
+  !call SELFGRAVWAVE(0.0d0,6) !calculate cg
 end if
-
+ !write(*,*) 'posgrv1'
 END SUBROUTINE INITIA
 
 
@@ -517,25 +813,25 @@ character*7 stb(3)
 character*3 fnunit,fnpe
 
 
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   read(2,*) time
   read(2,*) nunit
 close(2)
-open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
+open(2,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
   read(2,*) nunit2D
 close(2)
-open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
+open(3,file='/work/maedarn/3DMHD/test/time.DAT')
 do i = 1, nunit
   read(3,'(1p1d25.17)') t(i)
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file='/work/maedarn/3DMHD/samplecnv2/test.DAT')
+!  open(2,file='/work/maedarn/3DMHD/test/test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
-open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//'.DAT')
-!open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//fnpe//'.DAT')
+open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//'.DAT')
+!open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -551,30 +847,79 @@ time_CPU(2) = 0.d0
 time_CPU(3) = 0.d0
 Time_signal = 0
 
+!---------------debug-------------------
+!write(*,*) '-------------3-----------',NRANK
+!---------------debug-------------------
+
 do in10 = 1, maxstp
-  
+
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
-  call SAVEU(nunit,dt,stb,st,t,0)
- 
-  do in20 = 1, nitera
-if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
-    tsave2D = dtsave2D * nunit2D
-    if(time.ge.tsave2D) call SAVEU2D(nunit2D)
-    if(time.ge.tfinal) goto 9000
-    if(time.ge.tsave ) goto 7777
-!***** Determine time-step dt *****
-    dt_mpi(NRANK) = tfinal
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
-    call Couran(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
-    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
-    st_mpi(NRANK) = 1
-    stt= dt_mpi(NRANK)
+  !call SAVEU(nunit,dt,stb,st,t,0)
 
-    call Stblty(tLMT)
+  do in20 = 1, nitera
+     !write(*,*) '---top---'
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
+    !tsave2D = dtsave2D * nunit2D
+    !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
+    !if(time.ge.tfinal) goto 9000
+    !if(time.ge.tsave ) goto 7777
+!***** Determine time-step dt *****
+    !dt_mpi(NRANK) = tfinal
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
+    !call Couran(tLMT)
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
+    !dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
+    !st_mpi(NRANK) = 1
+    !stt= dt_mpi(NRANK)
+
+    !---------------debug-------------------
+    write(*,*) '-------------4-----------',NRANK,in20,in10
+    !---------------debug-------------------
+
+
+    !if(ifgrv==2) then
+    !call SELFGRAVWAVE(stt,5)
+    !end if
+
+
+    !---------------debug-------------------
+    !write(*,*) '-------------5-----------',NRANK,in20,in10
+    !---------------debug-------------------
+
+
+
+    !--------for INIT---------------
+    !call Stblty(tLMT)
+    !--------for INIT---------------
+
+
+
+    !---------------debug-------------------
+    !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
+    !---------------debug-------------------
+    dt=dx(1)/cg*0.1d0
+    !if(ifgrv==2) then
+    !   call SELFGRAVWAVE(tLMT,7)
+
+       !---------------debug-------------------
+       !write(*,*) '-------------99-----------',NRANK,in20,in10
+       !---------------debug-------------------
+
+
+     !  call SELFGRAVWAVE(tLMT,11)
+
+       !---------------debug-------------------
+       !write(*,*) '-------------88-----------',NRANK
+       !---------------debug-------------------
+    !endif
+
+ !---------------debug-------------------
+ !write(*,*) '-------------1-----------',NRANK
+ !---------------debug-------------------
+goto 342
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -590,24 +935,41 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
       dt  = tfinal
       dtt = tfinal
       do i_t = 0, NPE-1
-        dt  = dmin1( dt, dt_gat(i_t) )
+         dt  = dmin1( dt, dt_gat(i_t) )
+         !write(*,*) '--------------dt--------------' , dt
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
       end do
-    END IF
+   END IF
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
-    if(NRANK.eq.0) write(*,*) in20,time,dt
+    !if(NRANK.eq.0) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
+
+    !write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
-    if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
-    call SOURCE(0.5d0*dt)
+    !if(ifgrv.eq.2) then
+       !call GRAVTY(dt,3)
+       !call SELFGRAVWAVE(dt,3)
+       !call SELFGRAVWAVE(dt*0.5d0,3)
+    !end if
+    !call SOURCE(0.5d0*dt)
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
-!***** Godunov parts *****
+    !***** Godunov parts *****
+
+342 continue
+
+
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+    goto 263
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
       ifEVO = 2; goto 1000
@@ -647,24 +1009,81 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
+
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+    263 continue
+    !---------------------------skip-----------------------------
+    !---------------------------skip-----------------------------
+
+    !---------------debug-------------------
+    !write(*,*) '-------------10-----------',NRANK
+    !---------------debug-------------------
+
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
-    call SOURCE(0.5d0*dt)
-    if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
-    call DISSIP()
-    time = time + dt
-  end do
-  itime = itime - 1
+    !call SOURCE(0.5d0*dt)
+    if(ifgrv.eq.2) then
+       !call GRAVTY(dt,2)
+       !call GRAVTY(dt,3)
+       !call GRAVTY(dt*0.5d0,3)
+       !write(*,*) dt,NRANK,'--dt--dt--'
+       call SELFGRAVWAVE(dt,2)
+       !---debug---
+       !call  SELFGRAVWAVE(0.0d0,4)
+       !call SELFGRAVWAVE(dt*0.5d0,3)
+
+       !---------------debug-------------------
+       !write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
+       !---------------debug-------------------
+
+
+    end if
+
+    !*********************************!収束判定
+    !call SELFGRAVWAVE(0.0d0,8) !収束判定
+    !if(shusoku1 > 1.0d0) then
+    !   !---------------debug-------------------
+    !   write(*,*) '-------------goto-----------',NRANK
+       !---------------debug-------------------
+    !   goto 2419
+    !end if
+    !*********************************!収束判定
+
+    !---------------debug-------------------
+    !write(*,*) '-------------12-----------',NRANK
+    !---------------debug-------------------
+    !call DISSIP()
+    !time = time + dt
+ end do
+  !itime = itime - 1
   7777   continue
-  itime = itime + 1
+  !itime = itime + 1
+
+  if(ifgrv.eq.2) then
+     call  SELFGRAVWAVE(0.0d0,4)
+  end if
+
+
+  !*********************************!収束判定
+  !call SELFGRAVWAVE(0.0d0,8) !収束判定
+  !if(shusoku1 > 1.0d0) then
+     !---------------debug-------------------
+  !   write(*,*) '-------------goto-----------',NRANK
+     !---------------debug-------------------
+  !  goto 2419
+  !end if
+  !*********************************!収束判定
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
   IF(NRANK.EQ.0) THEN
     time_CPU(2) = MPI_WTIME()
     time_CPU(2) = ( time_CPU(2)-time_CPU(1) )/3.6d3
     time_CPU(3) = time_CPU(3)+time_CPU(2)
     IF(time_CPU(3)+time_CPU(2).GT.11.7d0) Time_signal=1
-  END IF
+ END IF
   CALL MPI_BCAST(Time_signal,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   IF(Time_signal.EQ.1) GOTO 9000
@@ -672,9 +1091,23 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
 
 end do
 
+!---------------debug-------------------
+!write(*,*) '-------------22-----------',NRANK
+!---------------debug-------------------
+!**********************!収束判定
+!if(ifgrv.eq.2) then !if文中には飛べない
+2419 continue
+if(ifgrv.eq.2) then
+   call  SELFGRAVWAVE(0.0d0,4)
+end if
+!**********************!収束判定
+write(*,*) 'save',NRANK
+
 9000 continue
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
-call SAVEU(nunit,dt,stb,st,t,1)
+!call SAVEU(nunit,dt,stb,st,t,1)
+
+
 
 END SUBROUTINE EVOLVE
 
@@ -697,8 +1130,8 @@ CHARACTER*3 NPENUM
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat')
-open(10,FILE='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(10,file='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat')
+open(10,FILE='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
   do k = 1, Ncellz+1
@@ -726,7 +1159,7 @@ close(10)
 
 IF(NRANK.EQ.0) THEN
   t(nunit) = time
-  open(3,file='/work/maedarn/3DMHD/samplecnv2/time.DAT')
+  open(3,file='/work/maedarn/3DMHD/test/time.DAT')
   do i = 1, nunit
     write(3,'(1p1d25.17)') t(i)
   end do
@@ -740,13 +1173,13 @@ nunit = nunit + 1
   IF(NRANK.EQ.0) THEN
     write(5,'(a,1p1e11.3,1p1e11.3)') 'Done ! Time =', time, Tfinal
 !    close(5)
-    open(2,file='/work/maedarn/3DMHD/samplecnv2/tsave.DAT')
+    open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
     write(2,'(1p1d25.17)') time
     write(2,'(i8)') nunit-1
     close(2)
   END IF
 
-  open(8,file='/work/maedarn/3DMHD/samplecnv2/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     write(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -772,7 +1205,7 @@ CHARACTER*3 NPENUM
 !write(*,*) Ncellx,Ncelly
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit2D
-open(11,FILE='/work/maedarn/3DMHD/samplecnv2/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+open(11,FILE='/work/maedarn/3DMHD/test/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   k=1; do j=1,Ncelly
     write(11) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
                sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
@@ -785,7 +1218,7 @@ close(11)
 nunit2D = nunit2D + 1
 
 IF(NRANK.EQ.0) THEN
-  open(3,file='/work/maedarn/3DMHD/samplecnv2/tsave2D.DAT')
+  open(3,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
     write(3,*) nunit2D
     write(3,*) time
   close(3)
@@ -1313,10 +1746,10 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
    ndCp(i,j,k) = dmax1( ndCpmin ,ndCp(i,j,k)  )
    ndCO(i,j,k) = dmax1( ndCOmin ,ndCO(i,j,k)  )
 
-!  vel = dsqrt(2.d0*ekin*invd)
-!  U(i,j,k,2) = dsign(1.d0,U(i,j,k,2))*dmin1(dabs(U(i,j,k,2)),dabs(U(i,j,k,2))*30.d0/vel)
-!  U(i,j,k,3) = dsign(1.d0,U(i,j,k,3))*dmin1(dabs(U(i,j,k,3)),dabs(U(i,j,k,3))*30.d0/vel)
-!  U(i,j,k,4) = dsign(1.d0,U(i,j,k,4))*dmin1(dabs(U(i,j,k,4)),dabs(U(i,j,k,4))*30.d0/vel)
+  vel = dsqrt(2.d0*ekin*invd)
+  U(i,j,k,2) = dsign(1.d0,U(i,j,k,2))*dmin1(dabs(U(i,j,k,2)),dabs(U(i,j,k,2))*30.d0/vel)
+  U(i,j,k,3) = dsign(1.d0,U(i,j,k,3))*dmin1(dabs(U(i,j,k,3)),dabs(U(i,j,k,3))*30.d0/vel)
+  U(i,j,k,4) = dsign(1.d0,U(i,j,k,4))*dmin1(dabs(U(i,j,k,4)),dabs(U(i,j,k,4))*30.d0/vel)
 
 end do; end do; end do
 
@@ -1722,7 +2155,7 @@ do i = i_sta, Ncell+i_end
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
-
+ 
 end do
 end if
 if((k.ge.9).and.(k.le.11)) then
@@ -1921,9 +2354,11 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
   gamma = ( 5.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+7.d0*ndH2(i,j,k) )/gamma
   c2 = ( gamma * U(i,j,k,5) + Bcc(i,j,k,1)**2.d0+Bcc(i,j,k,2)**2.d0+Bcc(i,j,k,3)**2.d0 ) / U(i,j,k,1)
+  if(U(i,j,k,1) .ne. 0.0d0) then
   tCFL = dmin1(tCFL, dx(i)/(dsqrt(c2) + dabs(U(i,j,k,2))) )
   tCFL = dmin1(tCFL, dy(j)/(dsqrt(c2) + dabs(U(i,j,k,3))) )
   tCFL = dmin1(tCFL, dz(k)/(dsqrt(c2) + dabs(U(i,j,k,4))) )
+end if
 end do; end do; end do
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
 
@@ -2571,7 +3006,7 @@ DEALLOCATE(Tn,Pn,Qx,Qy,Qz)
 
 end if
 !*******************************(C3)
-if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point102'
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point102'
 !*******************************(A1)
 if(ifchem.eq.2) then
 
@@ -2774,7 +3209,7 @@ eps = dt*kCO*ndtot(i,j,k)
 end do; end do; end do
 
 end if
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
 
 
 END SUBROUTINE SOURCE
@@ -2786,10 +3221,11 @@ USE comvar
 USE mpivar
 USE chmvar
 
-double precision  tLMT,alpha,tauC,Nn,Tn,dl
+double precision  tLMT,alpha,tauC,Nn,Tn,dl!,cs
 double precision  CooL
 
 tLMT = tfinal
+!cs =
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   Nn = ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
@@ -3032,7 +3468,7 @@ END DO
 178 CONTINUE
 DEALLOCATE( Nttot,NtH2,NtC,NtCO )
 DEALLOCATE( tau,temp )
-      
+
 END SUBROUTINE SHIELD
 
 
@@ -3064,18 +3500,18 @@ ATN4 = ATN4*0.5d0
 !( 1 pc / 4.2e16  = 7.3469d1 )
 !( 4.35068d15 / 1 pc = 1.40995d-3 )
 !( 8.97293d18 / 1 pc = 2.90791d0  )
-if( k==33 .and. j==33 .and. i==33) write(*,*) NCO(33,33,33,1),NCO(33,33,33,2),'11'
+!if( k==33 .and. j==33 .and. i==33) write(*,*) NCO(33,33,33,1),NCO(33,33,33,2),'11'
 
 ATN5 = &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,1))**0.6) &
 +(0.5d0+dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,1)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,1)+1.d-100)**(-1.3d0) )
-if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'12'
+!if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'12'
 ATN5 = ATN5 + &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,2))**0.6) &
 +(0.5d0+dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,2)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,2)+1.d-100)**(-1.3d0) )
-if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'13'
+!if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'13'
 ATN5 = ATN5*0.5d0
-if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'14'
+!if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'14'
 !H Ionization
 zeta  = 9.4671d-4
 !H Recombination
@@ -3098,7 +3534,7 @@ kH2de = 1.133d6*(T**0.35d0)*dexp(-1.02d2/T)
 kCO   = 1.57785d-2/(1.d0+G0*ATN3/(ndH2(i,j,k)*xo))
 !***CO Photo-dissociation
 kCOph = 3.155d3*G0*ATN3*ATN4*ATN5
-if( k==33 .and. j==33 .and. i==33) write(*,*) G0,ATN3,ATN4,ATN5,kCOph
+!if( k==33 .and. j==33 .and. i==33) write(*,*) G0,ATN3,ATN4,ATN5,kCOph
 !***C ionization
 SHLC1 = dexp(-2.6d0*Av1-3.0857d1*NnC(i,j,k,1)-4.33743413d-4*NH2(i,j,k,1))/(1.d0+4.33743413d-4*NH2(i,j,k,1))
 SHLC2 = dexp(-2.6d0*Av2-3.0857d1*NnC(i,j,k,2)-4.33743413d-4*NH2(i,j,k,2))/(1.d0+4.33743413d-4*NH2(i,j,k,2))
@@ -3160,7 +3596,7 @@ if((IST.eq.0).or.(IST.eq.NSPLTx-1)) then
     ix = i+offset
     divv(i,j,k) = ( U(ix+1,j,k,2)-U(ix-1,j,k,2)+U(ix,j+1,k,3)-U(ix,j-1,k,3)+U(ix,j,k+1,4)-U(ix,j,k-1,4) )*0.25d0
   end do; end do; end do
-  
+
   do k=1,Ncellz; do j=1,Ncelly; do i=1,10
     ix = i+offset
     U(ix,j,k,2) = U(ix,j,k,2) + 0.1d0*(divv(i+1,j,k)-divv(i-1,j,k))
@@ -3171,3 +3607,4 @@ if((IST.eq.0).or.(IST.eq.NSPLTx-1)) then
 end if
 
 END SUBROUTINE DISSIP
+

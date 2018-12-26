@@ -11,20 +11,21 @@ program computeraw
  real(8), allocatable ::  pbrall(:,:),pblall(:,:)
  double precision , allocatable :: x(:),y(:),z(:),inputlength(:)
  integer :: val,core=0,NSPLTx,NSPLTy,NSPLTz,times,mesh,IST,KST,JST,lengthx,lengthy,lengthz,corexy,midle,corestart,lasttime,length
- integer :: i,j,k,kz=1,initime, Ncellx, Ncelly, Ncellz,usecore,dataname
+ integer :: i,j,k,kz=1,initime, Ncellx, Ncelly, Ncellz,usecore,dataname,iiii
  character(50) filename,data
  character(3) NPE!,time
  character(6) time
+ double precision dua,dub,duc
 
   !******parameter********
   core=64
-  mesh=32+2
-  val=1
-  lasttime=30
+  mesh=16+2
+  val=7
+  lasttime=50
   initime=0
-  Ncellx=32
-  Ncelly=32
-  Ncellz=32
+  Ncellx=16
+  Ncelly=16
+  Ncellz=16
   !***********************
 
 if(core.eq.4)    then; NSPLTx = 2; NSPLTy = 2; NSPLTz = 1; end if
@@ -97,33 +98,39 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
          write(*,*) IST,JST,KST,time,usecore
          write(time,'(I6.6)') times
          write(NPE,'(I3.3)') usecore
-         open(unit=150,file='/Users/maeda/Desktop/kaiseki/grwave/INIPHI'//NPE//time//'.DAT')!,FORM='UNFORMATTED') !バイナリ
+         open(unit=150,file='/Users/maeda/Desktop/kaiseki/testcode1/INIPHI1step'//NPE//time//'.DAT')!,FORM='UNFORMATTED') !バイナリ
     !     open(unit=150,file=trim(data)//NPE//'.dat')
          !open(unit=150,file='2D000031.dat',FORM='UNFORMATTED') !バイナリ
          !open(unit=250,file='NEW'//time//NPE//'.dat') !バイナリ
          do k = -1, mesh !*************************************************** +1 いる？ **********************************
             do j = -1, mesh
-              ! do i=  -1, mesh
-               read(150,*) (u(i,j,k,1) ,i=-1,mesh)
+               do i=  -1, mesh
+               read(150,*) dua,dub,duc,u(i,j,k,1),u(i,j,k,2),u(i,j,k,3),u(i,j,k,4),u(i,j,k,5),u(i,j,k,6),u(i,j,k,7) !(u(i,j,k,1) ,i=-1,mesh)
             end do
-            !end do
+            end do
          end do
          close(150)
          do k = 1, Ncellz
             do j = 1, Ncelly
                do i = 1, Ncellx
                   v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),1)=u(i,j,k,1)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),2)=u(i,j,k,2)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),3)=u(i,j,k,3)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),4)=u(i,j,k,4)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),5)=u(i,j,k,5)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),6)=u(i,j,k,6)
+                  v(i+IST*(Ncellx),j+JST*(Ncelly),k+KST*(Ncellz),7)=u(i,j,k,7)
                end do
             end do
          end do
 
 
    end do
-   open(100,file='/Users/maeda/Desktop/kaiseki/grwave/INIPHI'//time//'.DAT')
+   open(100,file='/Users/maeda/Desktop/kaiseki/testcode1/INIPHI'//time//'.DAT')
    do k=1,lengthz
       do j=1,lengthy
          do i=1,lengthx
-            write(100,*) v(i,j,k,1)
+            write(100,*) v(i,j,k,1),v(i,j,k,2),v(i,j,k,3),v(i,j,k,4),v(i,j,k,5),v(i,j,k,6),v(i,j,k,7)
          end do
       end do
       write(*,*) k,times

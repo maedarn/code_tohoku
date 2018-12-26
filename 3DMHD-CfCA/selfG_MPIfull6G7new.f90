@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -14,7 +14,7 @@ DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
-INTEGER :: ifchem,ifthrm,ifrad,ifgrv
+INTEGER :: ifchem,ifthrm,ifrad,ifgrv,loopbc=2
 END MODULE comvar
 
 MODULE mpivar
@@ -35,7 +35,7 @@ END MODULE chmvar
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi,Phiexa,Phigrd
 DOUBLE PRECISION :: Lbox
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
@@ -91,6 +91,8 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
          NH2(-1:ndx,-1:ndy,-1:ndz,2),NnC(-1:ndx,-1:ndy,-1:ndz,2),NCO(-1:ndx,-1:ndy,-1:ndz,2),tCII(-1:ndx,-1:ndy,-1:ndz,2) )
 ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
 ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz))
 
 !write(*,*) 'OK3'
 
@@ -103,7 +105,7 @@ write(*,*) 'OK4'
 DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
 DEALLOCATE(DTF)
-DEALLOCATE(Phi)
+DEALLOCATE(Phi,Phiexa,Phigrd)
 
 CALL MPI_FINALIZE(IERR)
 
@@ -127,7 +129,7 @@ double precision, dimension(:), allocatable :: x_i,y_i,z_i,dx_i,dy_i,dz_i
 double precision :: theta,pi,amp,xpi,ypi,zpi,phase1,phase2,phase3,kx,ky,kzz,kw
 double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC
 double precision :: ampn(2048),ampn0(2048)
-character*3 :: NPENUM
+character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2y,i2z,rsph2
@@ -256,8 +258,11 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   end if
 end do; end do; end do
 write(*,*) NRANK,'INIT'
+
 ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
 ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
+
+write(*,*) NRANK,'INIT2'
 
 do i = -1, Np1x
   dx_i(i) = ql1x/dble(Np1x)
@@ -315,8 +320,9 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   read(2,'(i8)') nunit
   close(2)
 
+  write(*,*) NRANK,'INIT3'
   !********************sphere***********************
-  !goto 6001
+  goto 6001
   DTF(:,:,:) = 0.0d0
   dinit1=1.0d0
   cenx=dble(Np1x)+0.5d0
@@ -378,8 +384,137 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
 end do
 end do
 end do
- !6001 continue
- !********************sphere***********************
+write(*,*) 'sphere'
+6001 continue
+!********************sphere***********************
+
+
+   !********************sheet***********************
+  !goto 6111
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1 = 2.0d0/G4pi/90.d0
+  censh = ql1x + dx(1)/2.0d0 !x=serfase
+  Hsheet = 1.0d1
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  !Hsheet = dble(Np1x) / 5.0d0
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   !i2 = IST*Ncellx+i
+   !i2y = JST*Ncelly+j
+   !i2z = KST*Ncellz+k
+
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if( dabs(x(i) - censh ) .le. Hsheet ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      !ndH(i,j,k)   = 0.0d0
+      !ndp(i,j,k)   = 0.0d0
+      !ndH2(i,j,k)  = 0.0d0
+      !ndHe(i,j,k)  = 0.0d0
+      !ndHep(i,j,k) = 0.0d0
+      !ndC(i,j,k)   = 0.0d0
+      !ndCO(i,j,k)  = 0.0d0
+      !ndCp(i,j,k)  = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+
+!minexa = 1.0d2
+write(MPIname,'(i3.3)') NRANK
+open(142,file='/work/maedarn/3DMHD/test/phiexact'//MPIname//'.DAT')
+!saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+!saexact1 = G4pi * dinit1 * Hsheet * dabs( x_i(0) - ql1x)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+
+
+!write(*,*) x_i(0) - censh , x_i(0),saexact1 ,'bcx'
+!ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
+do k=-1,Ncellz+2
+   do j=-1,Ncelly+2
+      do i= -1,Ncellx+2
+         if( dabs(x(i) - censh ) .le. Hsheet ) then
+            Phiexa(i,j,k) = G4pi/2.0d0 * dinit1 * (x(i) - censh )**2
+            write(142,*) sngl(G4pi/2.0d0 * dinit1 * (x(i) - censh )**2)
+         else
+            Phiexa(i,j,k) = G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2
+            write(142,*) sngl(G4pi * dinit1 * Hsheet * dabs(x(i) - censh)  - G4pi/2.0d0 * dinit1 * Hsheet**2)
+         end if
+!         write(142,*) sngl(Phiexa(i,j,k))
+         !minexa=dmin1(minexa,Phiexa(i,j,k))
+      end do
+   end do
+end do
+
+!do k=-1,Ncellz+2
+!   do j=-1,Ncelly+2
+!      do pls = 0,2,1
+!         bphi1l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+!         bphi1r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+!         bphi2l(j,k,1-abs(pls)) = Phiexa(1-abs(pls),j,k)
+!         bphi2r(j,k,Ncellx+abs(pls)) = Phiexa(Ncellx+abs(pls),j,k)
+!      end do
+!   end do
+!end do
+
+
+do k=-1,ndz
+do j=-1,ndy
+do i=0,ndx-1
+   Phigrd(i,j,k)=(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx(1)
+  !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
+end do
+Phigrd(-1,j,k)=(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx(1)
+Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx(1)
+end do
+end do
+
+!write(*,*) NRANK,Phigrd(0,1,1),Phigrd(Ncellx-1,1,1),dinit1
+!DEALLOCATE(Phiexa)
+!close(142)
+
+dinit1=0.0d0
+ !6111 continue
+!********************sheet***********************
 
   !********purtube yz plane***********!
   goto 1333
@@ -765,26 +900,30 @@ end do
 
 END SUBROUTINE EVOLVE
 
+
+
 SUBROUTINE GRAVTY(dt,mode)
 USE comvar
 USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
 DOUBLE PRECISION  :: dt,dxi
-INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
+INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt,jtime=0
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
+character(3) Nfinal,itime
 
 if(mode.eq.1) then
   call pinter(Nmem1,Nmem2,Ncellx,Ncelly,Ncellz)
 end if
 
 if(mode.eq.2) then
-  N_MPI(20)=1; N_MPI(1)=1
-  iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
-  call PB()
-  call mglin(Nmem1,Nmem2,2,5,5)
-  DEALLOCATE(bphi1,bphi2)
+   write(*,*)  'mode2'
+   N_MPI(20)=1; N_MPI(1)=1
+   iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
+   call PB()
+   call mglin(Nmem1,Nmem2,2,5,5)
+   DEALLOCATE(bphi1,bphi2)
 
   N_ol = 2
                       !count, blocklength, stride
@@ -832,17 +971,35 @@ if(mode.eq.2) then
   end do; end do; end if
   if(IST.eq.NSPLTx-1) then; do k=1,Ncellz; do j=1,Ncelly
     Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
-  end do; end do; end if
+ end do; end do; end if
+
+ write(Nfinal,'(I3.3)') NRANK
+ write(itime,'(I3.3)') jtime
+ open(521+NRANK,file='final'//itime//Nfinal//'.dat')
+ jtime=jtime+1
+ !end if
+
+ do k=1,Ncellz!; kk=(ncx+1)*(ncy+1)*k+point2(NGL)
+    do j=1,Ncelly!; jj=(ncx+1)*j+kk
+       do i=1,Ncellx!; ii = i+jj
+          !Phi(i,j,k) = cphi2(ii)
+          write(521+NRANK,*) Phi(i,j,k),Phiexa(i,j,k), Phi(i,j,k)-Phiexa(i,j,k), &
+               (Phi(i+1,j,k)-Phi(i-1,j,k))*0.5d0/dx(1),Phigrd(i,j,k),(Phi(i+1,j,k)-Phi(i-1,j,k))*0.5d0/dx(1)-Phigrd(i,j,k),&
+          dsqrt(((Phi(i+1,j,k)-Phi(i-1,j,k))*0.5d0/dx(1))**2.d0/(((Phi(i+1,j,k)-Phi(i-1,j,k))*0.5d0/dx(1))**2.d0&
+          +((Phi(i,j+1,k)-Phi(i,j-1,k))*0.5d0/dx(1))**2.d0+((Phi(i,j,k+1)-Phi(i,j,k-1))*0.5d0/dx(1))**2.d0))
+       end do; end do; end do
+
+       close(521+NRANK)
 end if
 
-!if(mode.eq.3) then !acceraration because of gravity
-!  dxi = 1.d0/(12.d0*dx(0))
-!  do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
-!    U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
-!    U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
-!    U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
-!  end do;end do;end do
-!end if
+if(mode.eq.3) then !acceraration because of gravity
+  dxi = 1.d0/(12.d0*dx(0))
+  do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+    U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
+    U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
+    U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
+  end do;end do;end do
+end if
 
 END SUBROUTINE GRAVTY
 
@@ -866,7 +1023,6 @@ nl = 1
 nx=3; ny=3; nz=3
 2 continue
 point1(nl+1)=point1(nl)+(nx)*(ny)*(nz)
-write(*,*) NRANK,point1(nl+1),nx,nl ,'point1'
 nx=nx*2-1; ny=ny*2-1; nz=nz*2-1
 nl = nl+1
 if(nl.ne.NGcr+1) goto 2
@@ -874,13 +1030,12 @@ if(nl.ne.NGcr+1) goto 2
 Need1 = point1(NGcr+1)
 
 !*** MPI Split Pointer ***!
-!nl = NGcr-1
-nl=NGcr
+nl = NGcr-1
+!nl = NGcr !===================????==================
 point2(nl) = 1
 nx=(2**NGcr)/NSPLTx+2; ny=(2**NGcr)/NSPLTy+2; nz=(2**NGcr)/NSPLTz+2
 3 continue
 point2(nl+1)=point2(nl)+(nx)*(ny)*(nz)
-write(*,*) NRANK,point2(nl+1),nx,nl,'point2'
 nx=nx*2-2; ny=ny*2-2; nz=nz*2-2
 nl = nl+1
 if(nl.ne.NGL+1) goto 3
@@ -905,235 +1060,86 @@ INCLUDE 'mpif.h'
 DOUBLE PRECISION :: cphi1(Need1),crho1(Need1),cres1(Need1),crhs1(Need1) !Unsplit
 DOUBLE PRECISION :: cphi2(Need2),crho2(Need2),cres2(Need2),crhs2(Need2) !MPI Split
 DOUBLE PRECISION :: tMPI(Need1,0:NPE-1)
-character(3) nnn
-character(3) name1
-double precision :: shd1=1.0d4
-!***********initialaze**********
-!cphi1(:)=0.0d0
-!crho1(:)=0.0d0
-!cres1(:)=0.0d0
-!crhs1(:)=0.0d0
-!cphi2(:)=0.0d0
-!crho2(:)=0.0d0
-!cres2(:)=0.0d0
-!crhs2(:)=0.0d0
-!***********initialaze**********
+character(3) Nfinal
 
-write(name1,'(I3.3)') NRANK
-open(250+NRANK,file='GINI'//name1//'.dat')
-do k=0,Ncellz+1; kk=(Ncellx+2)*(Ncelly+2)*k+point2(NGL)
-do j=0,Ncelly+1; jj=(Ncellx+2)*j+kk
-do i=0,Ncellx+1; nc = i+jj
-   write(250+NRANK,*) nc,jj,kk,i,j,k,  U(i,j,k,1)*G4pi
-end do
-end do
-end do
-close(250+NRANK)
 !Pre-BC for rho is necessary
-!write(*,*) 'mglin' , NRANK
-
-write(*,*) point2(NGL)+(Ncellz+2)*(Ncelly+2)*(Ncellx+2),Need2,'neeeed'
-
+!write(*,*) 'aaa'
 do k=0,Ncellz+1; kk=(Ncellx+2)*(Ncelly+2)*k+point2(NGL)
 do j=0,Ncelly+1; jj=(Ncellx+2)*j+kk
 do i=0,Ncellx+1; nc = i+jj
-   crhs2(nc) = U(i,j,k,1)*G4pi
+  crhs2(nc) = U(i,j,k,1)*G4pi
 end do;end do;end do
-
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*) 'mglin2' , NRANK
 
 ncx=(Ncellx+1)/2+1; ncy=(Ncelly+1)/2+1; ncz=(Ncellz+1)/2+1
 ngrid=NGL-1
-write(*,*) NRANK,ngrid,ncx,point2(ngrid),point2(ngrid+1),point2(ngrid+1)-point2(ngrid),'=======ppp-======'
 call rstrctMPI(crho2(point2(ngrid)),crhs2(point2(ngrid+1)),ncx,ncy,ncz,0)
 
-do while(ngrid.ne.NGcr) !真で繰り返す
+do while(ngrid.ne.NGcr)
   ncx=ncx/2+1; ncy=ncy/2+1; ncz=ncz/2+1
   ngrid=ngrid-1
   call rstrctMPI(crho2(point2(ngrid)),crho2(point2(ngrid+1)),ncx,ncy,ncz,0)
-  write(*,*) ncx, ngrid,NRANK,crho2(point2(ngrid)),crho2(point2(ngrid)+1),crho2(point2(ngrid+1)-1),point2(ngrid),point2(ngrid+1),&
-  point2(ngrid+1)-point2(ngrid),'gggrid'
 end do
 ncxcr=ncx; ncycr=ncy; nczcr=ncz
 
 ncx=2**NGcr+1;ncy=ncx;ncz=ncx
-write(*,*) ncxcr,ncx, ngrid,NGcr,NRANK,point2(NGcr+1)-point2(NGcr),point2(NGcr+1),point2(NGcr),crho2(point2(NGcr+1)), &
-     point1(NGcr),point1(NGcr+1)-point1(NGcr),crho2(point2(NGcr)), 'precll'
-
-!call saveu1(crho1(point1(NGcr)),crho2(point2(NGcr)),ncx,ncy,ncz,ncxcr,ncycr,nczcr)
-call collect(crho1(point1(NGcr)),crho2(point2(NGcr)),ncx,ncy,ncz,ncxcr,ncycr,nczcr,1)
+call collect( crho1(point1(NGcr)),crho2(point2(NGcr)),ncx,ncy,ncz,ncxcr,ncycr,nczcr )
 
 do while(ngrid.ne.1)
   ncx=ncx/2+1; ncy=ncy/2+1; ncz=ncz/2+1
   ngrid=ngrid-1
-  call rstrct(crho1(point1(ngrid)),crho1(point1(ngrid+1)),ncx,ncy,ncz,0,NRANK)
+  call rstrct(crho1(point1(ngrid)),crho1(point1(ngrid+1)),ncx,ncy,ncz,0)
 end do
 
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
 call slvsmlb(cphi1(point1(1)),crho1(point1(1))) !BC set is necessary
-!write(*,*) 'mglin3' , NRANK
-
-
-
-
-
 
 !Here nc=3
 ngrid = NGL
 do j=2,ngrid
-   write(*,*) 'mglin0' , NRANK , j
-   IF(j.le.NGcr) THEN !*** generate candidate sol. from j-1 to j (upward) ***
 
-      if(cphi1(point1(j-1)+1) > shd1) then
-         write(*,*) j,cphi1(point1(j-1)+1),NRANK,'==============1==============='
-      end if
-
-     ncx=ncx*2-1; ncy=ncy*2-1; ncz=ncz*2-1
-     !********:fordebug:************
-     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-     !********:fordebug:************
-    call interp(cphi1(point1(j)),cphi1(point1(j-1)),ncx,ncy,ncz,pointb1(j),1,NRANK)  !BC set is necessary
+  IF(j.le.NGcr) THEN !*** generate candidate sol. from j-1 to j (upward) *** 
+    ncx=ncx*2-1; ncy=ncy*2-1; ncz=ncz*2-1
+    call interp(cphi1(point1(j)),cphi1(point1(j-1)),ncx,ncy,ncz,pointb1(j),1)  !BC set is necessary
     call copy(crhs1(point1(j)),crho1(point1(j)),ncx,ncy,ncz)
-
-    if(cphi1(point1(j)+1) > shd1) then
-       write(*,*) j,cphi1(point1(j)+1),NRANK,'==============2==============='
-    end if
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
-if(j.eq.NGcr) then
-
-   !********:fordebug:************
-   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-   !********:fordebug:************
-    if(cphi1(point1(NGcr)+1) > shd1) then
-       write(*,*) j,cphi1(point1(j)+1),NRANK,'==============3==============='
-    end if
-
+    if(j.eq.NGcr) then
       ncx=ncxcr; ncy=ncycr; ncz=nczcr
       call divide( cphi2(point2(NGcr)),cphi1(point1(NGcr)),ncx,ncy,ncz,2**NGcr+1,2**NGcr+1,2**NGcr+1 )
       call copyMPI(crhs2(point2(NGcr)),crho2(point2(NGcr)),ncx,ncy,ncz)
-
-      if(cphi2(point1(NGcr)+1) > shd1) then
-         write(*,*) j,cphi1(point1(j)+1),NRANK,'==============4==============='
-      end if
     end if
- ELSE
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
-if(cphi2(point2(j-1)+1) > shd1) then
-   write(*,*) j,cphi2(point2(j-1)+1),NRANK,'==============5==============='
-end if
-
+  ELSE
     ncx=ncx*2-1; ncy=ncy*2-1; ncz=ncz*2-1
     call interpMPI(cphi2(point2(j)),cphi2(point2(j-1)),ncx,ncy,ncz,pointb2(j),1)  !BC set is necessary
     if(j.ne.ngrid) call copyMPI(crhs2(point2(j)),crho2(point2(j)),ncx,ncy,ncz)
-
-    if(cphi2(point2(j)+1) > shd1) then
-       write(*,*) j,cphi2(point2(j)+1),NRANK,'==============6==============='
-    end if
   END IF
-  write(*,*) 'mglin1' , NRANK , j
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
+  write(*,*) cphi2(point2(NGcr)+5)
   do jcycle=1,ncycle !V-cycle
-    write(*,*) 'mglin2' , NRANK , j , jcycle
+
     nfx=ncx; nfy=ncy; nfz=ncz
     do jj=j,2,-1          !*** DOWNWARD *****************************
                           !    phi + rhs --> res -->      (level N  )
                           !                          rhs  (level N-1)
-
-       write(*,*) 'mglinpost1' , NRANK , j , jcycle ,jj
-       IF(jj.lt.NGcr) THEN !*** generate residual from jj to jj-1 ****
-
-         ! if(cphi2(point2(j-1)+1) > shd1) then
-         !    write(*,*) j,cphi2(point2(j-1)+1),NRANK,'==============5==============='
-         ! end if
-
+      IF(jj.lt.NGcr) THEN !*** generate residual from jj to jj-1 ****
         do jpre=1,NPRE
-           mode=2; if((jj.ne.j).and.(jpre.eq.1)) mode=1
-           !********:fordebug:************
-           CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-           !********:fordebug:************
-
-           if(cphi1(point1(jj)+1) > shd1) then
-              write(*,*) j,jpre,jcycle,cphi1(point1(jj)+1),crhs1(point1(jj)+1),NRANK,'==============7==============='
-           end if
-
-           call relax(cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz,mode,NRANK)
-
-           if(cphi1(point1(jj)+1) > shd1) then
-              write(*,*) j,jpre,jcycle,cphi1(point1(jj)+1),crhs1(point1(jj)+1),NRANK,'==============8==============='
-           end if
-
-       end do
-       !********:fordebug:************
-       CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-       !********:fordebug:************
-        call resid(cres1(point1(jj)),cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz)
+          mode=2!; if((jj.ne.j).and.(jpre.eq.1)) mode=1
+          call relax(cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz,mode)
+        end do
+        call resid(cres1(point1(jj)),cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz) 
         nfx=nfx/2+1; nfy=nfy/2+1; nfz=nfz/2+1
-
-        if(cres1(point1(jj)+1) > shd1) then
-           write(*,*) j,jcycle,cphi1(point1(jj)+1),cres1(point1(jj)+1) ,NRANK,'==============9==============='
-        end if
-
-        call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1,NRANK)  !fill0 at BC below this subroutine is necessary
+        call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1)  !fill0 at BC below this subroutine is necessary
         call  fill0(cphi1(point1(jj-1)),nfx,nfy,nfz)
       ELSE
         NPRE1 = NPRE; if(j.ge.NGL) NPRE1 = 2
         do jpre=1,NPRE1
-           mode=2; if((jj.ne.j).and.(jpre.eq.1)) mode=1
-           !********:fordebug:************
-           CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-           !********:fordebug:************
-
-           if(cphi2(point2(jj)+1) > shd1) then
-              write(*,*) j,jpre,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============10==============='
-           end if
-
-           call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,mode)
-
-           if(cphi2(point2(jj)+1) > shd1) then
-              write(*,*) j,jpre,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============11==============='
-           end if
-       end do
-       !write(*,*) 'mglinpost2' , NRANK , j , jcycle ,jj
-       call residMPI(cres2(point2(jj)),cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz)
-       !write(*,*) 'mglinpost3' , NRANK , j , jcycle ,jj
-
-       if(cres2(point2(jj)+1) > shd1) then
-           write(*,*) j,jcycle,cphi2(point1(jj)+1),cres2(point1(jj)+1) ,NRANK,'==============12==============='
-        end if
-       if(jj.eq.NGcr) then
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
-       !   write(*,*) 'mglinpost4' , NRANK , j , jcycle ,jj
+          mode=2!; if((jj.ne.j).and.(jpre.eq.1)) mode=1
+          call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,mode)
+        end do
+        call residMPI(cres2(point2(jj)),cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz)
+        if(jj.eq.NGcr) then
           nfx=2**NGcr+1;nfy=nfx;nfz=nfx
-          call collect( cphi1(point1(NGcr)),cphi2(point2(NGcr)),nfx,nfy,nfz,ncxcr,ncycr,nczcr,1 ) !necessary at upward loop below
-          call collect( cres1(point1(NGcr)),cres2(point2(NGcr)),nfx,nfy,nfz,ncxcr,ncycr,nczcr,1 )
-
-          if(cres1(point1(NGcr)+1) > shd1 .or. cphi1(point1(NGcr)+1) > shd1) then
-             write(*,*) j,jcycle,cphi1(point1(NGcr)+1),cres1(point1(NGcr)+1),cphi2(point2(NGcr)+1) ,NRANK,'==============13==============='
-          end if
+          call collect( cphi1(point1(NGcr)),cphi2(point2(NGcr)),nfx,nfy,nfz,ncxcr,ncycr,nczcr ) !necessary at upward loop below
+          call collect( cres1(point1(NGcr)),cres2(point2(NGcr)),nfx,nfy,nfz,ncxcr,ncycr,nczcr )
           nfx=nfx/2+1; nfy=nfy/2+1; nfz=nfz/2+1
-       !   write(*,*) 'mglinpost5' , NRANK , j , jcycle ,jj
-          call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1,NRANK)  !fill0 at BC below this subroutine is necessary
+          call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1)  !fill0 at BC below this subroutine is necessary
           call  fill0(cphi1(point1(jj-1)),nfx,nfy,nfz)
-       !   write(*,*) 'mglinpost6' , NRANK , j , jcycle ,jj
         else
           nfx=nfx/2+1; nfy=nfy/2+1; nfz=nfz/2+1
           call rstrctMPI(crhs2(point2(jj-1)),cres2(point2(jj)),nfx,nfy,nfz,1)  !fill0 at BC below this subroutine is necessary
@@ -1141,114 +1147,55 @@ CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
         end if
       END IF
     end do
-
+    !write(*,*) cphi2(point2(NGcr)+5)
     call slvsml(cphi1(point1(1)),crhs1(point1(1)))  !BC set is unnecessary
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
 
     nfx=3; nfy=3; nfz=3
     do jj=2,j             !*** UPWARD **********************************
                           !    phi --> phi +rhs --> phi      (level N  )
                           !  + phi                           (level N-1)
       IF(jj.le.NGcr) THEN !*** generate new solution from jj-1 to jj ***
-         nfx=2*nfx-1; nfy=2*nfy-1; nfz=2*nfz-1
-
-
-         if(cphi1(point1(jj)+1) > shd1) then
-              write(*,*) j,jj,jcycle,cphi1(point1(jj-1)+1),cres1(point1(jj)+1),NRANK,'==============14==============='
-           end if
-
-         call addint(cphi1(point1(jj)),cphi1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,NRANK)  !BC set is unnecessary
-        !********:fordebug:************
-        CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-        !********:fordebug:************
-
-        if(cphi1(point1(jj)+1) > shd1) then
-              write(*,*) j,jj,jcycle,cphi1(point1(jj)+1),cres1(point1(jj)+1),NRANK,'==============15==============='
-           end if
-
+        nfx=2*nfx-1; nfy=2*nfy-1; nfz=2*nfz-1
+        call addint(cphi1(point1(jj)),cphi1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz)  !BC set is unnecessary
         if(jj.eq.NGcr) then
           nfx=ncxcr; nfy=ncycr; nfz=nczcr
-          call divide( cphi2(point2(NGcr)),cphi1(point1(NGcr)),nfx,nfy,nfz,2**NGcr+1,2**NGcr+1,2**NGcr+1 ) !境界の値は0?!!!!!!!!!!!!!!!!!!!!!!!!!
-          !********:fordebug:************
-          CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-          !********:fordebug:************
-
-          if(cphi2(point2(jj)+1) > shd1) then
-              write(*,*) j,jj,jcycle,cphi2(point2(jj)+1),cres2(point2(jj)+1),NRANK,'==============16==============='
-           end if
-
-           do jpost=1,NPOST
-
-              if(cphi2(point2(jj)+1) > shd1) then
-                 write(*,*) j,jj,jpost,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============17==============='
-              end if
-
-              call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,2)
-
-              if(cphi2(point2(jj)+1) > shd1) then
-                 write(*,*) j,jj,jpost,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============18==============='
-              end if
-          end do
-       else
-          !********:fordebug:************
-          CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-          !********:fordebug:************
+          call divide( cphi2(point2(NGcr)),cphi1(point1(NGcr)),nfx,nfy,nfz,2**NGcr+1,2**NGcr+1,2**NGcr+1 )
           do jpost=1,NPOST
-             if(cphi1(point1(jj)+1) > shd1) then
-                 write(*,*) j,jj,jpost,jcycle,cphi1(point1(jj)+1),crhs1(point1(jj)+1),NRANK,'==============19==============='
-              end if
-              call relax(cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz,2,NRANK)
-              if(cphi1(point1(jj)+1) > shd1) then
-                 write(*,*) j,jj,jpost,jcycle,cphi1(point1(jj)+1),crhs1(point1(jj)+1),NRANK,'==============20==============='
-              end if
+            call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,2)
+          end do
+        else
+          do jpost=1,NPOST
+            call relax(cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz,2)
           end do
         end if
-     ELSE
-        !********:fordebug:************
-        CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-        !********:fordebug:************
-        if(cphi2(point2(jj-1)+1) > shd1) then
-           write(*,*) j,jj,jcycle,cphi2(point2(jj-1)+1),cres2(point2(jj)+1),NRANK,'==============17==============='
-        end if
+      ELSE
         nfx=2*nfx-1; nfy=2*nfy-1; nfz=2*nfz-1
         call addintMPI(cphi2(point2(jj)),cphi2(point2(jj-1)),cres2(point2(jj)),nfx,nfy,nfz)  !BC set is unnecessary
         NPOST1 = NPOST; if(j.ge.NGL) NPOST1 = 2
-        !********:fordebug:************
-        CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-        !********:fordebug:************
         do jpost=1,NPOST1
-           if(cphi2(point2(jj)+1) > shd1) then
-              write(*,*) j,jj,jpost,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============22==============='
-           end if
-           call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,2)
-           if(cphi2(point2(jj)+1) > shd1) then
-              write(*,*) j,jj,jpost,jcycle,cphi2(point2(jj)+1),crhs2(point2(jj)+1),NRANK,'==============23==============='
-           end if
+          call relaxMPI(cphi2(point2(jj)),crhs2(point2(jj)),nfx,nfy,nfz,2)
         end do
       END IF
-   end do
-   !********:fordebug:************
-   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-   !********:fordebug:************
-     write(*,*) 'mglin4' , NRANK , j , jcycle
+    end do
+
   end do
 end do
 
 !ncx = Ncellx+1
-WRITE(nnn,'(I3.3)') NRANK
-open(521,file='final'//nnn//'.dat')
+!if(NRANK==40) then
+!write(Nfinal,'(I3.3)') NRANK
+!open(521+NRANK,file='final'//Nfinal//'.dat')
+!end if
+
 do k=1,ncz; kk=(ncx+1)*(ncy+1)*k+point2(NGL)
 do j=1,ncy; jj=(ncx+1)*j+kk
 do i=1,ncx; ii = i+jj
    Phi(i,j,k) = cphi2(ii)
-   write(521,*) Phi(i,j,k)
+!    write(521+NRANK,*) Phi(i,j,k)
 end do; end do; end do
-close(521)
-   !call saveu(Phi(1,1,1),nxc,nyc,nzc,2)
-
+!if(NRANK==40) then
+!close(521+NRANK)
+!end if
 END SUBROUTINE mglin
 
 
@@ -1259,39 +1206,17 @@ DOUBLE PRECISION :: u(0:nx,0:ny,0:nz)
 DOUBLE PRECISION  :: VECU
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 INTEGER :: LEFTt,RIGTt
-character(4) name
-character(3) nR
-integer :: countin=0
-!write(*,*) 'BC1',NRANK
-
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-!open(510+NRANK,file='BCsgr'//name//nR//'.dat')
-!do kkkk=0,nz
-!   do jjjj=0,ny
-!      do iiii=0,nx
-!         write(510+NRANK,*) iiii,jjjj,kkkk,nx,u(iiii,jjjj,kkkk)
-!      end do
-!   end do
-!end do
-!close(510+NRANK)
-!write(*,*) 'rMPI' , countin , NRANK
-countin =countin + 1
-
 
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-
 !*** for X ***!
 LEFTt = LEFT; IF(IST.eq.0)        LEFTt = MPI_PROC_NULL
 RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGTt = MPI_PROC_NULL
-write(*,*) 'BC2',NRANK,LEFTt,RIGTt
 CALL MPI_TYPE_VECTOR((ny+1)*(nz+1),1,nx+1,MPI_REAL8,VECU,IERR); CALL MPI_TYPE_COMMIT(VECU,IERR)
 if(lx1.eq.1) CALL MPI_SENDRECV(u(nx-1,0,0),1,VECU,RIGTt,1, &
                                u(   0,0,0),1,VECU,LEFTt,1, MPI_COMM_WORLD,MSTATUS,IERR)
 if(lx2.eq.1) CALL MPI_SENDRECV(u(   1,0,0),1,VECU,LEFTt,1, &
                                u(nx  ,0,0),1,VECU,RIGTt,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
-!write(*,*) 'BC2',NRANK
 !*** for Y ***!
 !IF(JST.eq.0)        BOTM = MPI_PROC_NULL
 !IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
@@ -1301,7 +1226,6 @@ if(ly1.eq.1) CALL MPI_SENDRECV(u(0,ny-1,0),1,VECU,TOP ,1, &
 if(ly2.eq.1) CALL MPI_SENDRECV(u(0,   1,0),1,VECU,BOTM,1, &
                                u(0,ny  ,0),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
-!write(*,*) 'BC3',NRANK
 !*** for z ***!
 !IF(KST.eq.0)        DOWN = MPI_PROC_NULL
 !IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
@@ -1311,67 +1235,28 @@ if(lz1.eq.1) CALL MPI_SENDRECV(u(0,0,nz-1),1,VECU,UP  ,1, &
 if(lz2.eq.1) CALL MPI_SENDRECV(u(0,0,   1),1,VECU,DOWN,1, &
                                u(0,0,nz  ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*) 'BC4',NRANK
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
 END SUBROUTINE BCsgr_MPI
 
 
-SUBROUTINE collect(u1,u2,nx1,ny1,nz1,nx2,ny2,nz2,pos)
+SUBROUTINE collect(u1,u2,nx1,ny1,nz1,nx2,ny2,nz2)
 USE mpivar
 INCLUDE 'mpif.h'
-integer :: countin=0, nx1,ny1,nz1,nx2,ny2,nz2,pos!,MSTATUS(MPI_STATUS_SIZE)
-double precision :: u2(0:nx2,0:ny2,0:nz2) , u1(nx1,ny1,nz1)
-!double precision ,intent(in) :: u2(0:nx2,0:ny2,0:nz2)!,u2(0:nx2,0:ny2,0:nz2)
-!double precision :: u3(1:(nx2+1)*(ny2+1)*(nz2+1))
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+double precision :: u1(nx1,ny1,nz1),u2(0:nx2,0:ny2,0:nz2)
 double precision :: tMPI(0:nx2,0:ny2,0:nz2,0:NPE-1)
-!integer :: countin=0!,nx1,ny1,nz1,nx2,ny2,nz2
-character*4 name
-character*3 nR
-write(*,*) 'cl=======1'
-goto 3001
-write (name,'(I4.4)') countin
-write (nR,'(i3.3)') NRANK
-open(10+NRANK,file='/work/maedarn/3DMHD/test/collectpre'//name//nR//'.dat')
-!goto 3000
-do k=0,nz2
-   do j=0,ny2
-      do i=0,nx2
-         write(10+NRANK,*) pos,nx1,nx2,i,j,k,u2(i,j,k)
-      end do
-   end do
-end do
-!3000 continue
 
-!do i=1,(nx2+1)*(ny2+1)*(nz2+1)
-!   write(131+NRANK,*) i , u3(i)
-!end do
-
-!do k=0,nz2
-!   do j=0,ny2
-!      do i=0,nx2
-!         u2(i,j,k)=u3( (i+1) + nx2*(j) +  nx2*ny2*(k) )
-!      end do
-!   end do
-!end do
-close(10+NRANK)
-3001 continue
+!***************fordebug*****************
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!***************fordebug*****************
 
 do k=0,nz2; do j=0,ny2; do i=0,nx2
   tMPI(i,j,k,NRANK)=u2(i,j,k)
 end do;end do;end do
-countin =countin + 1
-!**********NEW FORM***********
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!**********NEW FORM***********
-
 do Nroot=0,NPE-1
   CALL MPI_BCAST(tMPI(0,0,0,Nroot),(nx2+1)*(ny2+1)*(nz2+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
-
-!**********NEW FORM***********
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!**********NEW FORM***********
-
 do Nroot=0,NPE-1
  ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
  nxed=nx2-1; IF(ISTt.eq.NSPLTx-1) nxed=nx2
@@ -1381,48 +1266,13 @@ do Nroot=0,NPE-1
   do jj=1,nyed;j=JSTt*(ny2-1)+jj
    do ii=1,nxed;i=ISTt*(nx2-1)+ii
     u1(i,j,k) = tMPI(ii,jj,kk,Nroot)
- end do;end do;end do;end do
-
- !write (name,'(i4.4)') countin
- !write (nR,'(i3.3)') NRANK
- !goto 1202
-! open(251+NRANK,file='collect'//name//nR//'.dat')
-
- !do k=1,nz1; do j=1,ny1; do i=1,nx1
- !        write(251+NRANK,*) nx1, i,j,k, u1(i,j,k)
- !     end do
- !  end do
-!end do
- !do kk=1,nzed;k=KSTt*(nz2-1)+kk
- ! do jj=1,nyed;j=JSTt*(ny2-1)+jj
- !  do ii=1,nxed;i=ISTt*(nx2-1)+ii
- !         write(251+NRANK,*) ii,jj,kk, u1(i,j,k)!,tMPI(ii,jj,kk,Nroot)
- !      end do
- !   end do
- !end do
- !close(251+NRANK)
- !write(*,*) 'collect' , countin , NRANK
-! countin =countin + 1
- !1202 continue
- write(*,*) 'cl=======2'
+end do;end do;end do;end do
 END SUBROUTINE collect
 
 
 SUBROUTINE divide(u2,u1,nx2,ny2,nz2,nx1,ny1,nz1)
 USE mpivar
 double precision :: u2(0:nx2,0:ny2,0:nz2),u1(nx1,ny1,nz1)
-integer :: countin=0
-character(4) name
-character(3) nR
-!write(*,*) 'rsmp=======1'
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-open(171+NRANK,file='dvd'//name//nR//'.dat')
-
-write(*,*) 'di======1'
-!**********NEW FORM***********
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!**********NEW FORM***********
 
 iist=0; IF(IST.eq.0) iist=1
 jjst=0; IF(JST.eq.0) jjst=1
@@ -1431,16 +1281,8 @@ do kk=kkst,nz2;k=KST*(nz2-1)+kk
   do jj=jjst,ny2;j=JST*(ny2-1)+jj
     do ii=iist,nx2;i=IST*(nx2-1)+ii
       u2(ii,jj,kk) = u1(i,j,k)
-   end do;end do;end do
+end do;end do;end do
 
-   do k=0,nz2; do j=0,ny2; do i=0,nx2
-         write(171+NRANK,*) i,j,k, u2(i,j,k)
-      end do
-   end do
-end do
-close(171+NRANK)
-countin = countin+1
-write(*,*) 'di=======2'
 END SUBROUTINE divide
 
 
@@ -1448,27 +1290,10 @@ SUBROUTINE rstrctMPI(uc,uf,nx,ny,nz,mode)
 USE mpivar
 double precision :: uc(0:nx,0:ny,0:nz),uf(0:2*nx-1,0:2*ny-1,0:2*nz-1)
 double precision, parameter :: w = 1.d0/12.d0
-integer :: countin=0
-character(4) name
-character(3) nR
-write(*,*) 'rsmp=======1'
-
-goto 3002
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-open(171+NRANK,file='rstrctpre'//name//nR//'.dat')
-do k=0,2*nz-1; do j=0,2*ny-1; do i=0,2*nx-1
-         write(171+NRANK,*) i,j,k, uf(i,j,k)
-      end do
-   end do
-end do
-close(171+NRANK)
-countin = countin+1
-3002 continue
 
 ixst=1; ixed=nx-1; iyst=1; iyed=ny-1; izst=1; ized=nz-1
-IF(IST.eq.0) ixst = 2; IF(JST.eq.0) iyst = 2; IF(KST.eq.0) izst = 2 !境界は導出済
-
+IF(IST.eq.0) ixst = 2; IF(JST.eq.0) iyst = 2; IF(KST.eq.0) izst = 2
+write(*,*) 'rMPI' , uf(0,0,0)
 do kc=izst,ized; kf=2*kc-1
   do jc=iyst,iyed; jf=2*jc-1
     do ic=ixst,ixed; if=2*ic-1
@@ -1481,7 +1306,7 @@ end do
 
 IF(IST.eq.0) THEN
   do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
-    uc(1 ,jc,kc)=uf(1 ,jf,kf)
+    uc(1 ,jc,kc)=uf(1 ,jf,kf) 
   end do; end do
 END IF
 IF(IST.eq.NSPLTx-1) THEN
@@ -1528,42 +1353,15 @@ IF(IST.eq.NSPLTx-1) THEN
 END IF
 
 END IF
-
+!write(*,*) 'rMPI--' , uc(0,0,0)
 CALL BCsgr_MPI(uc,nx,ny,nz,1,1,1,1,1,1)
-
-!open(271+NRANK,file='rstrct'//name//nR//'.dat')
-!do k=0,nz; do j=0,ny; do i=0,nx
-!         write(271+NRANK,*) i,j,k, uc(i,j,k)
-!      end do
-!   end do
-!end do
-!close(271+NRANK)
-write(*,*) 'rsmp=======2'
+!write(*,*) 'rMPI--2' , uc(0,0,0)
 END SUBROUTINE rstrctMPI
 
 
-SUBROUTINE rstrct(uc,uf,nx,ny,nz,mode,NRANK)
+SUBROUTINE rstrct(uc,uf,nx,ny,nz,mode)
 double precision uc(nx,ny,nz),uf(2*nx-1,2*ny-1,2*nz-1)
 double precision, parameter :: w = 1.d0/12.d0
-integer :: countin=0,NRANK
-character(4) name
-character(3) nR
-write(*,*) 'rs=======1'
-
-goto 3003
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-!open(171+NRANK,file='rstrctnompi'//name//nR//'.dat')
-
-open(371+NRANK,file='rstrctnompipre'//name//nR//'.dat')
-do k=1,2*nz-1; do j=1,2*ny-1; do i=1,2*nx-1
-         write(371+NRANK,*)nx, i,j,k, uf(i,j,k)
-      end do
-   end do
-end do
-close(371+NRANK)
-
-3003 continue
 
 do kc=2,nz-1; kf=2*kc-1
   do jc=2,ny-1; jf=2*jc-1
@@ -1576,7 +1374,7 @@ end do
 
 nf=2*nx-1
 do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
-  uc(1 ,jc,kc)=uf(1 ,jf,kf)
+  uc(1 ,jc,kc)=uf(1 ,jf,kf) 
   uc(nx,jc,kc)=uf(nf,jf,kf)
 end do; end do
 nf=2*nz-1
@@ -1597,18 +1395,8 @@ do kc=1,nz; do jc=1,ny
   uc(nx,jc,kc) = 0.d0
 end do; end do
 
-goto 3004
-open(171+NRANK,file='rstrctnompi'//name//nR//'.dat')
-do k=1,nz; do j=1,ny; do i=1,nx
-         write(171+NRANK,*) i,j,k, uc(i,j,k)
-      end do
-   end do
-end do
-close(171+NRANK)
-countin = countin+1
-3004 continue
 END IF
-write(*,*) 'rs=======2'
+
 END SUBROUTINE rstrct
 
 
@@ -1616,7 +1404,6 @@ SUBROUTINE interpMPI(uf,uc,nx,ny,nz,np,mode)
 USE mpivar
 USE slfgrv
 double precision uf(0:nx,0:ny,0:nz),uc(0:nx/2+1,0:ny/2+1,0:nz/2+1)
-write(*,*) 'inmp=======1'
 
 do kc=1,nz/2+1; kf=2*kc-1
   do jc=1,ny/2+1; jf=2*jc-1
@@ -1666,20 +1453,13 @@ END IF
 END IF
 
 CALL BCsgr_MPI(uf,nx,ny,nz,1,0,1,0,1,0)
-write(*,*) 'inmp=======2'
+
 END SUBROUTINE interpMPI
 
 
-SUBROUTINE interp(uf,uc,nx,ny,nz,np,mode,NRANK)
+SUBROUTINE interp(uf,uc,nx,ny,nz,np,mode)
 USE slfgrv
 double precision uf(nx,ny,nz),uc(nx/2+1,ny/2+1,nz/2+1)
-integer :: countin=0,NRANK
-character(4) name
-character(3) nR
-write(*,*) 'in=======1'
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-
 
 do kc=1,nz/2+1; kf=2*kc-1
   do jc=1,ny/2+1; jf=2*jc-1
@@ -1719,73 +1499,55 @@ IF(mode.eq.1) THEN
   end do; end do
 END IF
 
-open(171+NRANK,file='interp'//name//nR//'.dat')
-do k=1,nz; do j=1,ny; do i=1,nx
-         write(171+NRANK,*) mode,i,j,k, uf(i,j,k)
-      end do
-   end do
-end do
-close(171+NRANK)
-countin = countin+1
-write(*,*) 'in=======1'
 END SUBROUTINE interp
 
 
 SUBROUTINE addintMPI(uf,uc,res,nx,ny,nz)
-  double precision res(0:nx,0:ny,0:nz),uc(0:nx/2+1,0:ny/2+1,0:nz/2+1),uf(0:nx,0:ny,0:nz)
-  integer :: up=0
+double precision res(0:nx,0:ny,0:nz),uc(0:nx/2+1,0:ny/2+1,0:nz/2+1),uf(0:nx,0:ny,0:nz)
 call interpMPI(res,uc,nx,ny,nz,0,0)
-!integer :: up=0
 !do k=0,nz; do j=0,ny; do i=0,nx
 !  uf(i,j,k)=uf(i,j,k)+res(i,j,k)
 !end do; end do; end do
-write(*,*) 'addmp=======1'
+
 !isw=2 !for speed up
-!isw=2-mod(up,2)
-!up=up+1
-!write(*,*) isw ,'iswiswmpi'
-do jsw=2,1,-1
-isw=jsw
+!do jsw=2,1,-1
+!   isw=jsw
 do k=0,nz
   do j=0,ny
-    do i=isw-1,nx,2
+     !do i=isw-1,nx,2
+     do i=0,nx,1
       uf(i,j,k)=uf(i,j,k)+res(i,j,k)
     end do
-    isw=3-isw
+    !isw=3-isw
   end do
-  isw=3-isw
+  !isw=3-isw
 end do
-end do
-write(*,*) 'addmp=======2'
+!end do
+
 END SUBROUTINE addintMPI
 
 
-SUBROUTINE addint(uf,uc,res,nx,ny,nz,NRANK)
-  double precision res(nx,ny,nz),uc(nx/2+1,ny/2+1,nz/2+1),uf(nx,ny,nz)
-  integer NRANK
-  integer :: up=0
-  write(*,*) 'add=======1'
-call interp(res,uc,nx,ny,nz,0,0,NRANK)
+SUBROUTINE addint(uf,uc,res,nx,ny,nz)
+double precision res(nx,ny,nz),uc(nx/2+1,ny/2+1,nz/2+1),uf(nx,ny,nz)
+call interp(res,uc,nx,ny,nz,0,0)
 !do k=1,nz; do j=1,ny; do i=1,nx
 !uf(i,j,k)=uf(i,j,k)+res(i,j,k)
 !end do; end do; end do
 
 !isw=1 ! for speed up
-!isw=2-mod(up,2)
-!up=up+1
-!write(*,*) isw ,'iswisw'
-do jsw=1,2
-   isw=jsw
+!do jsw=1,2
+!   isw=jsw
 do k=1,nz
   do j=1,ny
-    do i=isw,nx,2
+     !do i=isw,nx,2
+     do i=1,nx,1
       uf(i,j,k)=uf(i,j,k)+res(i,j,k)
     end do
-    isw=3-isw
+    !isw=3-isw
   end do
 end do
-end do
-write(*,*) 'add=======2'
+!end do
+
 END SUBROUTINE addint
 
 
@@ -1793,7 +1555,6 @@ SUBROUTINE slvsml(u,rhs)
 USE slfgrv
 double precision  u(3,3,3),rhs(3,3,3)
 double precision h
-write(*,*) 'sl=======1'
 h=0.5d0*Lbox
 
 u(1,1,1)=0.d0;u(3,1,1)=0.d0
@@ -1817,7 +1578,7 @@ u(2,3,2) = 0.025d0*h*h*(-rhs(2,1,1)-2.d0*rhs(2,1,2)-rhs(2,1,3)-rhs(2,2,1)-2.d0*r
 u(2,1,3) = 0.025d0*h*h*(-2.d0*rhs(2,1,1)-2.d0*rhs(2,1,2)-8.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
 u(2,2,3) = 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-2.d0*rhs(2,2,1)-2.d0*rhs(2,2,2)-8.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
 u(2,3,3) = 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-2.d0*rhs(2,3,1)-2.d0*rhs(2,3,2)-8.d0*rhs(2,3,3))
-write(*,*) 'sl=======2'
+
 END SUBROUTINE slvsml
 
 
@@ -1825,7 +1586,6 @@ SUBROUTINE slvsmlb(u,rhs)
 USE slfgrv
 double precision  u(3,3,3),rhs(3,3,3)
 double precision h
-write(*,*) 'rslvb=======1'
 h=0.5d0*Lbox
 
 u(1,1,1)=bphi1(1,1);  u(3,1,1)=bphi1(1,2)
@@ -1877,145 +1637,154 @@ u(2,3,3) = 0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) 
 - h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
 2.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 8.d0*h*h*rhs(2,3,3))
 
-do k=1,3
-   do j=1,3
-      do i=1,3
-         write(*,*) i,j,k, u(i,j,k),rhs(i,j,k)
-      end do
-   end do
-end do
-write(*,*) 'slvb=======2'
 END SUBROUTINE slvsmlb
 
 
 SUBROUTINE relaxMPI(u,rhs,nx,ny,nz,mode)
 USE mpivar
 USE slfgrv
-
-!=====fordbug
 INCLUDE 'mpif.h'
-
 double precision, parameter :: w=1.d0/6.d0
 double precision u(0:nx,0:ny,0:nz),rhs(0:nx,0:ny,0:nz)
 double precision h,h2
-integer :: countin=0
-character(4) name
-character(3) nR
-h=Lbox/dble((nx-1)*NSPLTx)
+integer :: check,check2,ctime=0,ctime2=0,check3=0
+h=Lbox/((nx-1)*NSPLTx)
 h2=h*h
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
-write(*,*) 'rxmp=======1' ,NRANK,h2,u(0,0,0)
-
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-!call saveu(u(0:nx,0:ny,0:nz),nx,nz,ny,0,0,0,1)
-!goto 3005
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') NRANK
-!open(751+NRANK,file='rMPIpre'//name//nR//'.dat')
-!do kkkk=0,nz
-!   do jjjj=0,ny
-!      do iiii=0,nx
-!         write(751+NRANK,*) iiii,jjjj,kkkk,nx,u(iiii,jjjj,kkkk),rhs(iiii,jjjj,kkkk)
-!      end do
-!   end do
-!end do
-!close(751+NRANK)
-write(*,*) 'rMPI' , countin , NRANK
-countin =countin + 1
-!3005 continue
-!********:fordebug:************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!********:fordebug:************
-
+!if(NRANK==0) then
+!   open(509,file='rMPIinin.dat')
+!   open(519,file='rMPIinin2.dat')
+!end if
+!check2=0
+!if(nx/2==0) then
+!   check3=check3+1
+!end if
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 li=0; IF(IST.eq.0) li=1
 lj=0; IF(JST.eq.0) lj=1
 lk=0; IF(KST.eq.0) lk=1
-do jsw=2,1,-1 !Red-Black Gauss-Seidel
-  isw=jsw
+
+!if(IST==0 .and. mode==1) then
+!   write(*,*) u(1,0,1), u(1,1,0),u(1,ny,1), u(1,1,nz),'U0U0'
+!end if
+
+!do jsw=2,1,-1 !Red-Black Gauss-Seidel
+!   isw=jsw
+!   check=3-jsw
   if(mode.eq.1) then
     do k=1,nz-1
-      do j=1,ny-1
-        do i=isw,nx-1,2
+       do j=1,ny-1
+!          if(NRANK==0) then
+!             write(509,*) isw
+!             if(check==isw) then
+!                open(519,file='rMPIinin2.dat')
+!                write(519,*) 'err',nx,ny,nz
+!                close(519)
+!             end if
+!             check=isw
+!          end if
+         !do i=isw,nx-1,2
+         do i=1,nx-1,1
           ifl=li*int(1/i)
           u(i,j,k)=-w*h2*rhs(i,j,k) &
-          *dble(1-ifl) + (0.5d0+dsign(0.5d0,dble(ifl)-0.5d0))*u(i,j,k)
+          *(1-ifl) + (0.5d0+dsign(0.5d0,ifl-0.5d0))*u(i,j,k)
 !		  if(NRANK.eq.0) write(*,*) 'i=',i,'ifl=',ifl
 !		  if(NRANK.eq.0) write(*,*) (1-ifl),(0.5d0+dsign(0.5d0,ifl-0.5d0))
-        end do
-        isw=3-isw
-      end do
-      isw=3-isw
-   end do
 
-   !********:fordebug:************
-   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-   !********:fordebug:************
-   write(*,*) 'rPRE1',NRANK , mode
-   mode=2
+          !if(NRANK==40) then
+!             write(519,*) i,j,k,isw,u(i,j,k),h2,(0.5d0+dsign(0.5d0,dble(ifl)-0.5d0)),&
+!                 (1.0d0-dble(ifl)),rhs(i,j,k)
+          !end if
+          !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+          !if(NRANK==0) then
+          !   write(509,*) isw
+          !   if(check==isw) then
+          !      open(519,file='rMPIinin2.dat')
+          !      write(519,*) 'err',nx,ny,nz
+          !      close(519)
+          !   end if
+          !   check=isw
+          !end if
+       end do
+!        isw=3-isw
+      end do
+!      isw=3-isw
+    end do
+    mode=2
+!    check2=10
   else
     do k=1,nz-1
-      do j=1,ny-1
-        do i=isw,nx-1,2
+       do j=1,ny-1
+!          if(NRANK==0) then
+!             write(509,*) isw
+!             if(check==isw) then
+!                open(519,file='rMPIinin2.dat')
+!                write(519,*) 'err',nx,ny,nz,check2,ctime,ctime2,check3
+!                close(519)
+!                ctime=ctime+1
+                !isw=3-isw
+!             else
+!                ctime2=ctime2+1
+!             end if
+!             check=isw
+!          end if
+!          do i=isw,nx-1,2
+         !    if(IST==0 .and. i==1)
+         do i=1,nx-1,1
           ifl=li*int(1/i)
           u(i,j,k)=w*(u(i+1,j,k)+u(i-1,j,k)+u(i,j+1,k)+u(i,j-1,k)+u(i,j,k+1)+u(i,j,k-1)-h2*rhs(i,j,k)) &
-          *dble(1-ifl) + (0.5d0+dsign(0.5d0,dble(ifl)-0.5d0))*u(i,j,k)
-        end do
-        isw=3-isw
+          *(1-ifl) + (0.5d0+dsign(0.5d0,ifl-0.5d0))*u(i,j,k)
+
+          !if(NRANK==0) then
+          !   write(509,*) isw
+          !   if(check==isw) then
+          !      open(519,file='rMPIinin2.dat')
+          !      write(519,*) 'err',nx,ny,nz,check2
+          !      close(519)
+          !   end if
+          !   check=isw
+!             write(509,*) i,j,k,isw,u(i,j,k),h2,(0.5d0+dsign(0.5d0,dble(ifl)-0.5d0)),&
+!                  (1.0d0-dble(ifl)),rhs(i,j,k),u(i+1,j,k)+u(i-1,j,k)+u(i,j+1,k)+u(i,j-1,k)+u(i,j,k+1)+u(i,j,k-1)!,u(i,j,k)-uold(i,j,k)
+          !end if
+          !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+         end do
+!         isw=3-isw
       end do
-      isw=3-isw
+!      isw=3-isw
     end do
  end if
- write(*,*)'rPRE2', NRANK , mode
+ !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
  CALL BCsgr_MPI(u,nx,ny,nz,1,1,1,1,1,1)
- write(*,*)'rPRE3', NRANK , mode
-end do
-write(*,*) 'rxmp=======2'
+  !write(*,*) 'rlx' , u(1,1,1)
+!end do
+
+!if(NRANK==0) then
+!   close(509)
+!   close(519)
+!   write(*,*) 'rlx' , u(1,1,1)
+!end if
+!close(509)
+!close(519)
 END SUBROUTINE relaxMPI
 
 
-SUBROUTINE relax(u,rhs,nx,ny,nz,mode,a)
+SUBROUTINE relax(u,rhs,nx,ny,nz,mode)
 USE slfgrv
 double precision, parameter :: w=1.d0/6.d0
 double precision u(nx,ny,nz),rhs(nx,ny,nz)
 double precision h,h2
-integer :: countin=0,a
-character(3) nR
-character(4) name
-write(*,*) 'rx=======1'
-goto 1010
-write (name,'(i4.4)') countin
-write (nR,'(i3.3)') a
-open(511+a,file='rpre'//name//nR//'.dat')
-do kkkk=1,nz
-   do jjjj=1,ny
-      do iiii=1,nx
-         write(511+a,*) iiii,jjjj,kkkk,nx,u(iiii,jjjj,kkkk),rhs(iiii,jjjj,kkkk)
-      end do
-   end do
-end do
-close(511+a)
-!write(*,*) 'rMPI' , countin , NRANK
-countin =countin + 1
-1010 continue
-write(*,*) a,'relax=======1'
-h=Lbox/dble(nx-1)
+h=Lbox/(nx-1)
 h2=h*h
 
-do jsw=1,2 !Red-Black Gauss-Seidel
-  isw=jsw
+!do jsw=1,2 !Red-Black Gauss-Seidel
+!  isw=jsw
   if(mode.eq.1) then
     do k=1,nz
       do j=1,ny
-        do i=isw+1,nx-1,2
+         !do i=isw+1,nx-1,2
+         do i=2,nx-1,2
           u(i,j,k)=-w*h2*rhs(i,j,k)
         end do
-        isw=3-isw
+!        isw=3-isw
       end do
     end do
     mode=2
@@ -2030,16 +1799,16 @@ do jsw=1,2 !Red-Black Gauss-Seidel
 !        jm = (j-1)*(1+isign(1,j-2)   )/2 + ny*(1-isign(1,j-2)   )/2 !original
         jp = j+1; if(j.eq.ny) jp = 1
 !        jp = (j+1)*(1+isign(1,ny-1-j))/2 +  1*(1-isign(1,ny-1-j))/2 !original
-        do i=isw+1,nx-1,2
-           u(i,j,k)=w*(u(i+1,j,k)+u(i-1,j,k)+u(i,jp,k)+u(i,jm,k)+u(i,j,kp)+u(i,j,km)-h2*rhs(i,j,k))
-          !qq write(*,*) a,i,i-1,'relaxinGG'
+!        do i=isw+1,nx-1,2
+        do i=2,nx-1,1
+          u(i,j,k)=w*(u(i+1,j,k)+u(i-1,j,k)+u(i,jp,k)+u(i,jm,k)+u(i,j,kp)+u(i,j,km)-h2*rhs(i,j,k))
         end do
-        isw=3-isw
+!        isw=3-isw
       end do
     end do
   end if
-end do
-write(*,*) a,'relax=======2'
+!end do
+
 END SUBROUTINE relax
 
 
@@ -2048,8 +1817,7 @@ USE mpivar
 USE slfgrv
 double precision res(0:nx,0:ny,0:nz),rhs(0:nx,0:ny,0:nz),u(0:nx,0:ny,0:nz)
 double precision h,h2i
-write(*,*) 'resmp=======1'
-h=Lbox/dble((nx-1)*NSPLTx)
+h=Lbox/((nx-1)*NSPLTx)
 h2i=1.d0/(h*h)
 
 !is=1; IF(IST.eq.0) is=2
@@ -2066,7 +1834,7 @@ end do; end do; end do
 IF(IST.eq.0) THEN
 !do k=1,nz,2; do j=1,ny,2 !for speed up
 do k=1,nz; do j=1,ny
-  res(1 ,j,k)=0.d0 
+  res(1 ,j,k)=0.d0
 end do; end do
 END IF
 IF(IST.eq.NSPLTx-1) THEN
@@ -2077,7 +1845,7 @@ end do; end do
 END IF
 
 CALL BCsgr_MPI(res,nx,ny,nz,1,1,1,1,1,1)
-write(*,*) 'resmp=======1'
+
 END SUBROUTINE residMPI
 
 
@@ -2085,8 +1853,7 @@ SUBROUTINE resid(res,u,rhs,nx,ny,nz)
 USE slfgrv
 double precision res(nx,ny,nz),rhs(nx,ny,nz),u(nx,ny,nz)
 double precision h,h2i
-write(*,*) 'res=======1'
-h=Lbox/dble(nx-1)
+h=Lbox/(nx-1)
 h2i=1.d0/(h*h)
 do k=1,nz; do j=1,ny; do i=2,nx-1
   res(i,j,k)=-h2i*(u(i+1,j,k)+u(i-1,j,k)+u(i,j+1,k)+u(i,j-1,k)+u(i,j,k+1)+u(i,j,k-1)-6.d0*u(i,j,k))+rhs(i,j,k) 
@@ -2097,28 +1864,25 @@ do k=1,nz; do j=1,ny
   res(1 ,j,k)=0.d0
   res(nx,j,k)=0.d0
 end do; end do
-write(*,*) 'res=======2'
+
 END SUBROUTINE resid
 
 
 SUBROUTINE copy(aout,ain,nx,ny,nz)
-  double precision ain(nx,ny,nz),aout(nx,ny,nz)
-  write(*,*) 'cp=======1'
+double precision ain(nx,ny,nz),aout(nx,ny,nz)
 do k=1,nz; do j=1,ny; do i=1,nx; aout(i,j,k)=ain(i,j,k); end do; end do; end do
 END SUBROUTINE copy
 
 SUBROUTINE copyMPI(aout,ain,nx,ny,nz)
-  double precision ain(0:nx,0:ny,0:nz),aout(0:nx,0:ny,0:nz)
-  write(*,*) 'cpmp=======1'
+double precision ain(0:nx,0:ny,0:nz),aout(0:nx,0:ny,0:nz)
 do k=0,nz; do j=0,ny; do i=0,nx; aout(i,j,k)=ain(i,j,k); end do; end do; end do
 END SUBROUTINE copyMPI
 
 SUBROUTINE fill0(u,nx,ny,nz)
   double precision u(nx,ny,nz)
-  write(*,*) 'fi=======1'
-  !===============
+  !*********
   u(:,:,:)=0.0d0
-  !===============
+  !*********
 do j=1,ny; do i=1,nx
   u(i,j,1 )=0.d0
   u(i,j,nz)=0.d0
@@ -2135,10 +1899,9 @@ END SUBROUTINE fill0
 
 SUBROUTINE fill0MPI(u,nx,ny,nz)
   double precision u(0:nx,0:ny,0:nz)
-  write(*,*) 'fimp=======1'
-  !===============
+  !*********
   u(:,:,:)=0.0d0
-  !===============
+  !*********
 do j=0,ny; do i=0,nx
   u(i,j,0 )=0.d0
   u(i,j,1 )=0.d0
@@ -2177,12 +1940,10 @@ complex*16, dimension(:), allocatable :: spe1,spe2
 double precision :: kap,temp1r,temp1i,temp2r,temp2i,facG,fac,dxx,dyy,dzz,zp1,zp2
 double precision, dimension(:,:,:), allocatable :: fint0,fint1
 
+DOUBLE PRECISION, dimension(:,:,:),  allocatable :: bcl1,bcr2
+complex*16, dimension(:,:), allocatable :: bcspel1,bcspel2
+
 character*4 fnum
-integer :: countin=0
-character(4) name
-character(3) nR
-
-
 
 iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
 
@@ -2198,12 +1959,12 @@ if(nl.ne.NGcr+1) goto 2
 Needb = pointb1(NGcr+1)
 ALLOCATE(bphi1(Needb,2))
 
-!nl = NGcr-1
-nl = NGcr
+nl = NGcr-1
+!nl = NGcr  !===================????==================
 pointb2(nl) = 1
 nx=(2**NGcr)/NSPLTx+2; ny=(2**NGcr)/NSPLTy+2; nz=(2**NGcr)/NSPLTz+2
 3 continue
-pointb2(nl+1)=pointb2(nl)+max0(nx*ny,ny*nz,nz*nx)
+pointb2(nl+1)=pointb2(nl)+max(nx*ny,ny*nz,nz*nx)
 nx=nx*2-2; ny=ny*2-2; nz=nz*2-2
 nl = nl+1
 if(nl.ne.NGL+1) goto 3
@@ -2215,22 +1976,27 @@ ALLOCATE(bphi2(Needb,2))
 
 ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,Ncellx+1),speq(Ncellz*NSPLTz,Ncellx))
 ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
-         dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
+     dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
+allocate(bcl1(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc),bcr2(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc))
+allocate(bcspel1(Ncellz*NSPLTz,-1:loopbc),bcspel2(Ncellz*NSPLTz,-1:loopbc))
 
+bcl1(:,:,:)=0.d0; bcr2(:,:,:)=0.d0; bcspel1(:,:)=(0.d0,0.d0); bcspel2(:,:)=(0.d0,0.d0)
 !nccy = Ncelly/NSPLTy; nccz = Ncellz/NSPLTz
 nccy = Ncelly; nccz = Ncellz
-
-
 do k=1,Ncellz; kz=KST*Ncellz+k
 do j=1,Ncelly; jy=JST*Ncelly+j
 do i=1,Ncellx
   data(jy,kz,i) = U(i,j,k,1)
 end do;end do;end do
 
-!****************new*****************
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!****************new*****************
+write(*,*) 'inPB1',NRANK
+!***************fordebug*****************
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!***************fordebug*****************
+do nlp2 = 0 , loopbc , 1
+   klrmax = ((NSPLTy) + NSPLTy * (NSPLTz-1)) * nlp2
 
+write(*,*) 'inPB2',NRANK
                     !count, blocklength, stride
 CALL MPI_TYPE_VECTOR(Ncellz,Ncelly,Ncelly*NSPLTy,MPI_REAL8,VECU,IERR)
 CALL MPI_TYPE_COMMIT(VECU,IERR)
@@ -2243,11 +2009,13 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   KSr = irecv/(NSPLTx*NSPLTy); JSr = irecv/NSPLTx-NSPLTy*KSr
 
   Nis = JSs + NSPLTy*KSs
-  kls = Nis + 1
+  kls = Nis + 1 + klrmax
   Nir = JST + NSPLTy*KST
-  klr = Nir + 1
+  klr = Nir + 1 + klrmax
 
-  write(*,*) NRANK,Nlp,isend,KSs,JSs,irecv,KSr,JSr,Nis,kls,Nir,klr , 'MMMMMMMMMMMPPPPPPPPPPPIIIIIIIIIIII'
+  !***************fordebug*****************
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !***************fordebug*****************
 
   if(kls.gt.Ncellx) then; isend = MPI_PROC_NULL; kls = Ncellx+1; end if
   if(klr.gt.Ncellx) then; irecv = MPI_PROC_NULL; klr = Ncellx+1; end if
@@ -2271,7 +2039,7 @@ nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
 
 if(klr.le.Ncellx) then
 
-  call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1) !dataをfourier
+  call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1)
 
   kz = klr
   zp1 = x(kz)-0.5d0*dzz
@@ -2281,58 +2049,62 @@ if(klr.le.Ncellx) then
   temp2r = dat2(1,1) - data(1,1,klr) * 0.5d0*zp2 * facG
   temp2i = dat2(2,1) - data(2,1,klr) * 0.5d0*zp2 * facG
 
-  write (name,'(i4.4)') countin
-  write (nR,'(i3.3)') NRANK
-  open(171+NRANK,file='PBa1'//name//nR//'.dat')
-  open(271+NRANK,file='PBb1'//name//nR//'.dat')
-
-  do m=1,nn2/2+1; do l=1,nn1/2
-    kap = 4.d0*( dsin(pi*(dble(l-1)/dble(nn1)))**2/dxx**2 + dsin(pi*(dble(m-1)/dble(nn2)))**2/dyy**2 )
-    kap = dsqrt(kap) - 1.d-4!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(271+NRANK,*) kap,nn1,nn2,dyy,dxx,dat1(2*l-1,m),dat1(2*l  ,m),dat2(2*l-1,m),dat2(2*l  ,m),data(2*l-1,m,klr) &
-    ,-zp1*kap,zp1,kz,dzz,0.5d0*dexp(-zp1*kap)/kap *facG
-    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
-    dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
-    write(171+NRANK,*) kap,nn1,nn2,dyy,dxx,dat1(2*l-1,m),dat1(2*l  ,m),dat2(2*l-1,m),dat2(2*l  ,m),-zp1*kap,zp1,kz,dzz,0.5d0*dexp(-zp1*kap)/kap *facG
+  do m=2,nn2/2+1; do l=1,nn1/2
+    !kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    !kap = sqrt(kap)+1.0d-20
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)
+    !kap = sqrt(kap)
+    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    !write(*,*) dat1(2*l-1,m),dat1(2*l  ,m),dat2(2*l-1,m),dat2(2*l  ,m),'PPPPPPPPPPPPPPPPP'
   end do;end do
 
-  !do k=0,2*nz-1; do j=0,2*ny-1; do i=0,2*nx-1
-  !       write(171+NRANK,*) i,j,k, uf(i,j,k)
-  !    end do
-  ! end do
-!end do
-  close(171+NRANK)
-  close(271+NRANK)
-  countin = countin+1
+  m=1
+  do l=2,nn1/2
+    !kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    !kap = sqrt(kap)+1.0d-20
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)
+    !kap = sqrt(kap)
+    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    !write(*,*) dat1(2*l-1,m),dat1(2*l  ,m),dat2(2*l-1,m),dat2(2*l  ,m),'PPPPPPPPPPPPPPPPP'
+  end do
 
   l=nn1/2+1
   do m=1,nn2/2+1
-     kap = 4.d0*( dsin(pi*(dble(l-1)/dble(nn1)))**2/dxx**2 + dsin(pi*(dble(m-1)/dble(nn2)))**2/dyy**2 )
-     kap = dsqrt(kap)- 1.d-4
-     !write(*,*) NRANK,-zp1*kap
-    spe1(m) = spe1(m) + speq(m,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    spe2(m) = spe2(m) + speq(m,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)+1.0d-20
+    kap = sqrt(kap)
+    !kap = sqrt(kap)
+    spe1(m) = spe1(m) + speq(m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    spe2(m) = spe2(m) + speq(m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do
 
   do m2=nn2/2+2,nn2; m=nn2+2-m2; do l=1,nn1/2
-    kap = 4.d0*( dsin(pi*(dble(l-1)/dble(nn1)))**2/dxx**2 + dsin(pi*(dble(m-1)/dble(nn2)))**2/dyy**2 )
-    kap = dsqrt(kap) - 1.d-4
-    !write(*,*) NRANK,-zp1*kap,'BP1'
-    dat1(2*l-1,m2) = dat1(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    dat1(2*l  ,m2) = dat1(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    dat2(2*l-1,m2) = dat2(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
-    dat2(2*l  ,m2) = dat2(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
+    !kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    !kap = sqrt(kap)+1.0d-20
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)
+    !kap = sqrt(kap)
+    dat1(2*l-1,m2) = dat1(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l  ,m2) = dat1(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat2(2*l-1,m2) = dat2(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    dat2(2*l  ,m2) = dat2(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do;end do
 
   l=nn1/2+1
   do m2=nn2/2+2,nn2; m=nn2+2-m2
-    kap = 4.d0*( dsin(pi*(dble(l-1)/dble(nn1)))**2/dxx**2 + dsin(pi*(dble(m-1)/dble(nn2)))**2/dyy**2 )
-    kap = dsqrt(kap)- 1.d-4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !write(*,*) NRANK,-zp1*kap
-    spe1(m2) = spe1(m2) + speq(m2,klr)* 0.5d0*dexp(-zp1*kap)/kap *facG
-    spe2(m2) = spe2(m2) + speq(m2,klr)* 0.5d0*dexp(-zp2*kap)/kap *facG
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    !kap = sqrt(kap)+1.0d-20
+    kap = sqrt(kap)
+    spe1(m2) = spe1(m2) + speq(m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    spe2(m2) = spe2(m2) + speq(m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do
 
   dat1(1,1) = temp1r
@@ -2341,6 +2113,28 @@ if(klr.le.Ncellx) then
   dat2(2,1) = temp2i
 
 end if
+
+write(*,*) 'inPB3',NRANK
+
+do k=1,Ncellz*NSPLTz
+   do j=1,Ncelly*NSPLTy
+      dat1(j,k)=dat1(j,k)+bcl1(j,k,nlp2-1)
+      dat2(j,k)=dat2(j,k)+bcr2(j,k,nlp2-1)
+   end do
+   spe1(k)=spe1(k)+bcspel1(k,nlp2-1)
+   spe2(k)=spe2(k)+bcspel2(k,nlp2-1)
+end do
+
+do k=1,Ncellz*NSPLTz
+   do j=1,Ncelly*NSPLTy
+      bcl1(j,k,nlp2)=dat1(j,k)
+      bcr2(j,k,nlp2)=dat2(j,k)
+   end do
+   bcspel1(k,nlp2)=spe1(k)
+   bcspel2(k,nlp2)=spe2(k)
+end do
+
+end do
 
 CALL MPI_ALLREDUCE(dat1(1,1),data(1,1,1),Ncelly*NSPLTy*Ncellz*NSPLTz,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,IERR)
 CALL MPI_ALLREDUCE(spe1(1)  ,speq(  1,1),Ncellz*NSPLTz,MPI_COMPLEX16,MPI_SUM,MPI_COMM_WORLD,IERR)
@@ -2365,7 +2159,7 @@ end do; end do
 !end do
 !close(3); END IF
 
-
+write(*,*) 'inPB4',NRANK
 ncx=Ncellx+1; ncy=Ncelly+1; ncz=Ncellz+1
 do k=0,ncz; kk= (ncy+1)*k
 do j=0,ncy; n = j+kk
@@ -2393,12 +2187,8 @@ end do; end do
 
 DEALLOCATE(data,speq)
 DEALLOCATE(dat1,spe1,dat2,spe2)
+DEALLOCATE(bcspel1,bcspel2,bcl1,bcr2)
 !-----------------------------------------------------------------
-
-open(171+NRANK,file='Phi1'//name//nR//'.dat')
-open(271+NRANK,file='Phi2'//name//nR//'.dat')
-open(371+NRANK,file='Phi3'//name//nR//'.dat')
-open(471+NRANK,file='Phi4'//name//nR//'.dat')
 
 ncx = Ncellx+1; ncy = Ncelly+1; ncz = Ncellz+1
 w  = 0.125d0
@@ -2415,8 +2205,7 @@ do lc=NGL-1,NGcr-1,-1
     kc = ic+(mcx+1)*jc
     bphi2(pointb2(lc)+kc,l) = 4.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1    ,l)+bphi2(pointb2(lc+1)+kf+1    ,l)+ &
                                                                      bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
-    !write(171+NRANK,*) lc,kf,kc,jc,ic,jf,if,l,bphi2(pointb2(lc)+kc,l)
- end do
+  end do
   end do
 
   do jc = 2,mcy-1; jf = 2*jc-1
@@ -2425,14 +2214,12 @@ do lc=NGL-1,NGcr-1,-1
     kc = ic+(mcx+1)*jc
     bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*(                                bphi2(pointb2(lc+1)+kf+1   ,l)+ &
                                                                      bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
-    ! write(271+NRANK,*) 0,lc,kf,kc,jc,ic,jf,if,l,bphi2(pointb2(lc)+kc,l)
     ic = mcx; if = 2*ic-1
     kf = if+(mcx*2)*jf
     kc = ic+(mcx+1)*jc
     bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+ &
                                                                      bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
-   ! write(271+NRANK,*) 1,lc,kf,kc,jc,ic,jf,if,l,bphi2(pointb2(lc)+kc,l)
- end do
+  end do
   do ic = 2,mcx-1; if = 2*ic-1
     jc = 1; jf = 2*jc-1
     kf = if+(mcx*2)*jf
@@ -2444,8 +2231,7 @@ do lc=NGL-1,NGcr-1,-1
     kc = ic+(mcx+1)*jc
     bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+bphi2(pointb2(lc+1)+kf+1   ,l)+ &
                                                                      bphi2(pointb2(lc+1)+kf-mfx-1,l)                                )
-     !write(371+NRANK,*) lc,kf,kc,jc,ic,jf,if,l,bphi2(pointb2(lc)+kc,l)
- end do
+  end do
 
     jc = 1; jf = 2*jc-1
     ic = 1; if = 2*ic-1
@@ -2472,15 +2258,8 @@ do lc=NGL-1,NGcr-1,-1
     bphi2(pointb2(lc)+kc,l) = 6.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1 ,l)+ &
                                                                      bphi2(pointb2(lc+1)+kf-mfx-1,l)                                )
 
-     !write(471+NRANK,*) 1,lc,kf,kc,jc,ic,jf,if,l,bphi2(pointb2(lc)+kc,l)
- end do
+  end do
 end do
-
-
-!close(171+NRANK)
-!close(271+NRANK)
-!close(371+NRANK)
-!close(471+NRANK)
 
 nz=(2**NGcr)/NSPLTz+1; ny=(2**NGcr)/NSPLTy+1; nx=(2**NGcr)/NSPLTx+1; n1=2**NGcr+1
 ALLOCATE( temp1(n1,n1,n1), temp2(0:nx,0:ny,0:nz) )
@@ -2488,36 +2267,26 @@ ALLOCATE( temp1(n1,n1,n1), temp2(0:nx,0:ny,0:nz) )
 
 do k=0,nz; kk = (ny+1)*k + pointb2(NGcr)
 do j=0,ny; n = j + kk
-   temp2(1 ,j,k) = bphi2(n,1)
-    write(471+NRANK,*) j,k,n, temp2(1 ,j,k),bphi2(n,1)
+  temp2(1 ,j,k) = bphi2(n,1)
 end do;end do
-close(471+NRANK)
-call collect( temp1,temp2,n1,n1,n1,nx,ny,nz,0 )
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
 do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
 do j=1,n1; n = j-1 + kk
-   bphi1(n,1) = temp1(1 ,j,k)
-   write(371+NRANK,*) j,k,n, bphi1(n,1) , temp1(1 ,j,k)
+  bphi1(n,1) = temp1(1 ,j,k)
 end do;end do
-close(371+NRANK)
+
 do k=0,nz; kk = (ny+1)*k + pointb2(NGcr)
 do j=0,ny; n = j + kk
-   temp2(nx,j,k) = bphi2(n,2)
-   write(171+NRANK,*) j,k,n,nx, temp2(nx ,j,k),bphi2(n,2)
+  temp2(nx,j,k) = bphi2(n,2)
 end do;end do
-call collect( temp1,temp2,n1,n1,n1,nx,ny,nz,0 )
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
 do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
 do j=1,n1; n = j-1 + kk
-   bphi1(n,2) = temp1(n1,j,k)
-   write(271+NRANK,*) j,k,n,n1, bphi1(n,2) , temp1(n1 ,j,k)
+  bphi1(n,2) = temp1(n1,j,k)
 end do;end do
-close(171+NRANK)
-close(271+NRANK)
+
 DEALLOCATE(temp1,temp2)
 
-open(171+NRANK,file='Phi5'//name//nR//'.dat')
-open(271+NRANK,file='Phi6'//name//nR//'.dat')
-open(371+NRANK,file='Phi7'//name//nR//'.dat')
-open(471+NRANK,file='Phi8'//name//nR//'.dat')
 
 nc = (2**NGcr)+1
 w  = 0.125d0
@@ -2532,8 +2301,7 @@ do lc=NGcr-1,1,-1
     kc = ic-1+(nc)    *(jc-1)
     bphi1(pointb1(lc)+kc,l) = 4.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+bphi1(pointb1(lc+1)+kf+1 ,l)+ &
                                                                      bphi1(pointb1(lc+1)+kf-nf,l)+bphi1(pointb1(lc+1)+kf+nf,l) )
-     write(171+NRANK,*) lc,kf,kc,jc,ic,kf,kc,l,bphi1(pointb1(lc)+kc,l)
- end do
+  end do
   end do
 
   do jc = 2,nc-1; jf = 2*jc-1
@@ -2547,8 +2315,7 @@ do lc=NGcr-1,1,-1
     kc = ic-1+(nc)    *(jc-1)
     bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+ &
                                                                      bphi1(pointb1(lc+1)+kf-nf,l)+bphi1(pointb1(lc+1)+kf+nf,l) )
-     write(271+NRANK,*) lc,kf,kc,jc,ic,kf,kc,l,bphi1(pointb1(lc)+kc,l)
- end do
+  end do
   do ic = 2,nc-1; if = 2*ic-1
     jc = 1; jf = 2*jc-1
     kf = if-1+(nc*2-1)*(jf-1)
@@ -2560,8 +2327,7 @@ do lc=NGcr-1,1,-1
     kc = ic-1+(nc)    *(jc-1)
     bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+bphi1(pointb1(lc+1)+kf+1 ,l)+ &
                                                                      bphi1(pointb1(lc+1)+kf-nf,l)                            )
-   write(371+NRANK,*) lc,kf,kc,jc,ic,kf,kc,l,bphi1(pointb1(lc)+kc,l)
- end do
+  end do
 
     jc = 1; jf = 2*jc-1
     ic = 1; if = 2*ic-1
@@ -2588,140 +2354,133 @@ do lc=NGcr-1,1,-1
     bphi1(pointb1(lc)+kc,l) = 6.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+ &
                                                                      bphi1(pointb1(lc+1)+kf-nf,l)                            )
 
-    write(471+NRANK,*) lc,kf,kc,jc,ic,kf,kc,l,bphi1(pointb1(lc)+kc,l)
-    ! write(*,*) bphi1(pointb1(lc)+kc,l),'===========bphi1============='
   end do
 end do
 
-close(171+NRANK)
-close(271+NRANK)
-close(371+NRANK)
-close(471+NRANK)
-!do i=1,100
-!   write(*,*) bphi1(i,1),bphi1(i,2),'===========bphi1============='
-!end do
 END SUBROUTINE PB
 
 
-SUBROUTINE rlft3(data,speq,nn1,nn2,isign) ! numelical in F77
+SUBROUTINE rlft3(data,speq,nn1,nn2,isign) 
 INTEGER isign,nn1,nn2
 COMPLEX*16 data(nn1/2,nn2),speq(nn2)
 INTEGER i1,i2,j1,j2,nn(2)
-DOUBLE PRECISION theta,wi,wpi,wpr,wr,wtemp
+DOUBLE PRECISION theta,wi,wpi,wpr,wr,wtemp 
 COMPLEX*16 c1,c2,h1,h2,w
-c1=cmplx(0.5d0,0.0d0)
-c2=cmplx(0.0d0,-0.5d0*isign)
-theta=6.28318530717959d0/dble(isign*nn1) !(yの数) 2*pi/grid(y)
-wpr=-2.0d0*dsin(0.5d0*theta)**2
-wpi=dsin(theta)
-nn(1)=nn1/2
-nn(2)=nn2
+c1=cmplx(0.5d0,0.0d0) 
+c2=cmplx(0.0d0,-0.5d0*isign) 
+theta=6.28318530717959d0/dble(isign*nn1) 
+wpr=-2.0d0*sin(0.5d0*theta)**2 
+wpi=sin(theta) 
+nn(1)=nn1/2 
+nn(2)=nn2 
 
 if(isign.eq.1) then
   call fourn(data,nn,2,isign)
-    do i2=1,nn2
-      speq(i2)=data(1,i2)
-    enddo
+    do i2=1,nn2 
+      speq(i2)=data(1,i2) 
+    enddo 
 endif
 wr=1.0d0
 wi=0.0d0
-do i1=1,nn1/4+1
-  j1=nn1/2-i1+2
-  do i2=1,nn2
+do i1=1,nn1/4+1 
+  j1=nn1/2-i1+2 
+  do i2=1,nn2 
     j2=1
-    if(i2.ne.1) j2=nn2-i2+2
+    if(i2.ne.1) j2=nn2-i2+2 
     if(i1.eq.1) then
-      h1=c1*(data(1,i2)+conjg(speq(j2)))
+      h1=c1*(data(1,i2)+conjg(speq(j2))) 
       h2=c2*(data(1,i2)-conjg(speq(j2)))
-      data(1,i2)=h1+h2
-      speq(j2)=conjg(h1-h2)
+      data(1,i2)=h1+h2 
+      speq(j2)=conjg(h1-h2) 
     else
-      h1=c1*(data(i1,i2)+conjg(data(j1,j2)))
-      h2=c2*(data(i1,i2)-conjg(data(j1,j2)))
-      data(i1,i2)=h1+w*h2
-      data(j1,j2)=conjg(h1-w*h2)
+      h1=c1*(data(i1,i2)+conjg(data(j1,j2))) 
+      h2=c2*(data(i1,i2)-conjg(data(j1,j2))) 
+      data(i1,i2)=h1+w*h2 
+      data(j1,j2)=conjg(h1-w*h2) 
     endif
   enddo
   wtemp=wr
-  wr=wr*wpr-wi*wpi+wr
-  wi=wi*wpr+wtemp*wpi+wi
-  w=cmplx(wr,wi)
+  wr=wr*wpr-wi*wpi+wr 
+  wi=wi*wpr+wtemp*wpi+wi 
+  w=cmplx(wr,wi) 
 enddo
 
 if(isign.eq.-1) call fourn(data,nn,2,isign)
 END SUBROUTINE
 
-SUBROUTINE fourn(data,nn,ndim,isign)
-INTEGER isign,ndim,nn(ndim)
-DOUBLE PRECISION data(*)
-INTEGER i1,i2,i2rev,i3,i3rev,ibit,idim,ifp1,ifp2,ip1,ip2,ip3,k1,k2,n,nprev,nrem,ntot
+SUBROUTINE fourn(data,nn,ndim,isign) 
+INTEGER isign,ndim,nn(ndim) 
+DOUBLE PRECISION data(*) 
+INTEGER i1,i2,i2rev,i3,i3rev,ibit,idim,ifp1,ifp2,ip1,ip2,ip3,k1,k2,n,nprev,nrem,ntot 
 DOUBLE PRECISION tempi,tempr
 DOUBLE PRECISION theta,wi,wpi,wpr,wr,wtemp
-ntot=1
+ntot=1 
 do idim=1,ndim
-  ntot=ntot*nn(idim) !z*y/2
+  ntot=ntot*nn(idim)
 enddo
-nprev=1
-do idim=1,ndim !2
+nprev=1 
+do idim=1,ndim
   n=nn(idim)
-  nrem=ntot/(n*nprev)
-  ip1=2*nprev
-  ip2=ip1*n
-  ip3=ip2*nrem
-  i2rev=1
+  nrem=ntot/(n*nprev) 
+  ip1=2*nprev 
+  ip2=ip1*n 
+  ip3=ip2*nrem 
+  i2rev=1 
   do i2=1,ip2,ip1
-    if(i2.lt.i2rev)then
-      do i1=i2,i2+ip1-2,2
-        do i3=i1,ip3,ip2
-          i3rev=i2rev+i3-i2
-          tempr=data(i3)
-          tempi=data(i3+1)
-          data(i3)=data(i3rev)
-          data(i3+1)=data(i3rev+1)
-          data(i3rev)=tempr
-          data(i3rev+1)=tempi
-        enddo
-      enddo
-    endif
-    ibit=ip2/2
-1   if((ibit.ge.ip1).and.(i2rev.gt.ibit)) then
-      i2rev=i2rev-ibit
-      ibit=ibit/2
-      goto 1
-    endif
-    i2rev=i2rev+ibit
+    if(i2.lt.i2rev)then 
+      do i1=i2,i2+ip1-2,2 
+        do i3=i1,ip3,ip2 
+          i3rev=i2rev+i3-i2 
+          tempr=data(i3) 
+          tempi=data(i3+1) 
+          data(i3)=data(i3rev) 
+          data(i3+1)=data(i3rev+1) 
+          data(i3rev)=tempr 
+          data(i3rev+1)=tempi 
+        enddo 
+      enddo 
+    endif 
+    ibit=ip2/2 
+1   if((ibit.ge.ip1).and.(i2rev.gt.ibit)) then 
+      i2rev=i2rev-ibit 
+      ibit=ibit/2 
+      goto 1 
+    endif 
+    i2rev=i2rev+ibit 
   enddo
   ifp1=ip1
-2 if(ifp1.lt.ip2)then
-    ifp2=2*ifp1
+2 if(ifp1.lt.ip2)then 
+    ifp2=2*ifp1 
     theta=isign*6.28318530717959d0/(ifp2/ip1)
-    wpr=-2.d0*sin(0.5d0*theta)**2
-    wpi=sin(theta)
-    wr=1.d0
-    wi=0.d0
-    do i3=1,ifp1,ip1
-      do i1=i3,i3+ip1-2,2
-        do i2=i1,ip3,ifp2
+    wpr=-2.d0*sin(0.5d0*theta)**2 
+    wpi=sin(theta) 
+    wr=1.d0 
+    wi=0.d0 
+    do i3=1,ifp1,ip1 
+      do i1=i3,i3+ip1-2,2 
+        do i2=i1,ip3,ifp2 
           k1=i2
-          k2=k1+ifp1
-          tempr=wr*data(k2)-wi*data(k2+1)
-          tempi=wr*data(k2+1)+wi*data(k2)
-          data(k2)=data(k1)-tempr
+          k2=k1+ifp1 
+          tempr=wr*data(k2)-wi*data(k2+1) 
+          tempi=wr*data(k2+1)+wi*data(k2) 
+          data(k2)=data(k1)-tempr 
           data(k2+1)=data(k1+1)-tempi
-          data(k1)=data(k1)+tempr
-          data(k1+1)=data(k1+1)+tempi
+          data(k1)=data(k1)+tempr 
+          data(k1+1)=data(k1+1)+tempi 
         enddo
       enddo
       wtemp=wr
-      wr=wr*wpr-wi*wpi+wr
-      wi=wi*wpr+wtemp*wpi+wi
-    enddo
-    ifp1=ifp2
-    goto 2
-  endif
-  nprev=n*nprev
-enddo
+      wr=wr*wpr-wi*wpi+wr 
+      wi=wi*wpr+wtemp*wpi+wi 
+    enddo 
+    ifp1=ifp2 
+    goto 2 
+  endif 
+  nprev=n*nprev 
+enddo 
 END SUBROUTINE
+
+
 
 subroutine saveu(Uin,nx,ny,nz,nix,niy,niz,mode)
   USE comvar

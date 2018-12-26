@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -53,7 +53,7 @@ DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphi1l,bphi2l,bstep1l,bstep2l &
      ,bphi1r,bphi2r,bstep1r,bstep2r
-integer , parameter :: bnd=3,loopbc=2
+integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
 
 !======================================================================*

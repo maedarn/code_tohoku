@@ -1,30 +1,108 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+
 
 #include <hdf5.h>
 
 // The number of cells in the X, Y dimensions
-#define NX 64
-#define NY 64
-#define NZ 64
-#define last 100
+#define NX 512
+#define NY 512
+#define NZ 512
+#define last 1
 //#define M_PI 3.1415926535897932
+
+/* functions */
+//int Trim(char *s);
+
+/* main */
+/*int main(void) {
+    int ret;
+    char snoopy[] = "   SNOOPY   ";
+
+    ret = Trim(snoopy);
+    printf("変換後: \"%s\"\n", snoopy);
+    printf("削除した空白: %d文字\n", ret);
+
+    return EXIT_SUCCESS;
+}
+*/
+
+/*
+ * 文字列の先頭と末尾にある空白を削除する
+ * @param[in] s 対象文字列
+ * @return 削除した空白の数を返す
+ */
+/*
+int Trim(char *s) {
+    int i;
+    int count = 0;
+*/
+
+    /* 空ポインタか? */
+//    if ( s == NULL ) { /* yes */
+//        return -1;
+//       }
+
+    /* 文字列長を取得する */
+//    i = strlen(s);
+
+    /* 末尾から順に空白でない位置を探す */
+//    while ( --i >= 0 && s[i] == ' ' ) count++;
+
+    /* 終端ナル文字を付加する */
+//    s[i+1] = '\0';
+
+    /* 先頭から順に空白でない位置を探す */
+//    i = 0;
+//    while ( s[i] != '\0' && s[i] == ' ' ) i++;
+//    strcpy(s, &s[i]);
+
+//    return i + count;
+//}
 
 
 void
 write_hdf5_data()
 {
   int time;
-  char filename[60];
-  char filename1[60];
+  int ren;
+  //char filename[160];
+  //char filename1[160];
+  char filename[75];
+  char filename1[74];
+  char pwd[40];
+  //char pwd[100];
+  char psps[30];
+  char DAT[5];
+  char HFILE[4];
+
+
+  sprintf(psps,"/Users/maeda/Desktop/kaiseki/" );
+  sprintf(DAT,".dat" );
+  sprintf(HFILE,".h5" );
+  //printf("文字列を入力してください\n");
+  sprintf(pwd,"multigrid-plane-512(512core)-gosa/final" );
+  //Trim(pwd);
+  //multigrid-plane-512(512core)
+  //printf("文字列を入力してください\n");
+  //scanf("%s",pwd);
+  //Trim(pwd);
   for(time=0;time<last;time++){
     printf("%d",time);
     hid_t     file_id;
     //char s1[6] = {'\0'};
     //sprintf(s1, "%6d", time);
-    sprintf(filename, "/Users/maeda/Desktop/kaiseki/testcode1/INIPHI%06d.dat", time);
-    sprintf(filename1, "/Users/maeda/Desktop/kaiseki/testcode1/INIPHI%05d.h5", time);
+    //strcat(str1, str2);
+    //snprintf(filename, 160, "%s%s%s", psps, pwd , DAT);
+    snprintf(filename, 75, "%s%s%s", psps, pwd , DAT);
+    //Trim(filename);
+    //snprintf(filename1, 160, "%s%s%s", psps, pwd , HFILE);
+    snprintf(filename1, 74, "%s%s%s", psps, pwd , HFILE);
+    //Trim(filename1);
+    //sprintf(filename, strcat(psps,pwd,".DAT"));
+    //sprintf(filename1, "/Users/maeda/Desktop/kaiseki/testcode25/final.h5");
     file_id = H5Fcreate(filename1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     // Create the coordinate data.
@@ -50,7 +128,7 @@ write_hdf5_data()
 
     //sprintf(filename, "final.DAT");
     fp = fopen(filename  , "r");
-    //printf("%s\n", filename);
+    printf("%s\n", filename);
     if(fp == NULL) {
       printf("ファイルを開くことが出来ませんでした．\n");
       return;
@@ -67,8 +145,8 @@ write_hdf5_data()
               //        n++; }
 
 
-		    fscanf(fp,"%f %f %f %f %f %f %f",&(Phir[tot]),&(Phil[tot]),&(a[tot]),&(b[tot]),&(d[tot]),&(e[tot]),&(Phim[tot]));
-                    //fscanf(fp,"%f %f %f %f %f %f %f %f",&(a[tot]),&(b[tot]),&(c[tot]),&(Phir[tot]),&(d[tot]),&(Phil[tot]),&(e[tot]),&(Phim[tot])); //%f,%f,%f,%f,%f,%f,%f",\  点で区切らない
+		    //fscanf(fp,"%f %f %f",&(Phir[tot]),&(Phil[tot]),&(Phim[tot]));
+                    fscanf(fp,"%f %f %f %f %f %f %f %f",&(a[tot]),&(b[tot]),&(Phir[tot]),&(d[tot]),&(Phil[tot]),&(e[tot]),&(Phim[tot]),&(c[tot])); //%f,%f,%f,%f,%f,%f,%f",\  点で区切らない
                             //&(rho[tot]),&(velocityx[tot]),&(velocityy[tot]),&(velocityz[tot]),&(pressure[tot]),&(Bfieldx[tot]),&(Bfieldy[tot]),&(Bfieldz[tot]));
                     //printf("%f,%f,%f,%f,%f\n",a[i], b[i], Phir[i], Phil[i], Phim[i]);
                     //printf("%d,%d,%d\n",n,j,k);
@@ -100,7 +178,7 @@ write_hdf5_data()
         dims[2] = (NX);                /**/
         dataspace_id = H5Screate_simple(3, dims, NULL);
 
-        dataset_id = H5Dcreate(file_id, "/Phix", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        dataset_id = H5Dcreate(file_id, "/Phimns", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
         status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, Phir);
 
@@ -113,7 +191,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/Phiy", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/fxexa", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, Phil);
       
@@ -127,7 +205,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/Phiz", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/Phical", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, a);
       
@@ -140,7 +218,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/fx", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/Phiexa", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, b);
       
@@ -153,7 +231,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/fy", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/fxcal", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, d);
       
@@ -166,7 +244,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/fz", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/fxmns", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, e);
       
@@ -180,7 +258,7 @@ write_hdf5_data()
       dims[2] = (NX);
       dataspace_id = H5Screate_simple(3, dims, NULL);
       
-      dataset_id = H5Dcreate(file_id, "/Phim", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      dataset_id = H5Dcreate(file_id, "/fxratio", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       
       status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, Phim);
       
@@ -188,6 +266,19 @@ write_hdf5_data()
       
       status = H5Sclose(dataspace_id);
 
+      dims[0] = (NZ);
+      dims[1] = (NY);
+      dims[2] = (NX);
+      dataspace_id = H5Screate_simple(3, dims, NULL);
+      
+      dataset_id = H5Dcreate(file_id, "/fparsent", H5T_NATIVE_FLOAT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      
+      status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, c);
+      
+      status = H5Dclose(dataset_id);
+      
+      status = H5Sclose(dataspace_id);
+      
       free(Phir);
       free(Phil);
       free(Phim);
