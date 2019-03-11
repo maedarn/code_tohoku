@@ -146,7 +146,8 @@ subroutine INITIAL()
         rho(i) = dinit1
         !rho(i) = 0.0d0
      else
-        rho(i) = 0.0d0
+        !rho(i) = 0.0d0
+        rho(i) = dinit1
         !rho(i) = dinit1*1.d-2
      end if
   end do
@@ -236,17 +237,17 @@ subroutine INITIAL()
 
   !--------const------------
   !---------Phi-------------
-  Phicgp(:)=bcphi1(1)
-  Phicgm(:)=bcphi1(1)
+!  Phicgp(:)=bcphi1(1)
+!  Phicgm(:)=bcphi1(1)
   !---------Phi-------------
 
   !-------Phidt-----------
-  Phidt(:)=bcphi1(1)
+!  Phidt(:)=bcphi1(1)
   !-------Phdt-----------
   !-------Phi1step-----------
   !Phi1step(:)=bcphi1
-  Phi1step(:)= Phigrd(-1)
-  Phi2step(:)= Phigrd(-1)
+!  Phi1step(:)= Phigrd(-1)
+!  Phi2step(:)= Phigrd(-1)
   !-------Phi1step-----------
   !--------const------------
 end subroutine INITIAL
@@ -264,25 +265,49 @@ subroutine BC(mode)
      !------kotei & free-----------
      !goto 100
      !---------Phi-------------
-     Phicgp(1)= bcphi1(1)
-     Phicgp(0)= bcphi1(2)
-     Phicgp(-1)= bcphi1(3)
-     Phicgp(ndx-2)= bcphi2(1)
-     Phicgp(ndx-1)= bcphi2(2)
-     Phicgp(ndx)= bcphi2(3)
-     !Phicgp(ndx)=Phicgp(ndx-1)
-     !Phicgp(ndx-1)= Phicgp(ndx-2)
-     !Phicgp(ndx-2)= Phicgp(ndx-3)
+     !Phicgp(1)= bcphi1(1)
+     !Phicgp(0)= bcphi1(2)
+     !Phicgp(-1)= bcphi1(3)
+     !Phicgp(ndx-2)= bcphi2(1)
+     !Phicgp(ndx-1)= bcphi2(2)
+     !Phicgp(ndx)= bcphi2(3)
+    ! Phicgp(ndx)=Phicgp(ndx-1)
+    ! Phicgp(ndx-1)= Phicgp(ndx-2)
+    ! Phicgp(ndx-2)= Phicgp(ndx-3)
+    ! Phicgp(-1)= Phicgp(0)
+    ! Phicgp(0)= Phicgp(1)
+    ! Phicgp(1)= Phicgp(2)
 
-     Phicgm(1)= bcphi1(1)
-     Phicgm(0)= bcphi1(2)
-     Phicgm(-1)= bcphi1(3)
+    ! Phicgm(ndx)=Phicgm(ndx-1)
+    ! Phicgm(ndx-1)= Phicgm(ndx-2)
+    ! Phicgm(ndx-2)= Phicgm(ndx-3)
+    ! Phicgm(-1)= Phicgm(0)
+    ! Phicgm(0)= Phicgm(1)
+    ! Phicgm(1)= Phicgm(2)
+
+     Phicgp(ndx)=Phicgp(2)
+     Phicgp(ndx-1)= Phicgp(1)
+     !Phicgp(ndx-2)= Phicgp(ndx-3)
+     Phicgp(-1)= Phicgp(ndx-3)
+     Phicgp(0)= Phicgp(ndx-2)
+     !Phicgp(1)= Phicgp(2)
+
+     Phicgm(ndx)=Phicgm(2)
+     Phicgm(ndx-1)= Phicgm(1)
+     !Phicgm(ndx-2)= Phicgm(ndx-3)
+     Phicgm(-1)= Phicgm(ndx-3)
+     Phicgm(0)= Phicgm(ndx-2)
+     !Phicgm(1)= Phicgm(2)
+
+!     Phicgm(1)= bcphi1(1)
+!     Phicgm(0)= bcphi1(2)
+!     Phicgm(-1)= bcphi1(3)
      !Phicgm(-1)= Phicgm(0)
      !Phicgm(0)= Phicgm(1)
      !Phicgm(1)= Phicgm(2)
-     Phicgm(ndx-2)= bcphi2(1)
-     Phicgm(ndx-1)= bcphi2(2)
-     Phicgm(ndx)= bcphi2(3)
+!     Phicgm(ndx-2)= bcphi2(1)
+!     Phicgm(ndx-1)= bcphi2(2)
+!     Phicgm(ndx)= bcphi2(3)
 
 
      !Phicgp(1)= bcphi1(1)
@@ -334,17 +359,24 @@ subroutine BC(mode)
   if(mode==3)then
      !-------Phi1step+cg-----------
      !goto 700
-     Phi1step(1)= Phigrd(1)
-     Phi1step(0)= Phigrd(0)
-     Phi1step(-1)=Phigrd(-1)
-     !Phi1step(-1)= Phi1step(0)
-     !Phi1step(0)= Phi1step(1)
-     !Phi1step(1)=Phi1step(2)
-     Phi1step(ndx-2)= Phigrd(ndx-2)
-     Phi1step(ndx-1)= Phigrd(ndx-1)
-     Phi1step(ndx)= Phigrd(ndx)
+     !Phi1step(1)= Phigrd(1)
+     !Phi1step(0)= Phigrd(0)
+     !Phi1step(-1)=Phigrd(-1)
+    ! Phi1step(-1)= Phi1step(0)
+    ! Phi1step(0)= Phi1step(1)
+    ! Phi1step(1)=Phi1step(2)
+     Phi1step(-1)= Phi1step(ndx-3)
+     Phi1step(0)= Phi1step(ndx-2)
+     !Phi1step(ndx-2)= Phigrd(ndx-2)
+     !Phi1step(ndx-1)= Phigrd(ndx-1)
+     !Phi1step(ndx)= Phigrd(ndx)
+   !  Phi1step(ndx)= Phi1step(ndx-1)
+   !  Phi1step(ndx-1)= Phi1step(ndx-2)
+   !  Phi1step(ndx-2)= Phi1step(ndx-3)
      !Phi1step(ndx/2)=0.0d0
      !Phi1step(ndx/2-1)=0.0d0
+     Phi1step(ndx)= Phi1step(2)
+     Phi1step(ndx-1)= Phi1step(1)
      !700 continue
 
 
@@ -372,13 +404,13 @@ subroutine BC(mode)
      !Phi1step(-1)=-Phigrd(1)
      !Phi1step(ndx-2)= -Phigrd(ndx-2)
      !Phi1step(ndx-1)= -Phigrd(ndx-2)
-     !Phi1step(ndx)= -Phigrd(ndx-2)
-     Phi2step(1)= -Phigrd(1)
-     Phi2step(0)= -Phigrd(0)
-     Phi2step(-1)=-Phigrd(-1)
-     Phi2step(ndx-2)= -Phigrd(ndx-2)
-     Phi2step(ndx-1)= -Phigrd(ndx-1)
-     Phi2step(ndx)= -Phigrd(ndx)
+     !!Phi1step(ndx)= -Phigrd(ndx-2)
+     !Phi2step(1)= -Phigrd(1)
+     !Phi2step(0)= -Phigrd(0)
+     !Phi2step(-1)=-Phigrd(-1)
+     !Phi2step(ndx-2)= -Phigrd(ndx-2)
+     !Phi2step(ndx-1)= -Phigrd(ndx-1)
+     !Phi2step(ndx)= -Phigrd(ndx)
      !Phi2step(ndx)= -Phi2step(ndx-1)
      !Phi2step(ndx-1)= -Phi2step(ndx-2)
      !Phi2step(ndx-2)= -Phi2step(ndx-3)
@@ -386,6 +418,10 @@ subroutine BC(mode)
      !Phi1step(ndx/2-1)=0.0d0
      !701 continue
 
+     Phi2step(-1)= Phi2step(ndx-3)
+     Phi2step(0)=  Phi2step(ndx-2)
+     Phi2step(ndx)=Phi2step(2)
+     Phi2step(ndx-1)=Phi2step(1)
 
      !Phi1step(ndx)= -Phigrd(ndx-2)
      !Phi2step(1)= -Phigrd(1)

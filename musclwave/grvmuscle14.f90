@@ -707,15 +707,15 @@ IF(iwy.EQ.1) THEN
   CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
        Phicgm(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  !IF(JST.eq.0) THEN
-  !   if(idm==1 .or. idm==3) then
+  IF(JST.eq.0) THEN
+     if(idm==1 .or. idm==3) then
      !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
-  !    DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
+      DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-  !   Phicgp(IX,JY,KZ,idm)= Phicgp(IX,1,KZ,idm)!Phicgp(IX,JY+1,KZ,idm)
+     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,1,KZ,idm)!Phicgp(IX,JY+1,KZ,idm)
     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-  !   END DO;END DO;END DO
-  !   endif
+     END DO;END DO;END DO
+     endif
 !     if(idm==2) then
      !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
 !      DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
@@ -732,7 +732,7 @@ IF(iwy.EQ.1) THEN
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
      !END DO;END DO;END DO
      !endif
-  !END IF
+  END IF
 !**************************************  BC for the upsides of domains  ****
   !DO K = 1, N_MPI(20)
   CALL MPI_SENDRECV(Phicgp(-1,1            ,-1,idm),1,VECU,BOTM,1, &
@@ -740,7 +740,7 @@ IF(iwy.EQ.1) THEN
   CALL MPI_SENDRECV(Phicgm(-1,1            ,-1,idm),1,VECU,BOTM,1, &
        Phicgm(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  !IF(JST.eq.NSPLTy-1) THEN
+  IF(JST.eq.NSPLTy-1) THEN
      !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = Ncelly+1, Ncelly+N_ol,1
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
 !     if(idm==2) then
@@ -749,13 +749,13 @@ IF(iwy.EQ.1) THEN
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
 !     END DO;END DO;END DO
 !     endif
-  !   if(idm==1 .or. idm==3) then
-  !   DO KZ = -1, Ncellz+2; DO JY = Ncelly+N_ol, Ncelly+1,-1 ; DO IX = -1, Ncellx+2
-  !   Phicgp(IX,JY,KZ,idm)= Phicgp(IX,Ncelly,KZ,idm)!Phicgp(IX,JY-1,KZ,idm)!bphiyl(KZ,IX,JY,idm)
+     if(idm==1 .or. idm==3) then
+     DO KZ = -1, Ncellz+2; DO JY = Ncelly+N_ol, Ncelly+1,-1 ; DO IX = -1, Ncellx+2
+     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,Ncelly,KZ,idm)!Phicgp(IX,JY-1,KZ,idm)!bphiyl(KZ,IX,JY,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-  !   END DO;END DO;END DO
-  !   endif
-  !END IF
+     END DO;END DO;END DO
+     endif
+  END IF
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -775,7 +775,7 @@ IF(iwz.EQ.1) THEN
   CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
        Phicgm(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  !IF(KST.eq.0) THEN
+  IF(KST.eq.0) THEN
 !     if(idm==3) then
      !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = 1-N_ol, 0
 !     DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
@@ -784,15 +784,15 @@ IF(iwz.EQ.1) THEN
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
 !     END DO;END DO;END DO
 !     end if
-  !   if(idm==1 .or. idm==2) then
+     if(idm==1 .or. idm==2) then
      !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = 1-N_ol, 0
-  !   DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
+     DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-  !   Phicgp(IX,JY,KZ,idm)=  Phicgp(IX,JY,1,idm)!Phicgp(IX,JY,KZ+1,idm)!bphizl(IX,JY,KZ,idm)
+     Phicgp(IX,JY,KZ,idm)=  Phicgp(IX,JY,1,idm)!Phicgp(IX,JY,KZ+1,idm)!bphizl(IX,JY,KZ,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-  !   END DO;END DO;END DO
-  !   end if
-  !END IF
+     END DO;END DO;END DO
+     end if
+  END IF
 !**************************************  BC for the upsides of domains  ****
   !DO K = 1, N_MPI(20)
   CALL MPI_SENDRECV(Phicgp(-1,-1,1            ,idm),1,VECU,DOWN,1, &
@@ -800,7 +800,7 @@ IF(iwz.EQ.1) THEN
   CALL MPI_SENDRECV(Phicgm(-1,-1,1            ,idm),1,VECU,DOWN,1, &
        Phicgm(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  !IF(KST.eq.NSPLTz-1) THEN
+  IF(KST.eq.NSPLTz-1) THEN
 !     if(idm==3) then
 !     DO KZ = Ncellz+N_ol, Ncellz+1,-1; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
@@ -809,14 +809,14 @@ IF(iwz.EQ.1) THEN
 !     END DO;END DO;END DO
 !     endif
      !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = Ncellz+1, Ncellz+N_ol,1
-  !   if(idm==1 .or. idm==2)then
-  !   DO KZ = Ncellz+N_ol, Ncellz+1,-1; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
+     if(idm==1 .or. idm==2)then
+     DO KZ = Ncellz+N_ol, Ncellz+1,-1; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-  !   Phicgp(IX,JY,KZ,idm)= Phicgp(IX,JY,Ncellz,idm)!Phicgp(IX,JY,KZ-1,idm)!bphizl(IX,JY,KZ,idm)
+     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,JY,Ncellz,idm)!Phicgp(IX,JY,KZ-1,idm)!bphizl(IX,JY,KZ,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-  !   END DO;END DO;END DO
-  !   endif
-  !END IF
+     END DO;END DO;END DO
+     endif
+  END IF
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
@@ -898,45 +898,45 @@ IF(iwy.EQ.1) THEN
        Phi1step(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_SENDRECV(Phi2step(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
        Phi2step(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  IF(JST.eq.0) THEN
-!     if(idm==2) then
-!     DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0,1; DO IX = -1, Ncellx+2
+  IF(JST.eq.0) THEN
+     if(idm==2) then
+     DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0,1; DO IX = -1, Ncellx+2
  ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!        Phi1step(IX,JY,KZ,idm)= bstepyl(KZ,IX,JY,idm)
+        Phi1step(IX,JY,KZ,idm)= bstepyl(KZ,IX,JY,idm)
         !Phi1step(IX,JY,KZ,idm)= 0.0d0
      !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-!  END DO;END DO;END DO
-!endif
-!if(idm==1 .or. idm==3) then
-!     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+  END DO;END DO;END DO
+endif
+if(idm==1 .or. idm==3) then
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
         !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,1,KZ,idm)
+        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,1,KZ,idm)
         !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     END if
-!  END IF
+     END DO;END DO;END DO
+     END if
+  END IF
 !**************************************  BC for the upsides of domains  ****
   CALL MPI_SENDRECV(Phi1step(-1,1            ,-1,idm),1,VECU,BOTM,1, &
        Phi1step(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_SENDRECV(Phi2step(-1,1            ,-1,idm),1,VECU,BOTM,1, &
        Phi2step(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  IF(JST.eq.NSPLTy-1) THEN
-!     if(idm==2) then
-     !DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-!     DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol,1; DO IX = -1, Ncellx+2
+  IF(JST.eq.NSPLTy-1) THEN
+     if(idm==2) then
+    !DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+     DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol,1; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!     Phi1step(IX,JY,KZ,idm)= bstepyr(KZ,IX,JY,idm)
+     Phi1step(IX,JY,KZ,idm)= bstepyr(KZ,IX,JY,idm)
      !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!  END DO;END DO;END DO
-!  endif
-!  if(idm==1 .or. idm==3) then
-!     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+  END DO;END DO;END DO
+  endif
+  if(idm==1 .or. idm==3) then
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
         !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,Ncelly,KZ,idm)
+        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,Ncelly,KZ,idm)
         !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     END if
-!  END IF
+     END DO;END DO;END DO
+     END if
+  END IF
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -953,44 +953,44 @@ IF(iwz.EQ.1) THEN
        Phi1step(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_SENDRECV(Phi2step(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
        Phi2step(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  IF(KST.eq.0) THEN
-!     if(idm==3) then
-!     DO KZ = 1-N_ol, 0,1; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+  IF(KST.eq.0) THEN
+     if(idm==3) then
+     DO KZ = 1-N_ol, 0,1; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
  ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     Phi1step(IX,JY,KZ,idm)= bstepzl(IX,JY,KZ,idm)
+     Phi1step(IX,JY,KZ,idm)= bstepzl(IX,JY,KZ,idm)
      !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-!  END DO;END DO;END DO
-!       endif
-!if(idm==1 .or. idm==2) then
-!     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+  END DO;END DO;END DO
+       endif
+if(idm==1 .or. idm==2) then
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
         !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,1,idm)
+        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,1,idm)
         !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     END if
-!  END IF
+     END DO;END DO;END DO
+     END if
+  END IF
 !**************************************  BC for the upsides of domains  ****
   CALL MPI_SENDRECV(Phi1step(-1,-1,1            ,idm),1,VECU,DOWN,1, &
        Phi1step(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   CALL MPI_SENDRECV(Phi2step(-1,-1,1            ,idm),1,VECU,DOWN,1, &
        Phi2step(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  IF(KST.eq.NSPLTz-1) THEN
-!     if(idm==3) then
+  IF(KST.eq.NSPLTz-1) THEN
+     if(idm==3) then
      !DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-!     DO KZ =Ncellz+1, Ncellz+N_ol,1 ; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+     DO KZ =Ncellz+1, Ncellz+N_ol,1 ; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!     Phi1step(IX,JY,KZ,idm)= bstepzr(IX,JY,KZ,idm)
+     Phi1step(IX,JY,KZ,idm)= bstepzr(IX,JY,KZ,idm)
      !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!  END DO;END DO;END DO
-!endif
-!if(idm==1 .or. idm==2) then
-!     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+  END DO;END DO;END DO
+endif
+if(idm==1 .or. idm==2) then
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
         !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-!        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,Ncellz,idm)
+        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,Ncellz,idm)
         !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     END if
-! END IF
+     END DO;END DO;END DO
+     END if
+ END IF
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt

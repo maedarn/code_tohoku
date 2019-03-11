@@ -1,0 +1,35 @@
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D66*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D67*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D68*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D69*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D60*.dat .
+scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D71*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D72*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D73*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D74*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D75*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D76*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D77*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D78*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D79*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D70*.dat .
+scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D81*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D82*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D83*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D84*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D85*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D86*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D87*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D88*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D89*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D80*.dat .
+scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D91*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D92*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D93*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D94*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D95*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D96*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D97*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D98*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D99*.dat .
+ scp  maedarn@xc.cfca.nao.ac.jp:/work/maedarn/3DMHD/samplecnv2/2D90*.dat .
