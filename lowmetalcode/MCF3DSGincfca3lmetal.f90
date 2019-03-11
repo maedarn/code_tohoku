@@ -27,7 +27,7 @@ END MODULE mpivar
 MODULE chmvar
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0!, TCMB=5.d-2
 DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !POP0
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
@@ -176,7 +176,7 @@ goto 10000
  !dmean=1.027 , dsp=0.21
  pinit1=2896.6d0 * 1.38d0/1.52d0 * 1.d-2 ; pinit2=pinit1
  Hini=0.9219098d0*2.d0; pini=0.9503446d-2*2.d0; H2ini=0.9465513d-8*2.d0; Heini=0.9155226d-1*2.d0; Hepini=0.5655353d-3*2.d0
- !Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
+ Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
  dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
 
  !low metal code
