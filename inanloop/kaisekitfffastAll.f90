@@ -75,7 +75,7 @@ program main
         Mass1=Mass1*Msun
         tff(time,is)=tff1
         Mass(time,is)=Mass1
-        inttff(time,is)=tff1*dt+inttff(time-1,is)
+        inttff(time,is)=tff1*dt+inttff(time-timejump,is) !timejump is important
         !intMass(time,is)=Mass1
      end do
   end do

@@ -1,5 +1,5 @@
 program main
-  implicit none
+  !implicit none
   double precision :: n , p1 , p2 , kai1 , kai2 , kai3 , root1 , root2 , root3 , sisu1 , sisu2 , sisu3 , sisu4 , sisu5 , sisu6 , &
        kaikai1 , kaikai2 , pmid , sa , nsisu , pos , inv , cmetal
   integer :: i , j

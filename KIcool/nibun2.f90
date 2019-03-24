@@ -4,12 +4,14 @@
 program main
   implicit none
   double precision :: n , p1 , p2 , kai1 , kai2 , kai3 , root1 , root2 , root3 , sisu1 , sisu2 , sisu3 , sisu4 , sisu5 , sisu6 , &
-       kaikai1 , kaikai2 , pmid , sa  , pos , inv
+       kaikai1 , kaikai2 , pmid , sa  , pos , inv,cmetal
   integer :: i
 
   inv = 1.0d0/1.27d0
   !n = inv
-  n = 2.0d0
+  !n = 2.0d0
+  n = 10.0d0
+  cmetal=0.2d0
   p1 = 1.0d0
   p2 = 1.d6
   do i = 1 , 50
@@ -23,9 +25,9 @@ program main
      root1 = dsqrt(p1/(n+pos))
      root2 = dsqrt(p2/(n+pos))
      root3 = dsqrt(pmid/(n+pos))
-     kai1 = 1 - (1.0d7 * sisu1 + 1.4d-2 * root1 *sisu2) * n
-     kai2 = 1 - (1.0d7 * sisu3 + 1.4d-2 * root2 *sisu4) * n
-     kai3 = 1 - (1.0d7 * sisu5 + 1.4d-2 * root3 *sisu6) * n
+     kai1 = 1 - (1.0d7 * sisu1 + cmetal*1.4d-2 * root1 *sisu2) * n
+     kai2 = 1 - (1.0d7 * sisu3 + cmetal*1.4d-2 * root2 *sisu4) * n
+     kai3 = 1 - (1.0d7 * sisu5 + cmetal*1.4d-2 * root3 *sisu6) * n
 
      sa = dabs(p1 - p2)
      if(sa < 1.0d-6) goto 1000
