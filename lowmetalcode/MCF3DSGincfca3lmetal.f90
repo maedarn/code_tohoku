@@ -14,7 +14,7 @@ DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv,loopbc=2
-character(31) :: dir='/work/maedarn/3DMHD/samplecnv2/' !samplecnv2
+character(32) :: dir='/work/maedarn/3DMHD/samplecnvs1/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
@@ -26,8 +26,8 @@ END MODULE mpivar
 
 MODULE chmvar
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0!, TCMB=5.d-2
-!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !POP0
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
@@ -242,6 +242,7 @@ BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2)
 !***** x-direction shock tube test *****!
 
 Ncellx = Ncellx/NSPLTx; Ncelly = Ncelly/NSPLTy; Ncellz = Ncellz/NSPLTz
+write(*,*) Ncellx, Ncelly, Ncellz ,'Ncell'
 dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
@@ -441,7 +442,7 @@ end do; end do; end do
 
 !**** read inhomogeneous density field ****!
   DTF(:,:,:) = dinit1
-!  goto 119
+  goto 119
   do MRANK = 0, NPE-1
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
@@ -516,7 +517,8 @@ IF(BCx2.eq.4) THEN; IF(IST.EQ.NSPLTx-1) RIGT = MPI_PROC_NULL; END IF
 
 call CC(4,0.d0)
 
-do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
+do k=-1,Ncellz+2; do j=-1,Ncelly+2; do i=-1,Ncellx+2
+!   do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   ndtot(i,j,k) = ndp(i,j,k)+ndH(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
   Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; NCO(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
@@ -599,13 +601,13 @@ time_CPU(3) = 0.d0
 Time_signal = 0
 write(*,*) 'DTF1'
 do in10 = 1, maxstp
-  
+
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
   call SAVEU(nunit,dt,stb,st,t,0)
- 
+
   do in20 = 1, nitera
 if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
@@ -740,7 +742,6 @@ double precision  :: dt,t(1000)
 character*7 stb(3)
 character*3 filenm
 CHARACTER*3 NPENUM
-
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
@@ -2993,7 +2994,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 end do; end do;end do
 
 do k = 1, Ncellz; do j = 1, Ncelly
-  tNtot=0.d0; tNH2=0.d0; tNC=0.d0; tNCO=0.d0; ttau=0.d0
+  tNto=0.d0; tNH2=0.d0; tNC=0.d0; tNCO=0.d0; ttau=0.d0
   do i = 1, Ncellx
     tNtot = tNtot + dxh * ndtot(i,j,k)
     tNH2  = tNH2  + dxh *  ndH2(i,j,k)

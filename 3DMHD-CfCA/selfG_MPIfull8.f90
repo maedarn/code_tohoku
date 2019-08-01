@@ -85,7 +85,8 @@ if(mode.eq.2) then
 !          +((Phi(i,j+1,k)-Phi(i,j-1,k))*0.5d0/dx(1))**2.d0+((Phi(i,j,k+1)-Phi(i,j,k-1))*0.5d0/dx(1))**2.d0))
 !       end do; end do; end do
 
-!       close(521+NRANK)
+ !       close(521+NRANK)
+ !write(*,*) 'PHI',PHI(1,Ncelly-1,1),PHI(1,Ncelly,1),PHI(1,Ncelly+1,1),NRANK
 end if
 
 if(mode.eq.3) then !acceraration because of gravity
@@ -289,9 +290,12 @@ do i=1,ncx; ii = i+jj
    Phi(i,j,k) = cphi2(ii)
 !    write(521+NRANK,*) Phi(i,j,k)
 end do; end do; end do
-!if(NRANK==40) then
-!close(521+NRANK)
-!end if
+
+!do k=1,ncz-1
+!do j=1,ncy-1
+!do i=1,ncx-1
+!   Phi(i,j,k) = (Phi(i,j,k)+Phi(i+1,j,k)+Phi(i,j+1,k)+Phi(i,j,k+1)+Phi(i+1,j+1,k)+Phi(i+1,j,k+1)+Phi(i,j+1,k+1)+Phi(i+1,j+1,k+1))/8.d0
+!end do; end do; end do
 END SUBROUTINE mglin
 
 
