@@ -219,7 +219,7 @@ do j=2,ngrid
           mode=2!; if((jj.ne.j).and.(jpre.eq.1)) mode=1
           call relax(cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz,mode)
         end do
-        call resid(cres1(point1(jj)),cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz) 
+        call resid(cres1(point1(jj)),cphi1(point1(jj)),crhs1(point1(jj)),nfx,nfy,nfz)
         nfx=nfx/2+1; nfy=nfy/2+1; nfz=nfz/2+1
         call rstrct(crhs1(point1(jj-1)),cres1(point1(jj)),nfx,nfy,nfz,1)  !fill0 at BC below this subroutine is necessary
         call  fill0(cphi1(point1(jj-1)),nfx,nfy,nfz)
@@ -348,7 +348,7 @@ double precision :: u1(nx1,ny1,nz1),u2(0:nx2,0:ny2,0:nz2)
 double precision :: tMPI(0:nx2,0:ny2,0:nz2,0:NPE-1)
 
 !***************fordebug*****************
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !***************fordebug*****************
 
 do k=0,nz2; do j=0,ny2; do i=0,nx2
@@ -404,9 +404,10 @@ do kc=izst,ized; kf=2*kc-1
 end do
 
 
+
 IF(IST.eq.0) THEN
   do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
-    uc(1 ,jc,kc)=uf(1 ,jf,kf) 
+    uc(1 ,jc,kc)=uf(1 ,jf,kf)
   end do; end do
 END IF
 IF(IST.eq.NSPLTx-1) THEN
@@ -474,7 +475,7 @@ end do
 
 nf=2*nx-1
 do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
-  uc(1 ,jc,kc)=uf(1 ,jf,kf) 
+  uc(1 ,jc,kc)=uf(1 ,jf,kf)
   uc(nx,jc,kc)=uf(nf,jf,kf)
 end do; end do
 nf=2*nz-1
@@ -828,8 +829,14 @@ lk=0; IF(KST.eq.0) lk=1
 !             check=isw
 !          end if
 !          do i=isw,nx-1,2
-         !    if(IST==0 .and. i==1)
-         do i=1,nx-1,1
+          !    if(IST==0 .and. i==1)
+
+
+          !------original------
+          do i=1,nx-1,1
+          !------original------
+
+          !do i=2,nx-1,1
           ifl=li*int(1/i)
           u(i,j,k)=w*(u(i+1,j,k)+u(i-1,j,k)+u(i,j+1,k)+u(i,j-1,k)+u(i,j,k+1)+u(i,j,k-1)-h2*rhs(i,j,k)) &
           *(1-ifl) + (0.5d0+dsign(0.5d0,ifl-0.5d0))*u(i,j,k)

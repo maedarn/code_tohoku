@@ -1,7 +1,7 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -14,6 +14,7 @@ DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
+!character(25) :: dir='/work/maedarn/3DMHD/test/'
 END MODULE comvar
 
 MODULE mpivar
@@ -40,6 +41,7 @@ DOUBLE PRECISION :: Lbox
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
+character(25) :: dir='/work/maedarn/3DMHD/test/'
 END MODULE slfgrv
 
 !======================================================================*
@@ -137,7 +139,7 @@ double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2y,i2z,rsph2
 double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
 
-open(8,file='/work/maedarn/3DMHD/test/INPUT3D.DAT')
+open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -307,14 +309,14 @@ end do
 
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
-  open(4,file='/work/maedarn/3DMHD/test/cdnt.DAT')
+  open(4,file=dir//'cdnt.DAT')
     write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
     write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
     write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
   close(4)
 END IF
 
-open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+open(2,file=dir//'tsave.DAT')
   read(2,'(1p1d25.17)') amp
   read(2,'(i8)') nunit
   close(2)
@@ -323,9 +325,9 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
 !  goto 6011
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
-  dinit1=2.0d0/G4pi/90.d0
+  dinit1= 200.d0
   censh = ql1x + dx(1)/2.0d0 !x=serfase
-  Hsheet = 1.0d1
+  Hsheet = 5.0d-1
   !rsph = ql1x-ql1x/5.0d0
   !rsph2=int(dble(Np1x)*0.8d0)
   !Hsheet = dble(Np1x) / 5.0d0
@@ -480,7 +482,7 @@ end do
   !********purtube yz plane***********!
   goto 1333
   ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
-  open(unit=28,file='/work/maedarn/3DMHD/test/delta2.dat',FORM='UNFORMATTED')
+  open(unit=28,file=dir//'delta2.dat',FORM='UNFORMATTED')
   do c=-1,Ncellz*NSPLTz+2
      do b=-1,Ncelly*NSPLTy+2
         read(28) plane(b,c)
@@ -571,7 +573,7 @@ end do; end do; end do
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
       WRITE(NPENUM,'(I3.3)') MRANK
-      open(unit=8,file='/work/maedarn/3DMHD/test/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file=dir//'DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = 1, Ncellz
       do j = 1, Ncelly
         read(8) (DTF(i,j,k),i=Ncellx*IS+1,Ncellx*IS+Ncellx)
@@ -619,7 +621,7 @@ DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCAT
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
-  open(unit=8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(unit=8,file=dir//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     read(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -674,6 +676,7 @@ SUBROUTINE EVOLVE
 USE comvar
 USE mpivar
 USE chmvar
+use slfgrv
 INCLUDE 'mpif.h'
 
 double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3)
@@ -685,25 +688,25 @@ character*3 fnunit,fnpe
 
 !===========time===========
 goto 2200
-open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+open(2,file=dir//'tsave.DAT')
   read(2,*) time
   read(2,*) nunit
 close(2)
-open(2,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
+open(2,file=dir//'tsave2D.DAT')
   read(2,*) nunit2D
 close(2)
-open(3,file='/work/maedarn/3DMHD/test/time.DAT')
+open(3,file=dir//'time.DAT')
 do i = 1, nunit
   read(3,'(1p1d25.17)') t(i)
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file='/work/maedarn/3DMHD/test/test.DAT')
+!  open(2,file=dir//'test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
-open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//'.DAT')
-!open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//fnpe//'.DAT')
+open(5,file=dir//'info'//fnunit//'.DAT')
+!open(5,file=dir//'info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -1153,7 +1156,7 @@ write(*,*) NRANK,sa1,bphi1(1,1),saexact1 -bphi1(1,1),'saexact1'
 write(*,*) NRANK,ncx,'?ncx?'
 
 write(Nfinal,'(I3.3)') NRANK
-open(521+NRANK,file='final'//Nfinal//'.dat')
+open(521+NRANK,file=dir//'final'//Nfinal//'.dat')
 !open(621+NRANK,file='exact'//Nfinal//'.dat')
 !open(721+NRANK,file='d'//Nfinal//'.dat')
 !end if
@@ -1170,7 +1173,7 @@ close(521+NRANK)
 !end if
 
 
-open(621+NRANK,file='exact'//Nfinal//'.dat')
+open(621+NRANK,file=dir//'exact'//Nfinal//'.dat')
 do k=1,ncz
 do j=1,ncy
 do i=1,ncx
@@ -1185,7 +1188,7 @@ close(621+NRANK)
 !end if
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
-open(721+NRANK,file='d'//Nfinal//'.dat')
+open(721+NRANK,file=dir//'d'//Nfinal//'.dat')
 do k=1,ncz
 do j=1,ncy
 do i=1,ncx
@@ -1193,7 +1196,7 @@ do i=1,ncx
 end do; end do; end do
 close(721+NRANK)
 
-open(721+NRANK,file='dpr'//Nfinal//'.dat')
+open(721+NRANK,file=dir//'dpr'//Nfinal//'.dat')
 do k=1,ncz
 do j=1,ncy
 do i=1,ncx
@@ -1277,7 +1280,7 @@ do Nroot=0,NPE-1
     u1(i,j,k) = tMPI(ii,jj,kk,Nroot)
  end do;end do;end do;end do
  !********debug**********
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !********debug**********
 END SUBROUTINE collect
 
@@ -1469,24 +1472,24 @@ end do
 IF(mode.eq.1) THEN
 
 IF(IST.eq.0) THEN
-   write(rank,'(i3.3)') NRANK
-   open(500,file='ris'//rank//'.dat')
+!   write(rank,'(i3.3)') NRANK
+!   open(500,file='ris'//rank//'.dat')
 do k=0,nz; kk=(ny+1)*k
 do j=0,ny; nn=j+kk
    uf(1 ,j,k)=bphi2(np+nn,1)
-   write(500,*) uf(1 ,j,k)
+!   write(500,*) uf(1 ,j,k)
 end do; end do
-close(500)
+!close(500)
 END IF
 IF(IST.eq.NSPLTx-1) THEN
-   write(rank,'(i3.3)') NRANK
-   open(510,file='rst'//rank//'.dat')
+!   write(rank,'(i3.3)') NRANK
+!   open(510,file='rst'//rank//'.dat')
 do k=0,nz; kk=(ny+1)*k
 do j=0,ny; nn=j+kk
    uf(nx,j,k)=bphi2(np+nn,2)
-   write(510,*) uf(nx ,j,k),np,nz
+!   write(510,*) uf(nx ,j,k),np,nz
 end do; end do
-close(510)
+!close(510)
 END IF
 
 END IF
@@ -1531,14 +1534,14 @@ do kf=2,nz,2
 end do
 
 IF(mode.eq.1) THEN
-   open(800,file='intp.dat')
+!   open(800,file='intp.dat')
   do kf=1,nz; kk=ny*(kf-1)
   do jf=1,ny; nn=jf-1+kk
     uf(1 ,jf,kf) = bphi1(np+nn,1)
     uf(nx,jf,kf) = bphi1(np+nn,2)
-    write(800,*) uf(1 ,jf,kf),uf(nx ,jf,kf)
+!    write(800,*) uf(1 ,jf,kf),uf(nx ,jf,kf)
  end do; end do
- close(800)
+! close(800)
 END IF
 
 END SUBROUTINE interp
@@ -1625,9 +1628,12 @@ END SUBROUTINE slvsml
 
 
 SUBROUTINE slvsmlb(u,rhs)
-USE slfgrv
+  USE slfgrv
+  use mpivar
 double precision  u(3,3,3),rhs(3,3,3)
 double precision h
+integer :: cn=0
+character(3) cnc,cncmpi
 h=0.5d0*Lbox
 
 u(1,1,1)=bphi1(1,1);  u(3,1,1)=bphi1(1,2)
@@ -1641,6 +1647,18 @@ u(1,3,2)=bphi1(6,1);  u(3,3,2)=bphi1(6,2)
 u(1,1,3)=bphi1(7,1);  u(3,1,3)=bphi1(7,2)
 u(1,2,3)=bphi1(8,1);  u(3,2,3)=bphi1(8,2)
 u(1,3,3)=bphi1(9,1);  u(3,3,3)=bphi1(9,2)
+
+!u(2,1,1) = 0.025d0* (8.d0*u(1,1,1) + 2.d0*u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + &
+!u(1,3,2) + u(1,3,3) + 8.d0*u(3,1,1) + 2.d0*u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
+
+! - 8.d0*h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+
+!u(2,3,3) = 0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) + 2.d0*u(1,2,3) + 2.d0*u(1,3,1) + 2.d0*u(1,3,2) + &
+!8.d0*u(1,3,3) + u(3,1,1) + u(3,1,2) + 2.d0*u(3,1,3) + u(3,2,1) + u(3,2,2) + 2.d0*u(3,2,3) + 2.d0*u(3,3,1) + 2.d0*u(3,3,2) + 8.d0*u(3,3,3) &
+
+!- h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 8.d0*h*h*rhs(2,3,3))
 
 u(2,1,1) = 0.025d0* (8.d0*u(1,1,1) + 2.d0*u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + &
 u(1,3,2) + u(1,3,3) + 8.d0*u(3,1,1) + 2.d0*u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
@@ -1679,6 +1697,20 @@ u(2,3,3) = 0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) 
 - h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
 2.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 8.d0*h*h*rhs(2,3,3))
 
+
+write(cnc,'(I3.3)') cn
+write(cncmpi,'(I3.3)') NRANK
+open(19,FILE=dir//cnc//cncmpi//'.dat',FORM='FORMATTED')
+
+do i=1,3
+   do j=1,3
+      write(19,*) (u(i,j,k),k=1,3)
+   end do
+   write(19,*)
+end do
+close(19)
+
+cn=cn+1
 END SUBROUTINE slvsmlb
 
 
@@ -1693,7 +1725,7 @@ h=Lbox/((nx-1)*NSPLTx)
 h2=h*h
 
 !********debug**********
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !********debug**********
 !if(NRANK==40) then
 !   open(509,file='rMPIinin.dat')
@@ -1701,8 +1733,8 @@ CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !end if
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 li=0; IF(IST.eq.0) li=1 ! for debug
-!lj=0; IF(JST.eq.0) lj=1 ! for debug
-!lk=0; IF(KST.eq.0) lk=1 ! for debug
+lj=0; IF(JST.eq.0) lj=1 ! for debug
+lk=0; IF(KST.eq.0) lk=1 ! for debug
 do jsw=2,1,-1 !Red-Black Gauss-Seidel
   isw=jsw
   if(mode.eq.1) then
@@ -1755,7 +1787,7 @@ end do
 
 
 !********debug**********
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !********debug**********
 !if(NRANK==40) then
 !   close(509)
@@ -1838,7 +1870,7 @@ IF(IST.eq.0) THEN
 !do k=1,nz,2; do j=1,ny,2 !for speed up
 do k=1,nz; do j=1,ny !for debug from 0
    res(1 ,j,k)=0.d0
-   !res(0 ,j,k)=0.d0 !for debug
+   res(0 ,j,k)=0.d0 !for debug
 end do; end do
 END IF
 IF(IST.eq.NSPLTx-1) THEN
@@ -2566,7 +2598,7 @@ end if
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat')
+!open(10,file=dir//''//filenm//NPENUM//'.dat')
 !open(10,FILE='/work/maedarn/3DMHD/testg/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 !100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
 !  k=1;j=1;i=1
@@ -2600,7 +2632,7 @@ write(filenm,'(I3.3)') nunit
 goto 2202
 IF(NRANK.EQ.0) THEN
   t(nunit) = time
-  open(3,file='/work/maedarn/3DMHD/test/time.DAT')
+  open(3,file=dir//'time.DAT')
   do i = 1, nunit
     write(3,'(1p1d25.17)') t(i)
   end do
@@ -2614,13 +2646,13 @@ nunit = nunit + 1
   IF(NRANK.EQ.0) THEN
     write(5,'(a,1p1e11.3,1p1e11.3)') 'Done ! Time =', time, Tfinal
 !    close(5)
-    open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+    open(2,file=dir//'tsave.DAT')
     write(2,'(1p1d25.17)') time
     write(2,'(i8)') nunit-1
     close(2)
   END IF
 
-  open(8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(8,file=dir//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     write(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -2765,7 +2797,7 @@ subroutine saveu1(Uin1,Uin,nx1,ny1,nz1,nx2,ny2,nz2)
  ! USE comvar
   USE mpivar
  ! USE chmvar
- ! USE slfgrv
+  USE slfgrv
   INCLUDE 'mpif.h'
 
 integer :: nunit=0,st,msig,nx1,ny1,nz1,mode,nx2,ny2,nz2
@@ -2780,7 +2812,7 @@ WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
 write(*,*) '==================saveU============'
 
-open(10+NRANK,FILE='/work/maedarn/3DMHD/test/saveu'//filenm//NPENUM//'.dat')
+open(10+NRANK,FILE=dir//'saveu'//filenm//NPENUM//'.dat')
 !100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
 !  k=1;j=1;i=1
   do k = 0,nz2

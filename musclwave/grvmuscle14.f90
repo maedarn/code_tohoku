@@ -415,7 +415,7 @@ subroutine slvmuscle(dt)
   do l=-1,ndz
   do m=-1,ndy
   do n=-1,ndx
-     rho(n,m,l) = U(n,m,l,1)
+     rho(n,m,l) = U(n,m,l,1)-rhomean
      source(n,m,l,1)=-source(n,m,l,1)+G4pi*rho(n,m,l)
      source(n,m,l,2)=-source(n,m,l,2)+G4pi*rho(n,m,l)
      source(n,m,l,3)=-source(n,m,l,3)+G4pi*rho(n,m,l)
@@ -659,7 +659,7 @@ IF(iwx.EQ.1) THEN
      if(idm==2 .or. idm==3) then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phicgp(IX,JY,KZ,idm)=  Phicgp(1,JY,KZ,idm)!Phicgp(IX+1,JY,KZ,idm)
+     Phicgp(IX,JY,KZ,idm) =  Phicgp(1,JY,KZ,idm)!Phicgp(IX+1,JY,KZ,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
      endif
@@ -1794,7 +1794,7 @@ nccy = Ncelly; nccz = Ncellz
 do k=1,Ncellz; kz=KST*Ncellz+k
 do j=1,Ncelly; jy=JST*Ncelly+j
 do i=-1,Ncellx+2
-  data(jy,kz,i) = U(i,j,k,1)
+  data(jy,kz,i) = U(i,j,k,1)-rhomean
 end do;end do;end do
 
                     !count, blocklength, stride
