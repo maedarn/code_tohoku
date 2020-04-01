@@ -54,7 +54,7 @@ program main
 
      end do
 
-1000 open(2 , file = 'KIcoolcmetal.dat' , STATUS = 'UNKNOWN')
+1000 open(2 , file = 'KIcoolbr.dat' ,access='stream',FORM='UNFORMATTED')!, STATUS = 'UNKNOWN')
      write(2 , *) n , pmid
   end do
   close(2)

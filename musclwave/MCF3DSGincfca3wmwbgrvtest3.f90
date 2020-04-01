@@ -13,7 +13,7 @@ DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
-double precision :: shusoku1=0.0d0 , phiratio=1.0d0/3.0d0
+double precision :: shusoku1=0.0d0 , phiratio=1.0d0/3.0d0,rhomean
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
@@ -414,6 +414,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !rsph = ql1x-ql1x/5.0d0
   !rsph2=int(dble(Np1x)*0.8d0)
   !Hsheet = dble(Np1x) / 5.0d0
+  rhomean = dinit1*(Hsheet*2.d0)/(ql1x+ql2x)
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    !i2 = IST*Ncellx+i
    !i2y = JST*Ncelly+j
@@ -597,6 +598,8 @@ dinit1=0.0d0
 end do
 end do
 end do
+
+rhomean = dinit1*G4pi/3.d0 * (rrsph)**3 / ((ql1x+ql2x)**3)
 dinit1=0.0d0
  6001 continue
 !********************sphere***********************

@@ -25,7 +25,7 @@ program main
   ny=512
   nz=512
   val=9
-  loop=5
+  loop=30
   Lbox=100.d0
   Msun=1.473d-2 !1pc * 1pc * 1pc * 1m_p/cc
   rgn=3000
@@ -33,7 +33,7 @@ program main
   ganmim1=3.d0/2.d0 !1.d0/((5.d0/3.d0-1.d0)
   sloop=30
   smesh=5
-  timeloop=36
+  timeloop=3
   timestep=4
   jump=4
   mu=1.27d0
@@ -86,7 +86,7 @@ program main
   !m=1
   write(num,'(i3.3)') m
   write(num1,'(i1.1)') m
-  open(150,file='tagalog'//timech//num//'.DAT',FORM='FORMATTED')
+  open(150,file='taglog-n'//timech//num//'.DAT',FORM='FORMATTED')
   write(*,*) num
   !m=1
   do k=1,nz
@@ -104,7 +104,7 @@ program main
 end do
 
   U(:,:,:,:)=0.e0
-  open(110,file='Allatimebig'//timech//'.DAT',FORM='UNFORMATTED')
+  open(110,file='Allnewbigtime'//timech//'.DAT',FORM='UNFORMATTED')
   do k=1,nz
      do j=1,ny
         do i=1,nz
@@ -294,9 +294,9 @@ end do
                     kg(n)=k
                  end if
               end if
-              !xg(n)=dble(U(i,j,k,1))*x(i)*(dl**3)+xg(i)
-              !yg(n)=dble(U(i,j,k,1))*y(i)*(dl**3)+yg(i)
-              !zg(n)=dble(U(i,j,k,1))*z(i)*(dl**3)+zg(i)
+                 !xg(n)=dble(U(i,j,k,1))*x(i)*(dl**3)+xg(i)
+                 !yg(n)=dble(U(i,j,k,1))*y(i)*(dl**3)+yg(i)
+                 !zg(n)=dble(U(i,j,k,1))*z(i)*(dl**3)+zg(i)
               !end if
            end do
         end do
@@ -429,7 +429,7 @@ end do
 !  end do
   !close(510)
 
-  open(610,file='mdivlow'//timech//num//'.DAT',FORM='FORMATTED')
+  open(610,file='mdiv-n'//timech//num//'.DAT',FORM='FORMATTED')
   do n=1,rgn
      if(cas(n)==1)then
         write(610,*) n,MM(n),div(n),emag(n),ekin(n),ethm(n),-egrv(n),&
@@ -451,14 +451,14 @@ end do
      end do
   end do
 
-  open(910,file='masfunlow'//timech//num//'.DAT',FORM='FORMATTED')
+  open(910,file='masfun-n'//timech//num//'.DAT',FORM='FORMATTED')
   do i=1,sloop
      write(910,*) 10.d0**((dlog10(lgM(i-1))+dlog10(lgM(i)))*0.5d0),lgMcnt(i)
   end do
   close(910)
   !198 continue
 end do
-open(100,file='Allphylow'//timech//'.DAT',FORM='FORMATTED')
+open(100,file='Allphymanytag'//timech//'.DAT',FORM='FORMATTED')
 !do k=1,nz,jump
 !   do j=1,ny,jump
 !      do i=1,nx,jump
@@ -487,18 +487,18 @@ U(i,j,k,8),U(i,j,k,9),sngl(Tn(i,j,k)*1.d3),vdotf(i,j,k),vdotfb(i,j,k),vdotfg(i,j
 end do
 close(100)
 
-!if(time1==2) then
-!open(170,file='Allhirs'//timech//'.DAT',FORM='FORMATTED')
-!do k=1,nz
-!   do j=1,ny
-!      do i=1,nx
-!         write(170,*) U(i,j,k,1),real(tag(i,j,k,3)),real(tag(i,j,k,5))
-!      end do
-!   end do
-!   write(*,*) k
-!end do
-!close(170)
-!end if
+if(time1==2) then
+open(170,file='Allhirs'//timech//'.DAT',FORM='FORMATTED')
+do k=1,nz
+   do j=1,ny
+      do i=1,nx
+         write(170,*) U(i,j,k,1),real(tag(i,j,k,3)),real(tag(i,j,k,5))
+      end do
+   end do
+   write(*,*) k
+end do
+close(170)
+end if
 end do
 
   !ekin = 0.5d0 * (   U(i,j,k,2)**2 + U(i,j,k,3)**2 + U(i,j,k,4)**2 ) * U(i,j,k,1)

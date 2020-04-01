@@ -766,7 +766,7 @@ do i = 1,Ncell
   dxlag(i) = xlag(i)-xlag(i-1)
 end do
 CALL BC(Ncell,dxlag(-1),BCx1,BCx2)
-  
+
 CALL BC(Ncell,U(-1,1),BCx1,BCx2); call VLIMIT(Ncell,U(-1,1),grdU(-1,1),dxlag,0,1)
 CALL BC(Ncell,U(-1,3),BCx1,BCx2); call VLIMIT(Ncell,U(-1,3),grdU(-1,3),dxlag,0,1)
 CALL BC(Ncell,U(-1,4),BCx1,BCx2); call VLIMIT(Ncell,U(-1,4),grdU(-1,4),dxlag,0,1)
