@@ -3,7 +3,7 @@ subroutine SELFGRAVWAVE(dt,mode)
   USE mpivar
   USE slfgrv
   INCLUDE 'mpif.h'
-  integer :: mode,MRANK,count=0
+  integer :: mode,MRANK,count=0,rdnum
   DOUBLE PRECISION  :: dt,dxi
   !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
   INTEGER :: MSTATUS(MPI_STATUS_SIZE)
@@ -25,48 +25,32 @@ subroutine SELFGRAVWAVE(dt,mode)
      source(:,:,:,:)=0.0d0
      sourcedt(:,:,:,:)=0.0d0
      sourcedt2(:,:,:,:)=0.0d0
+　　　Phiwv(:,:,:,:)=0.d0
+     Phigrdwv(:,:,:,:)=0.d0
   end if
   !**************** INITIALIZEATION **************
 
   !****************read INITIAL CONDITION**************
   if(mode==1) then
      WRITE(NPENUM,'(I3.3)') NRANK
-     open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI1step'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit= 8,file=dir//'PHIINI/PHIINIwv'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=18,file=dir//'PHIINI/PHIGRDwv'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
-           !do i = -1, Ncellx+2
-           read(8) (Phicgp(i,j,k,1),Phicgp(i,j,k,2),Phicgp(i,j,k,3),i=-1,Ncellx+2)
-           !enddo
+           do i = -1, Ncellx+2
+           read(8) (Phiwv(i,j,k,rdnum),rdnum=1,wvnum)
+           enddo
         end do
      end do
      close(8)
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
-           !do i = -1, Ncellx+2
-           read(18) (Phicgm(i,j,k,1),Phicgm(i,j,k,2),Phicgm(i,j,k,3),i=-1,Ncellx+2)
-           !enddo
+           do i = -1, Ncellx+2
+           read(18) (Phigrdwv(i,j,k,rdnum),rdnum=1,wvnum)
+           enddo
         end do
      end do
      close(18)
-     do k = -1, Ncellz+2
-        do j = -1, Ncelly+2
-           !do i = -1, Ncellx+2
-           read(28) (Phi1step(i,j,k,1),Phi1step(i,j,k,2),Phi1step(i,j,k,3),i=-1,Ncellx+2)
-           !enddo
-        end do
-     end do
-     close(28)
-     do k = -1, Ncellz+2
-        do j = -1, Ncelly+2
-           !do i = -1, Ncellx+2
-           read(38) (Phi2step(i,j,k,1),Phi2step(i,j,k,2),Phi2step(i,j,k,3),i=-1,Ncellx+2)
-           !enddo
-        end do
-     end do
-     close(38)
   end if
   !****************read INITIAL CONDITION**************
 
@@ -121,24 +105,24 @@ subroutine SELFGRAVWAVE(dt,mode)
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI1step'//NPENUM//countcha//'.DAT')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHIINI/INIPHI1step'//NPENUM//countcha//'.DAT')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
      !-------------------INITIAL---------------------
      !   do k = -1, Ncellz+2
      !      do j = -1, Ncelly+2
-     !         !do i = -1, Ncellx+2
-     !         write(28) (Phi(i,j,k),i=-1,Ncellx+2)
-     !         !enddo
+     !         do i = -1, Ncellx+2
+     !         write(28) (Phiwv(i,j,k,rdnum),rdnum=1,wvnum)
+     !         enddo
      !      end do
      !   end do
      !   close(28)
      !   do k = -1, Ncellz+2
      !      do j = -1, Ncelly+2
-     !         !do i = -1, Ncellx+2
-     !         write(38) (Phidt(i,j,k),i=-1,Ncellx+2) 
-     !         !enddo
+     !         do i = -1, Ncellx+2
+     !         write(38) (Phigrdwv(i,j,k,rdnum),rdnum=1,wvnum)
+     !         enddo
      !      end do
      !   end do
      !   close(38)
@@ -1961,7 +1945,7 @@ ncz=Ncellz+2
 
 write(fn,'(i3.3)') NRANK
 write(lRANK,'(i1.1)') pls+2
-open(12,file='/work/maedarn/3DMHD/test/bcsave'//lRANK//fn//'.DAT')
+open(12,file=dir//'bcsave'//lRANK//fn//'.DAT')
 do k=-1,ncz!; kk= (ncy+1)*k
 do j=-1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
