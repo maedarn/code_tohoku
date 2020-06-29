@@ -364,17 +364,6 @@ if(mode==9) then
    !dt = sourcedt
 end if
 !***************SABILITY-exa**************
-
-
-!***************pointerforPB**************
-if(mode.eq.10) then
-  !call pinter(Nmem1,Nmem2,Ncellx,Ncelly,Ncellz)
-end if
-!***************pointerforPB**************
-
-if(mode==11) then
-   call cllsub(2,dt,0,0)
-end if
 end subroutine SELFGRAVWAVE
 
 
@@ -385,10 +374,6 @@ subroutine slvmuscle(dt)
   double precision :: dt,dtratio=dsqrt(3.0d0)
   integer :: i=0,n,m,l
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
-  integer ifEVOgrv,ifEVOgrv2
-
-  ifEVOgrv  = 1
-  ifEVOgrv2 = 1
 
   !do l=-1,ndz
   !do m=-1,ndy
@@ -396,129 +381,338 @@ subroutine slvmuscle(dt)
   !   rho(n,m,l) = U(n,m,l,1)
   !end do;end do;end do
 
-  do l=-1,ndz
-  do m=-1,ndy
-  do n=-1,ndx
-     rho(n,m,l) = U(n,m,l,1)-rhomean
-     source(n,m,l,1)=-source(n,m,l,1)+G4pi*rho(n,m,l)
-     source(n,m,l,2)=-source(n,m,l,2)+G4pi*rho(n,m,l)
-     source(n,m,l,3)=-source(n,m,l,3)+G4pi*rho(n,m,l)
+  !do l=-1,ndz
+  !do m=-1,ndy
+  !do n=-1,ndx
+  !   rho(n,m,l) = U(n,m,l,1)-rhomean
+  !   source(n,m,l,1)=-source(n,m,l,1)+G4pi*rho(n,m,l)
+  !   source(n,m,l,2)=-source(n,m,l,2)+G4pi*rho(n,m,l)
+  !   source(n,m,l,3)=-source(n,m,l,3)+G4pi*rho(n,m,l)
      !source(n,m,l,1)=source(n,m,l,1)-G4pi*rho(n,m,l)
      !source(n,m,l,2)=source(n,m,l,2)-G4pi*rho(n,m,l)
      !source(n,m,l,3)=source(n,m,l,3)-G4pi*rho(n,m,l)
-  end do;end do;end do
+  !end do;end do;end do
 
-  !write(*,*) 'OK or NOT 0'
-  !call muslcslv1D(Phi1step(-1,-1,-1,1),rho,dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,2),rho,dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,3),rho,dt*0.5d0*dtratio,3,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,1),source(-1,-1,-1,1),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,2),source(-1,-1,-1,2),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,3),source(-1,-1,-1,3),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,4),source(-1,-1,-1,4),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,5),source(-1,-1,-1,5),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,6),source(-1,-1,-1,6),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,7),source(-1,-1,-1,7),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phiwv(-1,-1,-1,8),source(-1,-1,-1,8),dt*0.5d0*dtratio,4,2)
-  !write(*,*) 'OK or NOT 1'
-  iwx=1; iwy=1; iwz=1
-  call BCgrv(102,1)
-  call BCgrv(102,2)
-  call BCgrv(102,3)
-  !write(*,*) 'OK or NOT 2'
+  !****************slv-wv****************
+  !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+  iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),3,3,0,0,1)
+   call BC(wp2(:,:,2),3,3,0,0,2)
+   call BC(wp2(:,:,3),3,3,0,0,3)
+   call BC(wp2(:,:,4),3,3,0,0,4)
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   do k=1,ndz-2
+     do j=1,ndy-2
+        do i=1,ndx-2
+     Phiwv(i,j,k,1) = Phiwv(i,j,k,1)+cg*dt*Phigrdwv(i,j,k,1)*0.5d0
+     Phiwv(i,j,k,2) = Phiwv(i,j,k,2)+cg*dt*Phigrdwv(i,j,k,2)*0.5d0
+     Phiwv(i,j,k,3) = Phiwv(i,j,k,3)+cg*dt*Phigrdwv(i,j,k,3)*0.5d0
+     Phiwv(i,j,k,4) = Phiwv(i,j,k,4)+cg*dt*Phigrdwv(i,j,k,4)*0.5d0
+     Phiwv(i,j,k,5) = Phiwv(i,j,k,5)+cg*dt*Phigrdwv(i,j,k,5)*0.5d0
+     Phiwv(i,j,k,6) = Phiwv(i,j,k,6)+cg*dt*Phigrdwv(i,j,k,6)*0.5d0
+     Phiwv(i,j,k,7) = Phiwv(i,j,k,7)+cg*dt*Phigrdwv(i,j,k,7)*0.5d0
+     Phiwv(i,j,k,8) = Phiwv(i,j,k,8)+cg*dt*Phigrdwv(i,j,k,8)*0.5d0
+        enddo
+     enddo
+   enddo
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),3,3,0,0,1)
+   call BC(wp2(:,:,2),3,3,0,0,2)
+   call BC(wp2(:,:,3),3,3,0,0,3)
+   call BC(wp2(:,:,4),3,3,0,0,4)
+   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
-  call cllsub(4,dt*0.5d0*dtratio,ifEVOgrv,ifEVOgrv2)
 
-  !write(*,*) 'OK or NOT 3'
-  call muslcslv1D(Phicgp(-1,-1,-1,1),Phi1step(-1,-1,-1,1),dt*dtratio,3,2)
-  call muslcslv1D(Phicgp(-1,-1,-1,2),Phi1step(-1,-1,-1,2),dt*dtratio,3,2)
-  call muslcslv1D(Phicgp(-1,-1,-1,3),Phi1step(-1,-1,-1,3),dt*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,1),source(-1,-1,-1,1),dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,2),source(-1,-1,-1,2),dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,3),source(-1,-1,-1,3),dt*0.5d0*dtratio,3,2)
-  iwx=1; iwy=1; iwz=1
-  call BCgrv(101,1)
-  call BCgrv(101,2)
-  call BCgrv(101,3)
+   !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+   iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+   call BC(wp1(:,:,1),4,4,0,0,1)
+   call BC(wp1(:,:,2),4,4,0,0,2)
+   call BC(wp1(:,:,3),4,4,0,0,3)
+   call BC(wp1(:,:,4),4,4,0,0,4)
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+   call BC(wp1(:,:,1),0,0,4,4,1)
+   call BC(wp1(:,:,2),0,0,4,4,2)
+   call BC(wp1(:,:,3),0,0,4,4,3)
+   call BC(wp1(:,:,4),0,0,4,4,4)
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+   call BC(wp1(:,:,1),0,0,4,4,1)
+   call BC(wp1(:,:,2),0,0,4,4,2)
+   call BC(wp1(:,:,3),0,0,4,4,3)
+   call BC(wp1(:,:,4),0,0,4,4,4)
+   do k=1,ndz-2
+     do j=1,ndy-2
+       do i=1,ndx-2
+       Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx/dy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy/dz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz/dx
+       Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx/dy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy/dz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz/dx
+       Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx/dy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy/dz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz/dx
+       Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx/dy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy/dz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz/dx
+       Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx/dy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy/dz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz/dx
+       Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx/dy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy/dz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz/dx
+       Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx/dy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy/dz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz/dx
+       Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx/dy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy/dz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz/dx
+       enddo
+     enddo
+   enddo
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+   call BC(wp1(:,:,1),0,0,4,4,1)
+   call BC(wp1(:,:,2),0,0,4,4,2)
+   call BC(wp1(:,:,3),0,0,4,4,3)
+   call BC(wp1(:,:,4),0,0,4,4,4)
+   iwx=0;iwy=1;iwz=0
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+   call BC(wp1(:,:,1),0,0,4,4,1)
+   call BC(wp1(:,:,2),0,0,4,4,2)
+   call BC(wp1(:,:,3),0,0,4,4,3)
+   call BC(wp1(:,:,4),0,0,4,4,4)
+   iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
+   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+   call BC(wp1(:,:,1),4,4,0,0,1)
+   call BC(wp1(:,:,2),4,4,0,0,2)
+   call BC(wp1(:,:,3),4,4,0,0,3)
+   call BC(wp1(:,:,4),4,4,0,0,4)
+   !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
-  !write(*,*) 'OK or NOT 4'
-  !call cllsub(5,dt*dtratio/3.0d0,dtifEVOgrv,ifEVOgrv2)
-  call cllsub(5,dt*dtratio,dtifEVOgrv,ifEVOgrv2)
 
-  !write(*,*) 'OK or NOT 5'
-  !call muslcslv1D(Phi1step(-1,-1,-1,1),rho,dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,2),rho,dt*0.5d0*dtratio,3,2)
-  !call muslcslv1D(Phi1step(-1,-1,-1,3),rho,dt*0.5d0*dtratio,3,2)
-  call muslcslv1D(Phi1step(-1,-1,-1,1),source(-1,-1,-1,1),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phi1step(-1,-1,-1,2),source(-1,-1,-1,2),dt*0.5d0*dtratio,4,2)
-  call muslcslv1D(Phi1step(-1,-1,-1,3),source(-1,-1,-1,3),dt*0.5d0*dtratio,4,2)
-  iwx=1; iwy=1; iwz=1
-  call BCgrv(102,1)
-  call BCgrv(102,2)
-  call BCgrv(102,3)
+  !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+  iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),3,3,0,0,1)
+   call BC(wp2(:,:,2),3,3,0,0,2)
+   call BC(wp2(:,:,3),3,3,0,0,3)
+   call BC(wp2(:,:,4),3,3,0,0,4)
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   do k=1,ndz-2
+     do j=1,ndy-2
+        do i=1,ndx-2
+     Phiwv(i,j,k,1) = Phiwv(i,j,k,1)+cg*dt*Phigrdwv(i,j,k,1)*0.5d0
+     Phiwv(i,j,k,2) = Phiwv(i,j,k,2)+cg*dt*Phigrdwv(i,j,k,2)*0.5d0
+     Phiwv(i,j,k,3) = Phiwv(i,j,k,3)+cg*dt*Phigrdwv(i,j,k,3)*0.5d0
+     Phiwv(i,j,k,4) = Phiwv(i,j,k,4)+cg*dt*Phigrdwv(i,j,k,4)*0.5d0
+     Phiwv(i,j,k,5) = Phiwv(i,j,k,5)+cg*dt*Phigrdwv(i,j,k,5)*0.5d0
+     Phiwv(i,j,k,6) = Phiwv(i,j,k,6)+cg*dt*Phigrdwv(i,j,k,6)*0.5d0
+     Phiwv(i,j,k,7) = Phiwv(i,j,k,7)+cg*dt*Phigrdwv(i,j,k,7)*0.5d0
+     Phiwv(i,j,k,8) = Phiwv(i,j,k,8)+cg*dt*Phigrdwv(i,j,k,8)*0.5d0
+        enddo
+     enddo
+   enddo
+   iwx=0;iwy=0;iwz=1
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=0;iwy=1;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+   call BC(wp2(:,:,1),0,0,3,3,1)
+   call BC(wp2(:,:,2),0,0,3,3,2)
+   call BC(wp2(:,:,3),0,0,3,3,3)
+   call BC(wp2(:,:,4),0,0,3,3,4)
+   iwx=1;iwy=0;iwz=0
+   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   call BC(wp2(:,:,1),3,3,0,0,1)
+   call BC(wp2(:,:,2),3,3,0,0,2)
+   call BC(wp2(:,:,3),3,3,0,0,3)
+   call BC(wp2(:,:,4),3,3,0,0,4)
+   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+  !****************slv-wv****************
 
-  call cllsub(4,dt*0.5d0*dtratio,ifEVOgrv,ifEVOgrv2)
-  !write(*,*) 'OK or NOT 6'
+  !iwx=1; iwy=1; iwz=1
+  !call BCgrv(102,1)
+  !call BCgrv(102,2)
+  !call BCgrv(102,3)
 end subroutine slvmuscle
 
-
-subroutine cllsub(mode,dt,ifEVOgrv,ifEVOgrv2)
-  use comvar
-  use slfgrv
-  INCLUDE 'mpif.h'
-  integer :: mode !,ifEVOgrv=1,ifEVOgrv2=1
-  double precision dt
-  integer :: n,m,l
-  double precision rho(-1:ndx,-1:ndy,-1:ndz)
-  integer ifEVOgrv,ifEVOgrv2
-
-  !write(*,*) 'cllsub',mode,dt,ifEVOgrv,ifEVOgrv2
-
-  if(mode==4) then
-     if(ifEVOgrv.eq.1) then
-        iwx=1; iwy=0; iwz=0
-        call muslcslv1D(Phi1step(-1,-1,-1,1),rho,dt,2,1)
-        call BCgrv(102,1)
-        iwx=0; iwy=1; iwz=0
-        call muslcslv1D(Phi1step(-1,-1,-1,2),rho,dt,2,2)
-        call BCgrv(102,2)
-        iwx=0; iwy=0; iwz=1
-        call muslcslv1D(Phi1step(-1,-1,-1,3),rho,dt,2,2)
-        call BCgrv(102,3)
-        goto 1470
-     end if
-1470 continue
-  end if
-
-
-  if(mode==5) then
-     if(ifEVOgrv2.eq.1) then
-        iwx=1; iwy=0; iwz=0
-        call muslcslv1D(Phicgp(-1,-1,-1,1),Phi1step(-1,-1,-1,1),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,2),Phi1step(-1,-1,-1,2),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,3),Phi1step(-1,-1,-1,3),dt,1,1)
-        call BCgrv(101,1)
-        call BCgrv(101,2)
-        call BCgrv(101,3)
-        iwx=0; iwy=1; iwz=0
-        call muslcslv1D(Phicgp(-1,-1,-1,1),Phi1step(-1,-1,-1,1),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,2),Phi1step(-1,-1,-1,2),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,3),Phi1step(-1,-1,-1,3),dt,1,1)
-        call BCgrv(101,1)
-        call BCgrv(101,2)
-        call BCgrv(101,3)
-        iwx=0; iwy=0; iwz=1
-        call muslcslv1D(Phicgp(-1,-1,-1,1),Phi1step(-1,-1,-1,1),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,2),Phi1step(-1,-1,-1,2),dt,1,1)
-        call muslcslv1D(Phicgp(-1,-1,-1,3),Phi1step(-1,-1,-1,3),dt,1,1)
-        call BCgrv(101,1)
-        call BCgrv(101,2)
-        call BCgrv(101,3)
-        goto 1788
-     end if
-1788 continue
-  end if
-end subroutine cllsub
 
 subroutine BCgrv(mode,idm)
   use comvar
@@ -990,14 +1184,11 @@ CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 end subroutine BCgrv
 
 
-subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
+subroutine muslcslv1D(Phiv,dt,mode)
   use comvar
   double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam  !kappa -> comver  better?
   integer :: direction , mode , invdt , loopmode , dloop,cnt=0
-  !DOUBLE PRECISION :: fluxf(-1:ndx,-1:ndy,-1:ndz),fluxg(-1:ndx,-1:ndy,-1:ndz)
-  !DOUBLE PRECISION, dimension(-1:ndx) :: Phigrad,Phipre,fluxphi,Phiv,source,Phi2dt,Phiu,sourcepre,sourcepri
-  DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,fluxphi&
-       ,Phiv,source,Phi2dt,Phiu,sourcepre,sourcepri
+  DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,Phiv,Phi2dt,Phiu
   character(5) name
   integer Ncell,Ncm,Ncl,ix,jy,kz,Lnum,Mnum,hazi,is,ie,idm
   DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
@@ -1019,7 +1210,6 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
   !----kyoukai-----
   nu2 = cg * dt / deltalength
   Phipre(:,:,:) = Phiv(:,:,:)
-  !write(name,'(i5.5)') cnt
   !------------ul.solver.+cg-------------
   if(mode==1) then
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
@@ -1120,34 +1310,6 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
   end if
   !------------ul.solver.-cg-------------
 
-
-  !--------------source------------------
-  if(mode==3) then
-     do k = 1,ndz-2
-        do j = 1,ndy-2
-           do i = 1,ndx-2
-              !Phiv(i,j,k) =  cg * G4pi * source(i,j,k) * dt * phiratio + Phipre(i,j,k)
-              !Phiv(i,j,k) =  cg * source(i,j,k) * dt * phiratio + Phipre(i,j,k)
-              Phiv(i,j,k) =  cg * source(i,j,k) * dt + Phipre(i,j,k)
-              !write(*,*) source(i,j,k),Phipre(i,j,k),Phiv(i,j,k),'-mode3-'
-           end do
-        end do
-     end do
-  end if
-
-  if(mode==4) then
-     do k = 1,ndz-2
-        do j = 1,ndy-2
-           do i = 1,ndx-2
-              Phiv(i,j,k) = -cg * source(i,j,k) * dt + Phipre(i,j,k)
-           end do
-        end do
-     end do
-  end if
-  !--------------source------------------
-
-!  close(201)
-!  close(202)
   cnt=cnt+2
 end subroutine muslcslv1D
 
