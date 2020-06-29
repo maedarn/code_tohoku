@@ -728,7 +728,7 @@ subroutine BCgrv(mode,idm)
 
   if(mode==100) then
 
-IF(iwx.EQ.1) THEN
+　IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
@@ -826,50 +826,24 @@ IF(iwx.EQ.1) THEN
   RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
 
 
-  CALL MPI_SENDRECV(Phicgp(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
-                    Phicgp(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
-       Phicgm(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
+  CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+                    Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
   IF(IST.eq.0) THEN
-     if(idm==1)then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phicgp(IX,JY,KZ,idm)= bphixl(JY,KZ,IX,idm)
+     Phiwv(IX,JY,KZ,idm)= bphixl(JY,KZ,IX,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
-     endif
-     if(idm==2 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phicgp(IX,JY,KZ,idm) =  Phicgp(1,JY,KZ,idm)!Phicgp(IX+1,JY,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2r(JY,KZ,IX)
-     END DO;END DO;END DO
-     endif
   END IF
 
-  CALL MPI_SENDRECV(Phicgp(1            ,-1,-1,idm),1,VECU,LEFT,1, &
-       Phicgp(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(1            ,-1,-1,idm),1,VECU,LEFT,1, &
-       Phicgm(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
+  CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+                    Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
   IF(IST.eq.NSPLTx-1) THEN
-     if(idm==1)then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phicgp(IX,JY,KZ,idm)= bphixr(JY,KZ,IX,idm)
+     Phiwv(IX,JY,KZ,idm)= bphixr(JY,KZ,IX,idm)
      !Phicgm(IX,JY,KZ,idm)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
-     write(*,*) Phicgp(Ncellx+1,1,1,idm),idm,'bcbc-kakunin',bphixr(1,1,Ncellx+1,idm)
-     endif
-     if(idm==2 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+N_ol, Ncellx+1,-1
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phicgp(IX,JY,KZ,idm)=  Phicgp(Ncellx,JY,KZ,idm)!Phicgp(IX-1,JY,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2r(JY,KZ,IX)
-     END DO;END DO;END DO
-     endif
-     !write(*,*) NRANK,Phicgp(-1,1,1),Phicgm(-1,1,1),Phicgp(Ncellx+2,1,1),Phicgm(Ncellx+2,1,1),'---bcc1---'
   END IF
 
 CALL MPI_TYPE_FREE(VECU,IERR)
@@ -885,36 +859,16 @@ IF(iwy.EQ.1) THEN
   TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
 !*************************************  BC for the downsides of domains  ****
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phicgp(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
-       Phicgp(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
-       Phicgm(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+       Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
   IF(JST.eq.0) THEN
-     if(idm==1 .or. idm==3) then
      !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
       DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,1,KZ,idm)!Phicgp(IX,JY+1,KZ,idm)
+     Phiwv(IX,JY,KZ,idm)= Phiwv(IX,1,KZ,idm)!Phicgp(IX,JY+1,KZ,idm)
     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
-     endif
-!     if(idm==2) then
-     !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
-!      DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     Phicgp(IX,JY,KZ,idm)= Phi(IX,JY,KZ)-Phicgp(IX,JY,KZ,1)-Phicgp(IX,JY,KZ,3)!Phicgp(IX,JY+1,KZ,idm)
-    !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     endif
-     !if(idm==2) then
-     !!DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
-     ! DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
-     !!DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     !Phicgp(IX,JY,KZ,idm)= Phicgp(IX,JY+1,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-     !END DO;END DO;END DO
-     !endif
   END IF
 !**************************************  BC for the upsides of domains  ****
   !DO K = 1, N_MPI(20)
@@ -1005,182 +959,6 @@ IF(iwz.EQ.1) THEN
   UP = UPt; DOWN = DOWNt
 END IF
 endif
-
-
-
-if(mode==102) then
-
-IF(iwx.EQ.1) THEN
-      !idm=1
-  CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
-  RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
-!********************************  BC for the leftsides of domains  *****
-  !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phi1step(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
-       Phi1step(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
-       Phi2step(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
-  IF(IST.eq.0) THEN
-     if(idm==1) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0,1
- ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phi1step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX,idm)
-     !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-  END DO;END DO;END DO
-  endif
-  if(idm==2 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0,1
-        ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-        Phi1step(IX,JY,KZ,idm)= Phi1step(1,JY,KZ,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-     END DO;END DO;END DO
-  end if
-  END IF
-  CALL MPI_SENDRECV(Phi1step(1            ,-1,-1,idm),1,VECU,LEFT,1, &
-       Phi1step(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(1            ,-1,-1,idm),1,VECU,LEFT,1, &
-       Phi2step(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
-
-  IF(IST.eq.NSPLTx-1) THEN
-     if(idm==1) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phi1step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX,idm)
-     !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-  END DO;END DO;END DO
-  endif
-  if(idm==2 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-        !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-        Phi1step(IX,JY,KZ,idm)=Phi1step(Ncellx,JY,KZ,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-     END DO;END DO;END DO
-  endif
-END IF
-
-!write(*,*) NRANK,'--bc--5--',Phi1step(0,1,1),Phi2step(0,1,1),Phi1step(Ncellx+1,1,1),Phi2step(Ncellx,1,1)
-
-!************************************************************************
-CALL MPI_TYPE_FREE(VECU,IERR)
-LEFT = LEFTt; RIGT = RIGTt
-END IF
-
-
-IF(iwy.EQ.1) THEN
-   !idm=2
-  CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
-  TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
-!*************************************  BC for the downsides of domains  ****
-  CALL MPI_SENDRECV(Phi1step(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
-       Phi1step(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
-       Phi2step(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(JST.eq.0) THEN
-     if(idm==2) then
-     DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0,1; DO IX = -1, Ncellx+2
- ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-        Phi1step(IX,JY,KZ,idm)= bstepyl(KZ,IX,JY,idm)
-        !Phi1step(IX,JY,KZ,idm)= 0.0d0
-     !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-  END DO;END DO;END DO
-endif
-if(idm==1 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-        !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,1,KZ,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-     END DO;END DO;END DO
-     END if
-  END IF
-!**************************************  BC for the upsides of domains  ****
-  CALL MPI_SENDRECV(Phi1step(-1,1            ,-1,idm),1,VECU,BOTM,1, &
-       Phi1step(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(-1,1            ,-1,idm),1,VECU,BOTM,1, &
-       Phi2step(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(JST.eq.NSPLTy-1) THEN
-     if(idm==2) then
-    !DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-     DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol,1; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phi1step(IX,JY,KZ,idm)= bstepyr(KZ,IX,JY,idm)
-     !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-  END DO;END DO;END DO
-  endif
-  if(idm==1 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-        !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,Ncelly,KZ,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-     END DO;END DO;END DO
-     END if
-  END IF
-!***************************************************************************
-  CALL MPI_TYPE_FREE(VECU,IERR)
-  TOP = TOPt; BOTM = BOTMt
-END IF
-
-IF(iwz.EQ.1) THEN
-   !idm=3
-  CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
-  CALL MPI_TYPE_COMMIT(VECU,IERR)
-  DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
-  UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
-!*************************************  BC for the downsides of domains  ****
-  CALL MPI_SENDRECV(Phi1step(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
-       Phi1step(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
-       Phi2step(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(KST.eq.0) THEN
-     if(idm==3) then
-     DO KZ = 1-N_ol, 0,1; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
- ! DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phi1step(IX,JY,KZ,idm)= bstepzl(IX,JY,KZ,idm)
-     !Phi2step(IX,JY,KZ,idm)= bstepxl(JY,KZ,IX)
-  END DO;END DO;END DO
-       endif
-if(idm==1 .or. idm==2) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-        !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,1,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-     END DO;END DO;END DO
-     END if
-  END IF
-!**************************************  BC for the upsides of domains  ****
-  CALL MPI_SENDRECV(Phi1step(-1,-1,1            ,idm),1,VECU,DOWN,1, &
-       Phi1step(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phi2step(-1,-1,1            ,idm),1,VECU,DOWN,1, &
-       Phi2step(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(KST.eq.NSPLTz-1) THEN
-     if(idm==3) then
-     !DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-     DO KZ =Ncellz+1, Ncellz+N_ol,1 ; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phi1step(IX,JY,KZ,idm)= bstepzr(IX,JY,KZ,idm)
-     !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-  END DO;END DO;END DO
-endif
-if(idm==1 .or. idm==2) then
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
-        !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-        Phi1step(IX,JY,KZ,idm)=Phi1step(IX,JY,Ncellz,idm)
-        !Phi2step(IX,JY,KZ,idm)= bstepxr(JY,KZ,IX)
-     END DO;END DO;END DO
-     END if
- END IF
-!***************************************************************************
-  CALL MPI_TYPE_FREE(VECU,IERR)
-  UP = UPt; DOWN = DOWNt
-END IF
-endif
-!----debug----
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 end subroutine BCgrv
 
 
@@ -1492,9 +1270,6 @@ character(5) ciii
 DOUBLE PRECISION flx1,fly1,flz1,flx2,fly2,flz2,flx3,fly3,flz3,bc11,bc12,bc21,bc22
 DOUBLE PRECISION fllx1,flly1,fllz1,fllx2,flly2,fllz2,fllx3,flly3,fllz3
 
-!dxx=dx(1)
-!dxx=-dx(1)
-!dxx=-deltalength
 dxx=deltalength
 !iwx = 0; iwy = 1; iwz = 1
 !call BCgrv(101)
@@ -1506,380 +1281,65 @@ write(ciii,'(i5.5)') c
 !open(4,file='/work/maedarn/3DMHD/test/bcstepscnd'//fn//'.DAT')
 !open(5,file='/work/maedarn/3DMHD/test/source'//fn//ciii//'.DAT')
 
-
-sourcedt2(:,:,:,:)=sourcedt(:,:,:,:)
-sourcedt(:,:,:,:)=Phi1step(:,:,:,:)
-source(:,:,:,:)=0.0d0
-
 dddt=1.0d0/dt/ratio/cg
 write(*,*) 'dddt',dddt
 
-!do
-!call vanalbada(Mnum,Lnum,Phipre,Phigrad,i_sta,i_end,dmein)
-
-do k = 1,ndz-2
-do j = 1,ndy-2
-do i = 1,ndx-2
-
-!call vanlimter(sourcedt(i+1,j,k,1),sourcedt(i,j,k,1),sourcedt(i-1,j,k,1),flx1)
-!call vanlimter(sourcedt(i+1,j,k,2),sourcedt(i,j,k,2),sourcedt(i-1,j,k,2),flx2)
-!call vanlimter(sourcedt(i+1,j,k,3),sourcedt(i,j,k,3),sourcedt(i-1,j,k,3),flx3)
-!call vanlimter(sourcedt(i,j+1,k,1),sourcedt(i,j,k,1),sourcedt(i,j-1,k,1),fly1)
-!call vanlimter(sourcedt(i,j+1,k,2),sourcedt(i,j,k,2),sourcedt(i,j-1,k,2),fly2)
-!call vanlimter(sourcedt(i,j+1,k,3),sourcedt(i,j,k,3),sourcedt(i,j-1,k,3),fly3)
-!call vanlimter(sourcedt(i,j,k+1,1),sourcedt(i,j,k,1),sourcedt(i,j,k-1,1),flz1)
-!call vanlimter(sourcedt(i,j,k+1,2),sourcedt(i,j,k,2),sourcedt(i,j,k-1,2),flz2)
-!call vanlimter(sourcedt(i,j,k+1,3),sourcedt(i,j,k,3),sourcedt(i,j,k-1,3),flz3)
-
-!flx1 = dsign(1.d0,sourcedt(i,j,k,1))*dmax1(0.0d0,dmin1(dabs(sourcedt(i,j,k,1)),dsign(1.0d0,sourcedt(i,j,k,1))&
-!     *sourcedt(i+1,j,k,1)))!/dabs(sourcedt(i,j,k,1))
-!fly2 = dsign(1.d0,sourcedt(i,j,k,2))*dmax1(0.0d0,dmin1(dabs(sourcedt(i,j,k,2)),dsign(1.0d0,sourcedt(i,j,k,2))&
-!     *sourcedt(i,j+1,k,2)))!/dabs(sourcedt(i,j,k,2))
-!flz3 = dsign(1.d0,sourcedt(i,j,k,3))*dmax1(0.0d0,dmin1(dabs(sourcedt(i,j,k,3)),dsign(1.0d0,sourcedt(i,j,k,3))&
-!     *sourcedt(i,j,k+1,3)))!/dabs(sourcedt(i,j,k,3))
-!fllx1 = dsign(1.d0,sourcedt(i-1,j,k,1))*dmax1(0.0d0,dmin1(dabs(sourcedt(i-1,j,k,1)),dsign(1.0d0,sourcedt(i-1,j,k,1))&
-!     *sourcedt(i,j,k,1)))!/dabs(sourcedt(i-1,j,k,1))
-!flly2 = dsign(1.d0,sourcedt(i,j-1,k,2))*dmax1(0.0d0,dmin1(dabs(sourcedt(i,j-1,k,2)),dsign(1.0d0,sourcedt(i,j-1,k,2))&
-!     *sourcedt(i,j,k,2)))!/dabs(sourcedt(i,j-1,k,2))
-!fllz3 = dsign(1.d0,sourcedt(i,j,k-1,3))*dmax1(0.0d0,dmin1(dabs(sourcedt(i,j,k-1,3)),dsign(1.0d0,sourcedt(i,j,k-1,3))&
-!     *sourcedt(i,j,k,3)))!/dabs(sourcedt(i,j,k-1,3))
-
-rx = (sourcedt(i,j,k,1)-sourcedt(i-1,j,k,1)+1.d-20)/(sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1)+1.d-20)
-ry = (sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2)+1.d-20)/(sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2)+1.d-20)
-rz = (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3)+1.d-20)/(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3)+1.d-20)
-rx2 = (sourcedt(i-1,j,k,1)-sourcedt(i-2,j,k,1)+1.d-20)/(sourcedt(i,j,k,1)-sourcedt(i-1,j,k,1)+1.d-20)
-ry2 = (sourcedt(i,j-1,k,2)-sourcedt(i,j-2,k,2)+1.d-20)/(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2)+1.d-20)
-rz2 = (sourcedt(i,j,k-1,3)-sourcedt(i,j,k-2,3)+1.d-20)/(sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3)+1.d-20)
-
-flx1=dmax1(0.0d0,dmin1(1.0d0,rx))
-fly2=dmax1(0.0d0,dmin1(1.0d0,ry))
-flz3=dmax1(0.0d0,dmin1(1.0d0,rz))
-fllx1=dmax1(0.0d0,dmin1(1.0d0,rx2))
-flly2=dmax1(0.0d0,dmin1(1.0d0,ry2))
-fllz3=dmax1(0.0d0,dmin1(1.0d0,rz2))
-
-!call vanlimter(inp,in,inm,flx)
-!call vanlimter(inp,in,inm,flx)
-!call vanalbada(,Lnum,Phipre,Phigrad,i_sta,i_end,dmein)
-!sourece(i,j,k,1)= sourcedt(i,j,k,1)-(sourcedt(i,j,k,2)+sourece2dt(i,j,k,2))-(sourcedt(i,j,k,3)+sourece2dt(i,j,k,3))&
-!     +ratio*dt/deltalength*0.5d0*(sourcedt(i,j+1,k,2)-sourcedt(i,j-1,k,2) + sourcedt(i,j,k+1,3)-sourcedt(i,j,k-1,3))
-!sourece(i,j,k,2)= sourcedt(i,j,k,2)-(sourcedt(i,j,k,1)+sourece2dt(i,j,k,1))-(sourcedt(i,j,k,3)+sourece2dt(i,j,k,3))&
-!     +ratio*dt/deltalength*0.5d0*(sourcedt(i+1,j,k,1)-sourcedt(i-1,j-1,k,1) + sourcedt(i,j,k+1,2)-sourcedt(i,j,k-1,2))
-!sourece(i,j,k,3)= sourcedt(i,j,k,3)-(sourcedt(i,j,k,2)+sourece2dt(i,j,k,2))-(sourcedt(i,j,k,1)+sourece2dt(i,j,k,1))&
-!     +ratio*dt/deltalength*0.5d0*(sourcedt(i,j+1,k,2)-sourcedt(i,j-1,k,2) + sourcedt(i-1,j,k,1)-sourcedt(i-1,j,k,1))
-!source(i,j,k,1)= -(sourcedt(i,j,k,2)+sourcedt2(i,j,k,2))*dddt-(sourcedt(i,j,k,3)+sourcedt2(i,j,k,3))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j-1,k,2))*fly2 + (sourcedt(i,j,k+1,3)-sourcedt(i,j,k-1,3))*flz3)
-!source(i,j,k,2)= -(sourcedt(i,j,k,1)+sourcedt2(i,j,k,1))*dddt-(sourcedt(i,j,k,3)+sourcedt2(i,j,k,3))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i+1,j,k,1)-sourcedt(i-1,j,k,1))*flx1 + (sourcedt(i,j,k+1,3)-sourcedt(i,j,k-1,3))*flz3)
-!source(i,j,k,3)= -(sourcedt(i,j,k,2)+sourcedt2(i,j,k,2))*dddt-(sourcedt(i,j,k,1)+sourcedt2(i,j,k,1))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j-1,k,2))*fly2 + (sourcedt(i-1,j,k,1)-sourcedt(i-1,j,k,1))*flx1)
-
-!source!
-!source(i,j,k,1)= -(sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt-(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2-(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-!     +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 - (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-!source(i,j,k,2)= -(sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt-(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1-(sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 &
-!     +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 - (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-!source(i,j,k,3)= -(sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt-(sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt&
-!     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2-(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-!     +(sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1 - (sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 )
-!source!
-
-
-  !source(i,j,k,1)= (sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt+(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-  !   +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2-(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-  !   +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 - (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-  !source(i,j,k,2)= (sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt+(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-  !   +1.0d0/deltalength*0.5d0*((sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1-(sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 &
-  !   +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 - (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-  !source(i,j,k,3)= (sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt+(sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt&
-  !   +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2-(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-  !   +(sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1 - (sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 )
-
-source(i,j,k,1)= (sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt+(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2+(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-     +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 + (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-source(i,j,k,2)= (sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt+(sourcedt(i,j,k,3)-sourcedt2(i,j,k,3))*dddt&
-     +1.0d0/deltalength*0.5d0*((sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1+(sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 &
-     +(sourcedt(i,j,k+1,3)-sourcedt(i,j,k,3))*flz3 + (sourcedt(i,j,k,3)-sourcedt(i,j,k-1,3))*fllz3)
-source(i,j,k,3)= (sourcedt(i,j,k,2)-sourcedt2(i,j,k,2))*dddt+(sourcedt(i,j,k,1)-sourcedt2(i,j,k,1))*dddt&
-     +1.0d0/deltalength*0.5d0*((sourcedt(i,j+1,k,2)-sourcedt(i,j,k,2))*fly2+(sourcedt(i,j,k,2)-sourcedt(i,j-1,k,2))*flly2 &
-     +(sourcedt(i+1,j,k,1)-sourcedt(i,j,k,1))*flx1 + (sourcedt(i,j,k,1)-sourcedt(i+1,j,k,1))*fllx1 )
-!write(5,*) source(i,j,k,1),source(i,j,k,2),source(i,j,k,3),sourcedt(i,j,k,1),sourcedt2(i,j,k,1),sourcedt(i,j,k,2),&
-!     sourcedt2(i,j,k,2),sourcedt(i,j,k,3),sourcedt2(i,j,k,3),flx1,fly2,flz3,fllx1,flly2,fllz3
-end do
-end do
-end do
 
 !close(5)
 c=c+1
 
-bphixl(:,:,:,:)=0.d0
-bphixr(:,:,:,:)=0.d0
-bphiyl(:,:,:,:)=0.d0
-bphiyr(:,:,:,:)=0.d0
-bphizl(:,:,:,:)=0.d0
-bphizr(:,:,:,:)=0.d0
-
-bstepxl(:,:,:,:)=0.d0
-bstepxr(:,:,:,:)=0.d0
-bstepyl(:,:,:,:)=0.d0
-bstepyr(:,:,:,:)=0.d0
-bstepzl(:,:,:,:)=0.d0
-bstepzr(:,:,:,:)=0.d0
-
-do k = -1,ndz
-do j = -1,ndy
-do i = -1,ndx
-Phi(i,j,k)=Phicgp(i,j,k,1)+Phicgp(i,j,k,2)+Phicgp(i,j,k,3)
-end do
-end do
-end do
-
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,0)
 
 do k = -1,Ncellz+2
 do j = -1,Ncelly+2
-
 bstepxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dxx
 bstepxl(j,k,0,1) = (-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dxx
 bstepxl(j,k,-1,1) = -(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dxx
 bstepxr(j,k,Ncellx+2,1) = (3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dxx
 bstepxr(j,k,Ncellx+1,1) = (-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dxx
 bstepxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dxx
-
-!bstepxl(j,k,1,1) = 3.0d0*(3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dxx
-!bstepxl(j,k,0,1) = 3.0d0*(-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dxx
-!bstepxl(j,k,-1,1) = -3.0d0*(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dxx
-!bstepxr(j,k,Ncellx+2,1) = 3.0d0*(3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dxx
-!bstepxr(j,k,Ncellx+1,1) = 3.0d0*(-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dxx
-!bstepxr(j,k,Ncellx,1) = -3.0d0*(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dxx
-!write(3,*) bstepxl(j,k,1,1),bstepxl(j,k,0,1),bstepxl(j,k,-1,1),bstepxr(j,k,Ncellx+2,1),bstepxr(j,k,Ncellx+1,1),bstepxr(j,k,Ncellx,1),&
-!     bstepxl(j,k,1,1),bstepxl(j,k,0,1),bstepxl(j,k,-1,1),bstepxr(j,k,Ncellx+2,1),bstepxr(j,k,Ncellx+1,1),bstepxr(j,k,Ncellx,1),'1'
 end do
 end do
 
-!close(3)
+do k=-1,ndz-2
+do j=-1,ndy-2
+do i=-1,0
+   bstepxl(i,j,k,1)= bstepxl(j,k,i,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,2)=-bstepxl(j,k,i,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,3)= bstepxl(j,k,i,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,4)=-bstepxl(j,k,i,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,5)= bstepxl(j,k,i,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,6)=-bstepxl(j,k,i,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,7)= bstepxl(j,k,i,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxl(i,j,k,8)=-bstepxl(j,k,i,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
 
-Phi1step(     0,      -1,:,1)= -(2.d0*Phi1step(1,-1,:,1)-Phi1step(2,-1,:,1))
-Phi1step(Ncellx,      -1,:,1)= -(Phi1step(Ncellx-1,-1,:,1)-2.d0*Phi1step(Ncellx,-1,:,1))
-Phi1step(     0,       0,:,1)= -(2.d0*Phi1step(1,0,:,1)-Phi1step(2,0,:,1))
-Phi1step(Ncellx,       0,:,1)= -(Phi1step(Ncellx-1,0,:,1)-2.d0*Phi1step(Ncellx,0,:,1))
-Phi1step(     0,Ncelly+2,:,1)= -(2.d0*Phi1step(1,Ncelly+2,:,1)-Phi1step(2,Ncelly+2,:,1))
-Phi1step(Ncellx,Ncelly+2,:,1)= -(Phi1step(Ncellx-1,Ncelly+2,:,1)-2.d0*Phi1step(Ncellx,Ncelly+2,:,1))
-Phi1step(     0,Ncelly+1,:,1)= -(2.d0*Phi1step(1,Ncelly+1,:,1)-Phi1step(2,Ncelly+1,:,1))
-Phi1step(Ncellx,Ncelly+1,:,1)= -(Phi1step(Ncellx-1,Ncelly+1,:,1)-2.d0*Phi1step(Ncellx,Ncelly+1,:,1))
-
-Phi1step(:,      -1,     0,3)= -(2.d0*Phi1step(:,-1,1,3)-Phi1step(:,-1,2,3))
-Phi1step(:,      -1,Ncellz,3)= -(Phi1step(:,-1,Ncellz-1,3)-2.d0*Phi1step(:,-1,Ncellz,3))
-Phi1step(:,       0,     0,3)= -(2.d0*Phi1step(:,0,1,3)-Phi1step(:,0,2,3))
-Phi1step(:,       0,Ncellz,3)= -(Phi1step(:,0,Ncellz-1,3)-2.d0*Phi1step(:,0,Ncellz,3))
-Phi1step(:,Ncelly+2,     0,3)= -(2.d0*Phi1step(:,Ncelly+2,1,3)-Phi1step(:,Ncelly+2,2,3))
-Phi1step(:,Ncelly+2,Ncellz,3)= -(Phi1step(:,Ncelly+2,Ncellz-1,3)-2.d0*Phi1step(:,Ncelly+2,Ncellz,3))
-Phi1step(:,Ncelly+1,     0,3)= -(2.d0*Phi1step(:,Ncelly+1,1,3)-Phi1step(:,Ncelly+1,2,3))
-Phi1step(:,Ncelly+1,Ncellz,3)= -(Phi1step(:,Ncelly+1,Ncellz-1,3)-2.d0*Phi1step(:,Ncelly+1,Ncellz,3))
-
-dxx=-deltalength
-
-do k = -1,Ncellx+2
-do j = -1,Ncellz+2
-
-!bstepyl(j,k,1,2) = (3.0d0*Phi(k,1,j)-4.0d0*Phi(k,0,j)+Phi(k,-1,j))*0.5d0/dxx
-!bstepyl(j,k,0,2) = (-Phi(k,-1,j)+Phi(k,1,j))*0.5d0/dxx
-!bstepyl(j,k,-1,2) = -(3.0d0*Phi(k,-1,j)-4.0d0*Phi(k,0,j)+Phi(k,1,j))*0.5d0/dxx
-!bstepyr(j,k,Ncelly+2,2) = (3.0d0*Phi(k,Ncelly+2,j)-4.0d0*Phi(k,Ncelly+1,j)+Phi(k,Ncelly,j))*0.5d0/dxx
-!bstepyr(j,k,Ncelly+1,2) = (-Phi(k,Ncelly,j)+Phi(k,Ncelly+2,j))*0.5d0/dxx
-!bstepyr(j,k,Ncelly,2) = -(3.0d0*Phi(k,Ncelly,j)-4.0d0*Phi(k,Ncelly+1,j)+Phi(k,Ncelly+2,j))*0.5d0/dxx
-
-!bstepyl(j,k,1,2) = (3.0d0*Phicgp(k,1,j,2)-4.0d0*Phicgp(k,0,j,2)+Phicgp(k,-1,j,2))*0.5d0/dxx
-!bstepyl(j,k,0,2) = (-Phicgp(k,-1,j,2)+Phicgp(k,1,j,2))*0.5d0/dxx
-!bstepyl(j,k,-1,2) = -(3.0d0*Phicgp(k,-1,j,2)-4.0d0*Phicgp(k,0,j,2)+Phicgp(k,1,j,2))*0.5d0/dxx
-!bstepyr(j,k,Ncelly+2,2) = (3.0d0*Phicgp(k,Ncelly+2,j,2)-4.0d0*Phicgp(k,Ncelly+1,j,2)+Phicgp(k,Ncelly,j,2))*0.5d0/dxx
-!bstepyr(j,k,Ncelly+1,2) = (-Phicgp(k,Ncelly,j,2)+Phicgp(k,Ncelly+2,j,2))*0.5d0/dxx
-!bstepyr(j,k,Ncelly,2) = -(3.0d0*Phicgp(k,Ncelly,j,2)-4.0d0*Phicgp(k,Ncelly+1,j,2)+Phicgp(k,Ncelly+2,j,2))*0.5d0/dxx
-!bc21
-!bc22
-
-!bstepyl(j,k, 1,2) = G4pi*U(k,1,j,1)-(Phi1step(k+1,1,j,1)-Phi1step(k-1,1,j,1))*0.5d0/dxx-(Phi1step(k,1,j+1,3)-Phi1step(k,1,j-1,3))*0.5d0/dxx
-!bstepyl(j,k,-1,2) = Phi1step(k,1,j,2)-(G4pi*U(k,-1,j,1)-(Phi1step(k+1,-1,j,1)-Phi1step(k-1,-1,j,1))*0.5d0/dxx&
-!        -(Phi1step(k,-1,j+1,3)-Phi1step(k,-1,j-1,3))*0.5d0/dxx)*2.d0*dxx
-!bstepyl(j,k, 0,2) = (3.d0*Phi1step(k,1,j,2)+bstepyl(j,k,-1,2)-(G4pi*U(k,0,j,1)-(Phi1step(k+1,0,j,1)-Phi1step(k-1,0,j,1))*0.5d0/dxx&
-!        -(Phi1step(k,0,j+1,3)-Phi1step(k,0,j-1,3))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-!bstepyl(j,k,-1,2) = G4pi*U(k,-1,j,1)-(Phi1step(k+1,-1,j,1)-Phi1step(k-1,-1,j,1))*0.5d0/dxx-(Phi1step(k,-1,j+1,3)-Phi1step(k,-1,j-1,3))*0.5d0/dxx
-!bstepyr(j,k,Ncelly+2,2) = -Phi1step(k,Ncelly,j,2)+(G4pi*U(k,Ncelly+2,j,1)-(Phi1step(k+1,Ncelly+2,j,1)-Phi1step(k-1,Ncelly+2,j,1))*0.5d0/dxx-&
-!     (Phi1step(k,Ncelly+2,j+1,3)-Phi1step(k,Ncelly+2,j-1,3))*0.5d0/dxx)*2.d0*dxx
-!bstepyr(j,k,Ncelly+1,2) =(Phi1step(k,Ncelly,j,2)+3.d0*bstepyr(j,k,Ncelly+2,2) -(G4pi*U(k,Ncelly+1,j,1)-(Phi1step(k+1,Ncelly+1,j,1)-&
-!     Phi1step(k-1,Ncelly+1,j,1))*0.5d0/dxx-&
-!     (Phi1step(k,Ncelly+1,j+1,3)-Phi1step(k,Ncelly+1,j-1,3))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-!bstepyr(j,k,Ncelly  ,2) = G4pi*U(k,1,j,1)-(Phi1step(k+1,1,j,1)-Phi1step(k-1,1,j,1))*0.5d0/dxx-(Phi1step(k,1,j+1,3)-Phi1step(k,1,j-1,3))*0.5d0/dxx
-
-
-bstepyl(j,k,-1,2) = Phi1step(k,1,j,2)-(G4pi*U(k,-1,j,1)-(Phi1step(k+1,-1,j,1)-Phi1step(k-1,-1,j,1))*0.5d0/dxx&
-        -(Phi1step(k,-1,j+1,3)-Phi1step(k,-1,j-1,3))*0.5d0/dxx)*2.d0*dxx
-bstepyl(j,k, 0,2) = (3.d0*Phi1step(k,1,j,2)+bstepyl(j,k,-1,2)-(G4pi*U(k,0,j,1)-(Phi1step(k+1,0,j,1)-Phi1step(k-1,0,j,1))*0.5d0/dxx&
-        -(Phi1step(k,0,j+1,3)-Phi1step(k,0,j-1,3))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-bstepyr(j,k,Ncelly+2,2) = -Phi1step(k,Ncelly,j,2)+(G4pi*U(k,Ncelly+2,j,1)-(Phi1step(k+1,Ncelly+2,j,1)-Phi1step(k-1,Ncelly+2,j,1))*0.5d0/dxx-&
-     (Phi1step(k,Ncelly+2,j+1,3)-Phi1step(k,Ncelly+2,j-1,3))*0.5d0/dxx)*2.d0*dxx
-bstepyr(j,k,Ncelly+1,2) =(Phi1step(k,Ncelly,j,2)+3.d0*bstepyr(j,k,Ncelly+2,2) -(G4pi*U(k,Ncelly+1,j,1)-(Phi1step(k+1,Ncelly+1,j,1)-&
-     Phi1step(k-1,Ncelly+1,j,1))*0.5d0/dxx-&
-     (Phi1step(k,Ncelly+1,j+1,3)-Phi1step(k,Ncelly+1,j-1,3))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-
-!write(3,*) bstepyl(j,k,1,2),bstepyl(j,k,0,2),bstepyl(j,k,-1,2),bstepyr(j,k,Ncellx+2,2),bstepyr(j,k,Ncellx+1,2),bstepyr(j,k,Ncellx,2),&
-!     bstepyl(j,k,1,2),bstepyl(j,k,0,2),bstepyl(j,k,-1,2),bstepyr(j,k,Ncellx+2,2),bstepyr(j,k,Ncellx+1,2),bstepyr(j,k,Ncellx,2),'2'
-end do
-end do
-!bstepyl(:,:,:,2)=0.0d0
-!bstepyr(:,:,:,2)=0.0d0
-
-!Phi1step(0,:,-1,1)=-(2.d0*Phi1step(1,:,-1,1)-Phi1step(2,:,-1,1))
-!Phi1step(Ncellx,:,-1,1)=-(Phi1step(Ncellx-1,:,-1,1)-2.d0*Phi1step(Ncellx,:,-1,1))
-!Phi1step(0,:,0,1)=-(2.d0*Phi1step(1,:,0,1)-Phi1step(2,:,0,1))
-!Phi1step(Ncellx,:,0,1)=-(Phi1step(Ncellx-1,:,0,1)-2.d0*Phi1step(Ncellx,:,0,1))
-
-!Phi1step(:,-1,     0,2)=2.d0*Phi1step(:,-1,1,3)-Phi1step(:,-1,2,3)
-!Phi1step(:,-1,Ncellz,2)=Phi1step(:,-1,Ncellz-1,3)-2.d0*Phi1step(:,-1,Ncellz,3)
-!Phi1step(:, 0,     0,2)=2.d0*Phi1step(:,0,1,3)-Phi1step(:,0,2,3)
-!Phi1step(:, 0,Ncellz,2)=Phi1step(:,0,Ncellz-1,3)-2.d0*Phi1step(:,0,Ncellz,3)
-
-Phi1step(     0,:,      -1,1)= -(2.d0*Phi1step(1,:,-1,1)-Phi1step(2,:,-1,1))
-Phi1step(Ncellx,:,      -1,1)= -(     Phi1step(Ncellx-1,:,-1,1)-2.d0*Phi1step(Ncellx,:,-1,1))
-Phi1step(     0,:,       0,1)= -(2.d0*Phi1step(1,:,0,1)-Phi1step(2,:,0,1))
-Phi1step(Ncellx,:,       0,1)= -(     Phi1step(Ncellx-1,:,0,1)-2.d0*Phi1step(Ncellx,:,0,1))
-Phi1step(     0,:,Ncellz+2,1)= -(2.d0*Phi1step(1,:,Ncellz+2,1)-Phi1step(2,:,Ncellz+2,1))
-Phi1step(Ncellx,:,Ncellz+2,1)= -(     Phi1step(Ncellx-1,:,Ncellz+2,1)-2.d0*Phi1step(Ncellx,:,Ncellz+2,1))
-Phi1step(     0,:,Ncellz+1,1)= -(2.d0*Phi1step(1,:,Ncellz+1,1)-Phi1step(2,:,Ncellz+1,1))
-Phi1step(Ncellx,:,Ncellz+1,1)= -(     Phi1step(Ncellx-1,:,Ncellz+1,1)-2.d0*Phi1step(Ncellx,:,Ncellz+1,1))
-
-Phi1step(:,     0,      -1,2)= -(2.d0*Phi1step(:,1,-1,2)-Phi1step(:,2,-1,2))
-Phi1step(:,Ncelly,      -1,2)= -(Phi1step(:,Ncelly-1,-1,2)-2.d0*Phi1step(:,Ncelly,-1,2))
-Phi1step(:,     0,       0,2)= -(2.d0*Phi1step(:,1,0,2)-Phi1step(:,2,0,2))
-Phi1step(:,Ncelly,       0,2)= -(Phi1step(:,Ncelly-1,0,2)-2.d0*Phi1step(:,Ncelly,0,2))
-Phi1step(:,     0,Ncellz+2,2)= -(2.d0*Phi1step(:,1,Ncellz+2,2)-Phi1step(:,2,Ncellz+2,2))
-Phi1step(:,Ncelly,Ncellz+2,2)= -(Phi1step(:,Ncelly-1,Ncellz+2,2)-2.d0*Phi1step(:,Ncelly,Ncellz+2,2))
-Phi1step(:,     0,Ncellz+1,2)= -(2.d0*Phi1step(:,1,Ncellz+1,2)-Phi1step(:,2,Ncellz+1,2))
-Phi1step(:,Ncelly,Ncellz+1,2)= -(Phi1step(:,Ncelly-1,Ncellz+1,2)-2.d0*Phi1step(:,Ncelly,Ncellz+1,2))
-
-do k = -1,Ncelly+2
-do j = -1,Ncellx+2
-
-!bstepzl(j,k,1,3) = (3.0d0*Phi(j,k,1)-4.0d0*Phi(j,k,0)+Phi(j,k,-1))*0.5d0/dxx
-!bstepzl(j,k,0,3) = (-Phi(j,k,-1)+Phi(j,k,1))*0.5d0/dxx
-!bstepzl(j,k,-1,3) = -(3.0d0*Phi(j,k,-1)-4.0d0*Phi(j,k,0)+Phi(j,k,1))*0.5d0/dxx
-!bstepzr(j,k,Ncellz+2,3) = (3.0d0*Phi(j,k,Ncellz+2)-4.0d0*Phi(j,k,Ncellz+1)+Phi(j,k,Ncellz))*0.5d0/dxx
-!bstepzr(j,k,Ncellz+1,3) = (-Phi(j,k,Ncellz)+Phi(j,k,Ncellz+2))*0.5d0/dxx
-!bstepzr(j,k,Ncellz,3) = -(3.0d0*Phi(j,k,Ncellz)-4.0d0*Phi(j,k,Ncellx+1)+Phi(j,k,Ncellz+2))*0.5d0/dxx
-
-!bstepzl(j,k,1,3) = (3.0d0*Phicgp(j,k,1,3)-4.0d0*Phicgp(j,k,0,3)+Phicgp(j,k,-1,3))*0.5d0/dxx
-!bstepzl(j,k,0,3) = (-Phicgp(j,k,-1,3)+Phicgp(j,k,1,3))*0.5d0/dxx
-!bstepzl(j,k,-1,3) = -(3.0d0*Phicgp(j,k,-1,3)-4.0d0*Phicgp(j,k,0,3)+Phicgp(j,k,1,3))*0.5d0/dxx
-!bstepzr(j,k,Ncellz+2,3) = (3.0d0*Phicgp(j,k,Ncellz+2,3)-4.0d0*Phicgp(j,k,Ncellz+1,3)+Phicgp(j,k,Ncellz,3))*0.5d0/dxx
-!bstepzr(j,k,Ncellz+1,3) = (-Phicgp(j,k,Ncellz,3)+Phicgp(j,k,Ncellz+2,3))*0.5d0/dxx
-!bstepzr(j,k,Ncellz,3) = -(3.0d0*Phicgp(j,k,Ncellz,3)-4.0d0*Phicgp(j,k,Ncellx+1,3)+Phicgp(j,k,Ncellz+2,3))*0.5d0/dxx
-
-bstepzl(j,k,-1,3) = Phi1step(j,k,1,3)-(G4pi*U(j,k,-1,1)-(Phi1step(j+1,k,-1,1)-Phi1step(j-1,k,-1,1))*0.5d0/dxx&
-        -(Phi1step(j,k+1,-1,2)-Phi1step(j,k-1,-1,2))*0.5d0/dxx)*2.d0*dxx
-bstepzl(j,k, 0,3) = (3.d0*Phi1step(j,k,1,3)+bstepzl(j,k,-1,3)-(G4pi*U(j,k,0,1)-(Phi1step(j+1,k,0,1)-Phi1step(j-1,k,0,1))*0.5d0/dxx&
-        -(Phi1step(j,k+1,0,2)-Phi1step(j,k-1,0,2))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-
-bstepzr(j,k,Ncellz+2,3) = -Phi1step(j,k,Ncellz,3)+(G4pi*U(j,k,Ncellz+2,1)-(Phi1step(j+1,k,Ncellz+2,1)-Phi1step(j-1,k,Ncellz+2,1))*0.5d0/dxx-&
-     (Phi1step(j,k+1,Ncellz+2,2)-Phi1step(j,k-1,Ncellz+2,2))*0.5d0/dxx)*2.d0*dxx
-bstepzr(j,k,Ncellz+1,3) =(Phi1step(j,k,Ncellz,3)+3.d0*bstepzr(j,k,Ncellz+2,3) -(G4pi*U(j,k,Ncellz+1,1)-(Phi1step(j+1,k,Ncellz+1,1)-&
-     Phi1step(j-1,k,Ncellz+1,1))*0.5d0/dxx-&
-     (Phi1step(j,k+1,Ncellz+1,2)-Phi1step(j,k-1,Ncellz+1,2))*0.5d0/dxx)*2.d0*dxx)*0.25d0
-
-!write(3,*) bstepzl(j,k,1,3),bstepzl(j,k,0,3),bstepzl(j,k,-1,3),bstepzr(j,k,Ncellx+2,3),bstepzr(j,k,Ncellx+1,3),bstepzr(j,k,Ncellx,3),&
-!     bstepzl(j,k,1,3),bstepzl(j,k,0,3),bstepzl(j,k,-1,3),bstepzr(j,k,Ncellx+2,3),bstepzr(j,k,Ncellx+1,3),bstepzr(j,k,Ncellx,3),'3'
-end do
-end do
-!close(3)
-!bstepzl(:,:,:,3)=0.0d0
-!bstepzr(:,:,:,3)=0.0d0
-
-do k = -1,Ncellz+2
-do j = -1,Ncelly+2
-
-!bphixl(j,k,-1,2) = Phicgp(0,j,k,2)
-bphixl(j,k,-1,2) = Phicgp(1,j,k,2)
-bphixl(j,k, 0,2) = Phicgp(1,j,k,2)
-!bphixr(j,k,Ncellx+2,2) = Phicgp(Ncellx+1,j,k,2)
-bphixr(j,k,Ncellx+2,2) = Phicgp(Ncellx,j,k,2)
-bphixr(j,k,Ncellx+1,2) = Phicgp(Ncellx  ,j,k,2)
-
-bphixl(j,k,-1,3) = Phicgp(0,j,k,3)
-bphixl(j,k, 0,3) = Phicgp(1,j,k,3)
-bphixr(j,k,Ncellx+2,3) = Phicgp(Ncellx+1,j,k,3)
-bphixr(j,k,Ncellx+1,3) = Phicgp(Ncellx  ,j,k,3)
-
-!bphixl(j,k,-1,1) = bphil(j,k,-1)-bphixl(j,k,-1,2)-bphixl(j,k,-1,3)
-!bphixl(j,k, 0,1) = bphil(j,k, 0)-bphixl(j,k, 0,2)-bphixl(j,k, 0,3)
-!bphixr(j,k,Ncellx+2,1) = bphir(j,k,Ncellx+2)-bphixr(j,k,Ncellx+2,2)-bphixr(j,k,Ncellx+2,3)
-!bphixr(j,k,Ncellx+1,1) = bphir(j,k,Ncellx+1)-bphixr(j,k,Ncellx+1,2)-bphixr(j,k,Ncellx+1,3)
-
-bphixl(j,k,-1,1) = bphil(j,k,-1)-Phicgp(-1,j,k,2)-Phicgp(-1,j,k,3)
-bphixl(j,k, 0,1) = bphil(j,k, 0)-Phicgp( 0,j,k,2)-Phicgp( 0,j,k,3)
-bphixr(j,k,Ncellx+2,1) = bphir(j,k,Ncellx+2)-Phicgp(Ncellx+2,j,k,2)-Phicgp(Ncellx+2,j,k,3)
-bphixr(j,k,Ncellx+1,1) = bphir(j,k,Ncellx+1)-Phicgp(Ncellx+1,j,k,2)-Phicgp(Ncellx+1,j,k,3)
-
-!bphixl(j,k,-1,1) = bphil(j,k,-1)+(-Phicgp(-1,j,k,2)-Phicgp(-1,j,k,3))/3.0d0
-!bphixl(j,k, 0,1) = bphil(j,k, 0)+(-Phicgp( 0,j,k,2)-Phicgp( 0,j,k,3))/3.0d0
-!bphixr(j,k,Ncellx+2,1) = bphir(j,k,Ncellx+2)+(-Phicgp(Ncellx+2,j,k,2)-Phicgp(Ncellx+2,j,k,3))/3.0d0
-!bphixr(j,k,Ncellx+1,1) = bphir(j,k,Ncellx+1)+(-Phicgp(Ncellx+1,j,k,2)-Phicgp(Ncellx+1,j,k,3))/3.0d0
-
-!bphixl(j,k,-1,1) = 3.0d0*bphil(j,k,-1)-Phicgp(-1,j,k,2)-Phicgp(-1,j,k,3)
-!bphixl(j,k, 0,1) = 3.0d0*bphil(j,k, 0)-Phicgp( 0,j,k,2)-Phicgp( 0,j,k,3)
-!bphixr(j,k,Ncellx+2,1) = 3.0d0*bphir(j,k,Ncellx+2)-Phicgp(Ncellx+2,j,k,2)-Phicgp(Ncellx+2,j,k,3)
-!bphixr(j,k,Ncellx+1,1) = 3.0d0*bphir(j,k,Ncellx+1)-Phicgp(Ncellx+1,j,k,2)-Phicgp(Ncellx+1,j,k,3)
-
-!write(4,*) bphixl(j,k,-1,1),bphixl(j,k,-1,2),bphixl(j,k,-1,3),bphixr(j,k,Ncellx+1,1),bphixl(j,k,Ncellx+1,2),bphixl(j,k,Ncellx+1,3)
+   bstepxr(i+Ncell+2,j,k,1)= bstepxl(j,k,i+Ncell+2,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,2)=-bstepxl(j,k,i+Ncell+2,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,3)= bstepxl(j,k,i+Ncell+2,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,4)=-bstepxl(j,k,i+Ncell+2,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,5)= bstepxl(j,k,i+Ncell+2,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,6)=-bstepxl(j,k,i+Ncell+2,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,7)= bstepxl(j,k,i+Ncell+2,1) &
+                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bstepxr(i+Ncell+2,j,k,8)=-bstepxl(j,k,i+Ncell+2,1) &
+                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
 end do
 end do
 
-do k = -1,Ncellx+2
-do j = -1,Ncellz+2
 
-bphiyl(j,k,-1,1) = Phicgp(k,0,j,1)
-bphiyl(j,k, 0,1) = Phicgp(k,1,j,1)
-bphiyr(j,k,Ncelly+2,1) = Phicgp(k,Ncelly+1,j,1)
-bphiyr(j,k,Ncelly+1,1) = Phicgp(k,Ncelly  ,j,1)
-
-bphiyl(j,k,-1,3) = Phicgp(k,0,j,3)
-bphiyl(j,k, 0,3) = Phicgp(k,1,j,3)
-bphiyr(j,k,Ncelly+2,3) = Phicgp(k,Ncelly+1,j,3)
-bphiyr(j,k,Ncelly+1,3) = Phicgp(k,Ncelly  ,j,3)
-
-bphiyl(j,k,-1,2) = Phi(k,-1,j)-bphiyl(j,k,-1,1)-bphiyl(j,k,-1,3)
-bphiyl(j,k, 0,2) = Phi(k, 0,j)-bphiyl(j,k, 0,1)-bphiyl(j,k, 0,3)
-bphiyr(j,k,Ncelly+2,2) = Phi(k,Ncelly+2,j)-bphiyr(j,k,Ncelly+2,1)-bphiyr(j,k,Ncelly+2,3)!-bphiyr(k,Ncelly+2,j,1)-bphiyr(k,Ncelly+2,j,3)
-bphiyr(j,k,Ncelly+1,2) = Phi(k,Ncelly+1,j)-bphiyr(j,k,Ncelly+1,1)-bphiyr(j,k,Ncelly+1,3)!-bphiyr(k,Ncelly+1,j,1)-bphiyr(k,Ncelly+1,j,3)
-
-!write(4,*) bphiyl(j,k,-1,1),bphiyl(j,k,-1,2),bphiyl(j,k,-1,3),bphiyr(j,k,Ncelly+1,1),bphiyl(j,k,Ncelly+1,2),bphiyl(j,k,Ncelly+1,3)
-end do
-end do
-
-do k = -1,Ncelly+2
-do j = -1,Ncellx+2
-
-bphizl(j,k,-1,1) = Phicgp(j,k,0,1)
-bphizl(j,k, 0,1) = Phicgp(j,k,1,1)
-bphizr(j,k,Ncellz+2,1) = Phicgp(j,k,Ncellz+1,1)
-bphizr(j,k,Ncellz+1,1) = Phicgp(j,k,Ncellz  ,1)
-
-bphizl(j,k,-1,2) = Phicgp(j,k,0,2)
-bphizl(j,k, 0,2) = Phicgp(j,k,1,2)
-bphizr(j,k,Ncellz+2,2) = Phicgp(j,k,Ncellz+1,2)
-bphizr(j,k,Ncellz+1,2) = Phicgp(j,k,Ncellz  ,2)
-
-bphizl(j,k,-1,3) = Phi(j,k,-1)-bphizl(j,k,-1,1)-bphizl(j,k,-1,2)
-bphizl(j,k, 0,3) = Phi(j,k, 0)-bphizl(j,k, 0,1)-bphizl(j,k, 0,2)
-bphizr(j,k,Ncellz+2,3) = Phi(j,k,Ncellz+2)-bphizr(j,k,Ncellz+2,1)-bphizr(j,k,Ncellz+2,2)!-bphizr(k,Ncellz+2,j,1)-bphizr(k,Ncellz+2,j,2)
-bphizr(j,k,Ncellz+1,3) = Phi(j,k,Ncellz+1)-bphizr(j,k,Ncellz+1,1)-bphizr(j,k,Ncellz+1,2)!-bphizr(k,Ncellz+1,j,1)-bphizr(k,Ncellz+1,j,2)
-
-!write(4,*) bphizl(j,k,-1,1),bphizl(j,k,-1,2),bphizl(j,k,-1,3),bphizr(j,k,Ncellz+1,1),bphizl(j,k,Ncellz+1,2),bphizl(j,k,Ncellz+1,3)
-end do
-end do
-!close(4)
 
 end subroutine pbstep
 
@@ -2110,9 +1570,9 @@ end do; end do
 ncy=Ncelly+2
 ncz=Ncellz+2
 
-write(fn,'(i3.3)') NRANK
-write(lRANK,'(i1.1)') pls+2
-open(12,file=dir//'bcsave'//lRANK//fn//'.DAT')
+!write(fn,'(i3.3)') NRANK
+!write(lRANK,'(i1.1)') pls+2
+!open(12,file=dir//'bcsave'//lRANK//fn//'.DAT')
 do k=-1,ncz!; kk= (ncy+1)*k
 do j=-1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
@@ -2130,10 +1590,10 @@ do j=-1,ncy!; n = j+kk
   bphir(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-  write(12,*) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
+!  write(12,*) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
 end do
 end do
-close(12)
+!close(12)
 
 DEALLOCATE(data,speq)
 DEALLOCATE(dat1,spe1,dat2,spe2)

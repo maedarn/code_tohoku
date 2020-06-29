@@ -53,11 +53,8 @@ DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphi1l,bphi2l,bstep1l,bstep2l &
-     !,bphi1r,bphi2r,bstep1r,bstep2r
-     ,bphil,bphir
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphixl,bphixr,bphiyl,bphiyr,bphizl,bphizr,&
-     bstepxl,bstepxr,bstepyl,bstepyr,bstepzl,bstepzr!,bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
 integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
 
@@ -116,51 +113,17 @@ ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 !*********grvwave*********
 ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
 ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz))
-!ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz))
-!ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz))
-!ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz))
-!ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz))
 ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz,1:4))
 ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz,1:4))
 ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz,1:4))
 ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz,1:4))
+
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-!ALLOCATE(bphi1l(1:ndy-2,1:ndz-2,-1:1))
-!ALLOCATE(bphi2l(1:ndy-2,1:ndz-2,-1:1))
-!ALLOCATE(bstep1l(1:ndy-2,1:ndz-2,-1:1))
-!ALLOCATE(bstep2l(1:ndy-2,1:ndz-2,-1:1))
-!ALLOCATE(bphi1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-!ALLOCATE(bphi2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-!ALLOCATE(bstep1r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-!ALLOCATE(bstep2r(1:ndy-2,1:ndz-2,ndx-2:ndx))
-
 ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
 ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
-
-!ALLOCATE(bphi1l(-1:ndy,-1:ndz,-1:1,1:Dim))
-!ALLOCATE(bphi2l(-1:ndy,-1:ndz,-1:1,1:Dim))
-!ALLOCATE(bstep1l(-1:ndy,-1:ndz,-1:1,1:Dim))
-!ALLOCATE(bstep2l(-1:ndy,-1:ndz,-1:1,1:Dim))
-!ALLOCATE(bphi1r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
-!ALLOCATE(bphi2r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
-!ALLOCATE(bstep1r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
-!ALLOCATE(bstep2r(-1:ndy,-1:ndz,ndx-2:ndx,1:Dim))
-
-ALLOCATE( bphixl(-1:ndy,-1:ndz,-1:1     ,1:4))
-ALLOCATE(bstepxl(-1:ndy,-1:ndz,-1:1     ,1:4))
-ALLOCATE( bphixr(-1:ndy,-1:ndz,ndx-2:ndx,1:4))
-ALLOCATE(bstepxr(-1:ndy,-1:ndz,ndx-2:ndx,1:4))
-
-ALLOCATE( bphiyl(-1:ndz,-1:ndx,-1:1     ,1:4))
-ALLOCATE(bstepyl(-1:ndz,-1:ndx,-1:1     ,1:4))
-ALLOCATE( bphiyr(-1:ndz,-1:ndx,ndy-2:ndy,1:4))
-ALLOCATE(bstepyr(-1:ndz,-1:ndx,ndy-2:ndy,1:4))
-
-ALLOCATE( bphizl(-1:ndx,-1:ndy,-1:1     ,1:4))
-ALLOCATE(bstepzl(-1:ndx,-1:ndy,-1:1     ,1:4))
-ALLOCATE( bphizr(-1:ndx,-1:ndy,ndz-2:ndz,1:4))
-ALLOCATE(bstepzr(-1:ndx,-1:ndy,ndz-2:ndz,1:4))
+ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:4))
+ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:4))
 !*********grvwave*********
 
 !write(*,*) 'OK3'
@@ -183,10 +146,7 @@ DEALLOCATE(Phicgm)
 DEALLOCATE(Phiwv,Phigrdwv)
 DEALLOCATE(Phi1step)
 DEALLOCATE(Phi2step)
-!DEALLOCATE(bphi1l,bphi2l,bstep1l,bstep2l)
-!DEALLOCATE(bphi1r,bphi2r,bstep1r,bstep2r)
-DEALLOCATE(bphil,bphir)
-DEALLOCATE(bphixl,bphixr,bphiyl,bphiyr,bphizl,bphizr,bstepxl,bstepxr,bstepyl,bstepyr,bstepzl,bstepzr)
+DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 !********gravwave**********
 
 CALL MPI_FINALIZE(IERR)
