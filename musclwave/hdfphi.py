@@ -19,11 +19,11 @@ nstep = 20
 itime = 0
 ftime = 100
 timejump=1
-dir = '/glv0/maedarn/test-grvwave/PHIINI/'
+dir = '/glv0/maedarn/test-glvwave/PHIINI/'
 
 for i in range(itime,ftime +1,timejump): #最後は含まない
     #f90 = open(dir+'All/All'+"%03.f"%(i)+'.DAT', 'rb')
-    f90 = open(dir+'All/All'+"%03.f"%(i)+'.DAT', 'rb')
+    f90 = open(dir+'All/All'+"%06.f"%(i)+'.DAT', 'rb')
     #f90 = open(dir+'dbug-ok/Alldphi'+"%03.f"%(i)+'.DAT', 'rb')
     #f90 = open(dir+'All/All'+"%03.f"%(i)+'.DAT', 'rb')
     #f90 = open(dir+'tagn/tag'+"%03.f"%(i)+'001.DAT', 'rb')
