@@ -17,14 +17,7 @@ subroutine SELFGRAVWAVE(dt,mode)
   !double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad,Phipregraddum
   !**************** INITIALIZEATION **************
   if(mode==0) then
-     Phicgp(:,:,:,:)=0.0d0
-     Phicgp(:,:,:,:)=0.0d0
-     Phi1step(:,:,:,:)=0.0d0
-     Phi2step(:,:,:,:)=0.0d0
      Phi(:,:,:) = 0.0d0
-     source(:,:,:,:)=0.0d0
-     sourcedt(:,:,:,:)=0.0d0
-     sourcedt2(:,:,:,:)=0.0d0
 　　　Phiwv(:,:,:,:)=0.d0
      Phigrdwv(:,:,:,:)=0.d0
   end if
@@ -64,9 +57,9 @@ subroutine SELFGRAVWAVE(dt,mode)
      !write(*,*) '------pb1-------' ,Nrank
 
      !calcurate Phi-bc
-     Call PB( 0)
-     Call PB(-1)
-     Call PB(-2)
+     !Call PB( 0)
+     !Call PB(-1)
+     !Call PB(-2)
      call pbphigrd(dt)
      call slvmuscle(dt)
   end if
@@ -124,17 +117,13 @@ subroutine SELFGRAVWAVE(dt,mode)
      !-------------------INITIAL---------------------
 
      !-------------------TEST---------------------
-     iwx = 1; iwy = 1; iwz = 1
+     !iwx = 1; iwy = 1; iwz = 1
      !call BCgrv(101)
      !call BCgrv(102)
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
            do i = -1, Ncellx+2
-  write(28,*) i,j,k, sngl(Phicgp(i,j,k,1)),sngl(Phicgp(i,j,k,2)),sngl(Phicgp(i,j,k,3)),&
-    sngl(Phi1step(i,j,k,1)),sngl(Phi1step(i,j,k,2)),sngl(Phi1step(i,j,k,3)),&
-                sngl(((Phicgp(i,j,k,1)+Phicgp(i,j,k,2)+Phicgp(i,j,k,3))))
-                !sngl(Phicgp(i,j,k)),sngl(Phicgm(i,j,k)),sngl(Phi1step(i,j,k)),sngl(Phi2step(i,j,k)),&
-                !sngl((Phicgp(i,j,k)+Phicgm(i,j,k))*0.5d0)!,i=-1,Ncellx+2)
+           write(28,*)
           enddo
         end do
      end do
@@ -399,10 +388,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),3,3,0,0,1)
-   call BC(wp2(:,:,2),3,3,0,0,2)
-   call BC(wp2(:,:,3),3,3,0,0,3)
-   call BC(wp2(:,:,4),3,3,0,0,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -412,10 +398,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
@@ -425,10 +408,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
         do i=1,ndx-2
@@ -452,10 +432,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -465,10 +442,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -478,10 +452,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),3,3,0,0,1)
-   call BC(wp2(:,:,2),3,3,0,0,2)
-   call BC(wp2(:,:,3),3,3,0,0,3)
-   call BC(wp2(:,:,4),3,3,0,0,4)
+   call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
 
@@ -495,10 +466,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BC(wp1(:,:,1),4,4,0,0,1)
-   call BC(wp1(:,:,2),4,4,0,0,2)
-   call BC(wp1(:,:,3),4,4,0,0,3)
-   call BC(wp1(:,:,4),4,4,0,0,4)
+   call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
@@ -508,10 +476,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
-   call BC(wp1(:,:,1),0,0,4,4,1)
-   call BC(wp1(:,:,2),0,0,4,4,2)
-   call BC(wp1(:,:,3),0,0,4,4,3)
-   call BC(wp1(:,:,4),0,0,4,4,4)
+   call BCgrv(110,1,8)
    iwx=0;iwy=0;iwz=1
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
@@ -521,10 +486,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BC(wp1(:,:,1),0,0,4,4,1)
-   call BC(wp1(:,:,2),0,0,4,4,2)
-   call BC(wp1(:,:,3),0,0,4,4,3)
-   call BC(wp1(:,:,4),0,0,4,4,4)
+   call BCgrv(110,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
        do i=1,ndx-2
@@ -572,10 +534,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BC(wp1(:,:,1),0,0,4,4,1)
-   call BC(wp1(:,:,2),0,0,4,4,2)
-   call BC(wp1(:,:,3),0,0,4,4,3)
-   call BC(wp1(:,:,4),0,0,4,4,4)
+   call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
@@ -586,10 +545,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
-   call BC(wp1(:,:,1),0,0,4,4,1)
-   call BC(wp1(:,:,2),0,0,4,4,2)
-   call BC(wp1(:,:,3),0,0,4,4,3)
-   call BC(wp1(:,:,4),0,0,4,4,4)
+   call BCgrv(110,1,8)
    iwx=1;iwy=0;iwz=0
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
@@ -599,10 +555,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BC(wp1(:,:,1),4,4,0,0,1)
-   call BC(wp1(:,:,2),4,4,0,0,2)
-   call BC(wp1(:,:,3),4,4,0,0,3)
-   call BC(wp1(:,:,4),4,4,0,0,4)
+   call BCgrv(110,1,8)
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
 
@@ -616,10 +569,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),3,3,0,0,1)
-   call BC(wp2(:,:,2),3,3,0,0,2)
-   call BC(wp2(:,:,3),3,3,0,0,3)
-   call BC(wp2(:,:,4),3,3,0,0,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -629,10 +579,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
@@ -642,10 +589,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
         do i=1,ndx-2
@@ -669,10 +613,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -682,10 +623,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BC(wp2(:,:,1),0,0,3,3,1)
-   call BC(wp2(:,:,2),0,0,3,3,2)
-   call BC(wp2(:,:,3),0,0,3,3,3)
-   call BC(wp2(:,:,4),0,0,3,3,4)
+   call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
@@ -695,10 +633,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BC(wp2(:,:,1),3,3,0,0,1)
-   call BC(wp2(:,:,2),3,3,0,0,2)
-   call BC(wp2(:,:,3),3,3,0,0,3)
-   call BC(wp2(:,:,4),3,3,0,0,4)
+   call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   !****************slv-wv****************
 
@@ -736,7 +671,8 @@ if(mode==100) then
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX,idm)
+     !Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
 !     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -748,7 +684,8 @@ if(mode==100) then
   IF(IST.eq.NSPLTx-1) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX,idm)
+     !Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
 !     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -770,6 +707,11 @@ IF(iwy.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
 !       Phicgm(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(JST.eq.0) THEN
+        DO KZ = -1, Ncellz+2; DO JY =  1-N_ol, 0; DO IX = -1, Ncellx+2
+        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+        END DO;END DO;END DO
+     END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
@@ -779,6 +721,11 @@ IF(iwy.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,1            ,-1),1,VECU,BOTM,1, &
 !       Phicgm(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(JST.eq.NSPLTy-1) THEN
+        DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX = -1, Ncellx+2
+        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+        END DO;END DO;END DO
+     END IF
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -799,6 +746,11 @@ IF(iwz.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
 !       Phicgm(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(KST.eq.0) THEN
+        DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+        END DO;END DO;END DO
+     END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
@@ -808,6 +760,11 @@ IF(iwz.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,1            ),1,VECU,DOWN,1, &
 !       Phicgm(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(KST.eq.NSPLTz-1) THEN
+      DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+      Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+      END DO;END DO;END DO
+   END IF
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -832,7 +789,8 @@ if(mode==110) then
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+     !Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+     Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
 !     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -844,7 +802,8 @@ if(mode==110) then
   IF(IST.eq.NSPLTx-1) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
+     !Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
+     Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
 !     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -867,6 +826,11 @@ IF(iwy.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
 !       Phicgm(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(JST.eq.0) THEN
+        DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
+        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        END DO;END DO;END DO
+     END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
@@ -876,6 +840,11 @@ IF(iwy.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,1            ,-1),1,VECU,BOTM,1, &
 !       Phicgm(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(JST.eq.NSPLTy-1) THEN
+        DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX =  -1, Ncellx+2
+        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        END DO;END DO;END DO
+     END IF
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -896,6 +865,11 @@ IF(iwz.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
 !       Phicgm(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(KST.eq.0) THEN
+        DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        END DO;END DO;END DO
+     END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
@@ -905,6 +879,12 @@ IF(iwz.EQ.1) THEN
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,1            ),1,VECU,DOWN,1, &
 !       Phicgm(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   IF(KST.eq.NSPLTz-1) THEN
+        DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX =  -1, Ncellx+2
+        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        END DO;END DO;END DO
+     END IF
+   enddo
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -1240,7 +1220,7 @@ write(*,*) 'dddt',dddt
 !close(5)
 c=c+1
 
-
+!******x-BC********
 do k = -1,Ncellz+2
 do j = -1,Ncelly+2
 bphigrdxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dx1
@@ -1290,6 +1270,7 @@ do i=-1,0
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
 end do
 end do
+!******x-BC********
 
 
 

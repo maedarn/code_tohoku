@@ -48,8 +48,9 @@ DOUBLE PRECISION :: Lbox
 !double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
 double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
 
-DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
-DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
+!DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
+DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
+DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
@@ -111,17 +112,13 @@ ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
 ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
 !*********grvwave*********
-ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(Phicgp(-1:ndx,-1:ndy,-1:ndz,1:4))
-ALLOCATE(Phicgm(-1:ndx,-1:ndy,-1:ndz,1:4))
-ALLOCATE(Phi1step(-1:ndx,-1:ndy,-1:ndz,1:4))
-ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz,1:4))
+ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
+ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ,1:wvnum))
-ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx,1:wvnum))
+ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
+ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
 ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
 ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 !*********grvwave*********
@@ -141,11 +138,7 @@ DEALLOCATE(Phi)
 
 !********gravwave**********
 DEALLOCATE(Phiexa,Phigrd)
-DEALLOCATE(Phicgp)
-DEALLOCATE(Phicgm)
 DEALLOCATE(Phiwv,Phigrdwv)
-DEALLOCATE(Phi1step)
-DEALLOCATE(Phi2step)
 DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 !********gravwave**********
 
@@ -498,7 +491,7 @@ dinit1=0.0d0
   !goto 6001
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
-  dinit1=3.0d0/G4pi/4.d1/4.d1
+  dinit1=1.d0
   cenx=dble(Np1x)+0.5d0
   ceny=dble(Np1y)+0.5d0
   cenz=dble(Np1z)+0.5d0
@@ -559,6 +552,45 @@ dinit1=0.0d0
 end do
 end do
 end do
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if(rsph .le. rrsph ) then
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rshp*dx1)**2
+   else
+      Phiexa(i,j,k)=-G4pi/rshp/dx1/3.d0*dinit1*(rrsph*dx1)**3+G4pi/2.d0*dinit1*(rrsph*dx1)**2
+   end if
+end do
+end do
+end do
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+end do
+end do
+end do
+
 dinit1=0.0d0
  !6001 continue
 !********************sphere***********************
