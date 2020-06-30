@@ -1217,8 +1217,8 @@ bphigrdxr(:,:,:,6)=bphigrdxr(:,:,:,1)
 bphigrdxr(:,:,:,7)=bphigrdxr(:,:,:,1)
 bphigrdxr(:,:,:,8)=bphigrdxr(:,:,:,1)
 
-do k=-1,ndz-2
-do j=-1,ndy-2
+do k=-1,ndz
+do j=-1,ndy
 do i=-1,0
    bphigrdxl(i,j,k,1)= bphigrdxl(j,k,i,1) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
@@ -1258,7 +1258,7 @@ end do
 end do
 !******x-BC********
 
-write(*,*) 'dddt2',dddt
+write(*,*) 'dddt2',dddt,bphigrdxr(Ncellx+1,1,1,1)
 
 end subroutine pbphigrd
 
