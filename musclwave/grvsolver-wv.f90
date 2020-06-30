@@ -1201,48 +1201,64 @@ bphigrdxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bp
 end do
 end do
 
+bphigrdxl(:,:,:,2)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,3)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,4)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,5)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,6)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,7)=bphigrdxl(:,:,:,1)
+bphigrdxl(:,:,:,8)=bphigrdxl(:,:,:,1)
+
+bphigrdxr(:,:,:,2)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,3)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,4)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,5)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,6)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,7)=bphigrdxr(:,:,:,1)
+bphigrdxr(:,:,:,8)=bphigrdxr(:,:,:,1)
+
 do k=-1,ndz-2
 do j=-1,ndy-2
 do i=-1,0
    bphigrdxl(i,j,k,1)= bphigrdxl(j,k,i,1) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,2)=-bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,2)=-bphigrdxl(j,k,i,2) &
                     -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,3)= bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,3)= bphigrdxl(j,k,i,3) &
                     -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,4)=-bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,4)=-bphigrdxl(j,k,i,4) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,5)= bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,5)= bphigrdxl(j,k,i,5) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,6)=-bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,6)=-bphigrdxl(j,k,i,6) &
                     -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,7)= bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,7)= bphigrdxl(j,k,i,7) &
                     -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,1) &
+   bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,8) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
 
    bphigrdxr(i+Ncellx+2,j,k,1)= bphigrdxl(j,k,i+Ncellx+2,1) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,2)=-bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,2)=-bphigrdxl(j,k,i+Ncellx+2,2) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,3)= bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,3)= bphigrdxl(j,k,i+Ncellx+2,3) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,4)=-bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,4)=-bphigrdxl(j,k,i+Ncellx+2,4) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,5)= bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,5)= bphigrdxl(j,k,i+Ncellx+2,5) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,6)=-bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,6)=-bphigrdxl(j,k,i+Ncellx+2,6) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,7)= bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,7)= bphigrdxl(j,k,i+Ncellx+2,7) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,8)=-bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,8)=-bphigrdxl(j,k,i+Ncellx+2,8) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
 end do
 end do
-enddo
+end do
 !******x-BC********
 
-
+write(*,*) 'dddt2',dddt
 
 end subroutine pbphigrd
 
