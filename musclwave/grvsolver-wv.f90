@@ -1255,21 +1255,21 @@ do i=-1,0
    bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,1) &
                     +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
 
-   bphigrdxr(i+Ncell+2,j,k,1)= bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,1)= bphigrdxl(j,k,i+Ncellx+2,1) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,2)=-bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,2)=-bphigrdxl(j,k,i+Ncellx+2,1) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,3)= bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,3)= bphigrdxl(j,k,i+Ncellx+2,1) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,4)=-bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,4)=-bphigrdxl(j,k,i+Ncellx+2,1) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,5)= bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,5)= bphigrdxl(j,k,i+Ncellx+2,1) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,6)=-bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,6)=-bphigrdxl(j,k,i+Ncellx+2,1) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,7)= bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,7)= bphigrdxl(j,k,i+Ncellx+2,1) &
                     -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncell+2,j,k,8)=-bphigrdxl(j,k,i+Ncell+2,1) &
+   bphigrdxr(i+Ncellx+2,j,k,8)=-bphigrdxl(j,k,i+Ncellx+2,1) &
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
 end do
 end do
@@ -1342,7 +1342,7 @@ nccy = Ncelly; nccz = Ncellz
 do k=1,Ncellz; kz=KST*Ncellz+k
 do j=1,Ncelly; jy=JST*Ncelly+j
 do i=-1,Ncellx+2
-  data(jy,kz,i) = U(i,j,k,1)-rhomean
+  data(jy,kz,i) = U(i,j,k,1)!-rhomean
 end do;end do;end do
 
                     !count, blocklength, stride
