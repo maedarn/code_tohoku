@@ -67,12 +67,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      Call PB( 0)
      Call PB(-1)
      Call PB(-2)
-     !call BCgrv(101,1)
-     !call BCgrv(101,2)
-     !call BCgrv(101,3)
-     call pbstep(dt)
-     !call pbstep()
-     !calcurate Phi-bc
+     call pbphigrd(dt)
      call slvmuscle(dt)
   end if
 
@@ -714,53 +709,50 @@ subroutine slvmuscle(dt)
 end subroutine slvmuscle
 
 
-subroutine BCgrv(mode,idm)
+subroutine BCgrv(mode,is,ie)
   use comvar
   use mpivar
   use slfgrv
   INCLUDE 'mpif.h'
-  integer ::  N_ol=2,i,mode,j,k,idm
+  integer ::  N_ol=2,i,mode,j,k,idm,is,ie
   INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   DOUBLE PRECISION  :: VECU
-  double precision , dimension(1:2) :: pl,pr
+ 
 
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
-  if(mode==100) then
-
+!***************BC-for-Phigrd***********************
+if(mode==100) then
 　IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
   RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
 
-
-  CALL MPI_SENDRECV(Phi(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
-                    Phi(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  CALL MPI_SENDRECV(Phicgm(Ncellx+1-N_ol,-1,-1),1,VECU,RIGT,1, &
-!       Phicgm(       1-N_ol,-1,-1),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  do idm=is,ie
+  CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+  Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
   IF(IST.eq.0) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 1,1
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phi(IX,JY,KZ)= bphil(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX,idm)
 !     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
-
-  CALL MPI_SENDRECV(Phi(1            ,-1,-1),1,VECU,LEFT,1, &
-       Phi(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-!  CALL MPI_SENDRECV(Phicgm(1            ,-1,-1),1,VECU,LEFT,1, &
-!       Phicgm(Ncellx+1     ,-1,-1),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  enddo
+  do idm=is,ie
+  CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+  Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
   IF(IST.eq.NSPLTx-1) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx, Ncellx+N_ol,1
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phi(IX,JY,KZ)= bphir(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX,idm)
 !     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
-
+  enddo
 CALL MPI_TYPE_FREE(VECU,IERR)
 LEFT = LEFTt; RIGT = RIGTt
 END IF
@@ -772,19 +764,22 @@ IF(iwy.EQ.1) THEN
   BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
   TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
 !*************************************  BC for the downsides of domains  ****
-  !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phi(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
-       Phi(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+   do idm=is,ie
+   CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+        Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
 !  CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
 !       Phicgm(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   enddo
 !**************************************  BC for the upsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phi(-1,1            ,-1),1,VECU,BOTM,1, &
-       Phi(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+   CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+        Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 !  CALL MPI_SENDRECV(Phicgm(-1,1            ,-1),1,VECU,BOTM,1, &
 !       Phicgm(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -797,54 +792,63 @@ IF(iwz.EQ.1) THEN
   DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
   UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
 !*************************************  BC for the downsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phi(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
-       Phi(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+  Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
 !       Phicgm(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   enddo
 !**************************************  BC for the upsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phi(-1,-1,1            ),1,VECU,DOWN,1, &
-       Phi(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+ CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+  Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 !  CALL MPI_SENDRECV(Phicgm(-1,-1,1            ),1,VECU,DOWN,1, &
 !       Phicgm(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
 endif
+!***************BC-for-Phiwv***********************
 
-if(mode==101) then
 
-IF(iwx.EQ.1) THEN
-      !dim=1
+!***************BC-for-Phiwvgrd***********************
+if(mode==110) then
+　IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
   RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
 
+  do idm=is,ie
+  CALL MPI_SENDRECV(Phigrdwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+  Phigrdwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
-  CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
-                    Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwv(IX,JY,KZ,idm)= bphixl(JY,KZ,IX,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
+     Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+!     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
+  enddo
+  do idm=is,ie
+  CALL MPI_SENDRECV(Phigrdwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+  Phigrdwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
-  CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
-                    Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
   IF(IST.eq.NSPLTx-1) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol,1
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phiwv(IX,JY,KZ,idm)= bphixr(JY,KZ,IX,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2r(JY,KZ,IX)
+     Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
+!     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
+  enddo
 
 CALL MPI_TYPE_FREE(VECU,IERR)
 LEFT = LEFTt; RIGT = RIGTt
@@ -852,47 +856,27 @@ END IF
 
 
 IF(iwy.EQ.1) THEN
-   !idm=2
   CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
   TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
 !*************************************  BC for the downsides of domains  ****
-  !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
-       Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+   do idm=is,ie
+   CALL MPI_SENDRECV(Phigrdwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+        Phigrdwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+!  CALL MPI_SENDRECV(Phicgm(-1,Ncelly+1-N_ol,-1),1,VECU,TOP ,1, &
+!       Phicgm(-1,       1-N_ol,-1),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  IF(JST.eq.0) THEN
-     !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = 1-N_ol, 0
-      DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0 ; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwv(IX,JY,KZ,idm)= Phiwv(IX,1,KZ,idm)!Phicgp(IX,JY+1,KZ,idm)
-    !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-     END DO;END DO;END DO
-  END IF
+   enddo
 !**************************************  BC for the upsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phicgp(-1,1            ,-1,idm),1,VECU,BOTM,1, &
-       Phicgp(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(-1,1            ,-1,idm),1,VECU,BOTM,1, &
-       Phicgm(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+   CALL MPI_SENDRECV(Phigrdwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+        Phigrdwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+!  CALL MPI_SENDRECV(Phicgm(-1,1            ,-1),1,VECU,BOTM,1, &
+!       Phicgm(-1,Ncelly+1     ,-1),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  IF(JST.eq.NSPLTy-1) THEN
-     !DO KZ = -1, Ncellz+2; DO IX = -1, Ncellx+2; DO JY = Ncelly+1, Ncelly+N_ol,1
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     if(idm==2) then
-!     DO KZ = -1, Ncellz+2; DO JY = Ncelly+N_ol, Ncelly+1,-1 ; DO IX = -1, Ncellx+2
-!     Phicgp(IX,JY,KZ,idm)= Phi(IX,JY,KZ)-Phicgp(IX,JY,KZ,1)-Phicgp(IX,JY,KZ,3)!Phicgp(IX,JY-1,KZ,idm)!bphiyl(KZ,IX,JY,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     endif
-     if(idm==1 .or. idm==3) then
-     DO KZ = -1, Ncellz+2; DO JY = Ncelly+N_ol, Ncelly+1,-1 ; DO IX = -1, Ncellx+2
-     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,Ncelly,KZ,idm)!Phicgp(IX,JY-1,KZ,idm)!bphiyl(KZ,IX,JY,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-     END DO;END DO;END DO
-     endif
-  END IF
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -900,71 +884,40 @@ END IF
 
 
 IF(iwz.EQ.1) THEN
-   !idm=3
   CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
   UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
 !*************************************  BC for the downsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phicgp(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
-       Phicgp(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
-       Phicgm(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+  CALL MPI_SENDRECV(Phigrdwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+  Phigrdwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+!  CALL MPI_SENDRECV(Phicgm(-1,-1,Ncellz+1-N_ol),1,VECU,UP  ,1, &
+!       Phicgm(-1,-1,       1-N_ol),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  IF(KST.eq.0) THEN
-!     if(idm==3) then
-     !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = 1-N_ol, 0
-!     DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     Phicgp(IX,JY,KZ,idm)= Phi(IX,JY,KZ)-Phicgp(IX,JY,KZ,1)-Phicgp(IX,JY,KZ,2)!Phicgp(IX,JY,KZ+1,idm)!bphizl(IX,JY,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     end if
-     if(idm==1 .or. idm==2) then
-     !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = 1-N_ol, 0
-     DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phicgp(IX,JY,KZ,idm)=  Phicgp(IX,JY,1,idm)!Phicgp(IX,JY,KZ+1,idm)!bphizl(IX,JY,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-     END DO;END DO;END DO
-     end if
-  END IF
+   enddo
 !**************************************  BC for the upsides of domains  ****
+   do idm=is,ie
   !DO K = 1, N_MPI(20)
-  CALL MPI_SENDRECV(Phicgp(-1,-1,1            ,idm),1,VECU,DOWN,1, &
-       Phicgp(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  CALL MPI_SENDRECV(Phicgm(-1,-1,1            ,idm),1,VECU,DOWN,1, &
-       Phicgm(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+ CALL MPI_SENDRECV(Phigrdwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+  Phigrdwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+!  CALL MPI_SENDRECV(Phicgm(-1,-1,1            ),1,VECU,DOWN,1, &
+!       Phicgm(-1,-1,Ncellz+1     ),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
   !END DO
-  IF(KST.eq.NSPLTz-1) THEN
-!     if(idm==3) then
-!     DO KZ = Ncellz+N_ol, Ncellz+1,-1; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     Phicgp(IX,JY,KZ,idm)= Phi(IX,JY,KZ)-Phicgp(IX,JY,KZ,1)-Phicgp(IX,JY,KZ,2)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-!     END DO;END DO;END DO
-!     endif
-     !DO IX = -1, Ncellx+2; DO JY = -1, Ncelly+2; DO KZ = Ncellz+1, Ncellz+N_ol,1
-     if(idm==1 .or. idm==2)then
-     DO KZ = Ncellz+N_ol, Ncellz+1,-1; DO JY = -1, Ncelly+2 ; DO IX = -1, Ncellx+2
-    !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phicgp(IX,JY,KZ,idm)= Phicgp(IX,JY,Ncellz,idm)!Phicgp(IX,JY,KZ-1,idm)!bphizl(IX,JY,KZ,idm)
-     !Phicgm(IX,JY,KZ,idm)= bphi2l(JY,KZ,IX)
-     END DO;END DO;END DO
-     endif
-  END IF
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
 endif
+!***************BC-for-Phiwvgrd***********************
 end subroutine BCgrv
 
 
 subroutine muslcslv1D(Phiv,dt,mode)
   use comvar
-  double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam  !kappa -> comver  better?
+  double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam ,deltalen !kappa -> comver  better?
   integer :: direction , mode , invdt , loopmode , dloop,cnt=0
   DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,Phiv,Phi2dt,Phiu
   character(5) name
@@ -972,9 +925,9 @@ subroutine muslcslv1D(Phiv,dt,mode)
   DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 
 
-  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
-     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; endif! BT1 = 3; BT2 = 1; VN = 3; end if
-        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
 
   !----kyoukai-----
    !if(hazi==1)then
@@ -986,7 +939,7 @@ subroutine muslcslv1D(Phiv,dt,mode)
       ie = Ncell-2
    !end if
   !----kyoukai-----
-  nu2 = cg * dt / deltalength
+  nu2 = cg * dt / deltalen
   Phipre(:,:,:) = Phiv(:,:,:)
   !------------ul.solver.+cg-------------
   if(mode==1) then
@@ -1257,7 +1210,7 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
 
 end subroutine fluxcal
 
-subroutine pbstep(dt)
+subroutine pbphigrd(dt)
 USE comvar
 USE mpivar
 USE slfgrv
@@ -1270,7 +1223,6 @@ character(5) ciii
 !DOUBLE PRECISION flx1,fly1,flz1,flx2,fly2,flz2,flx3,fly3,flz3,bc11,bc12,bc21,bc22
 !DOUBLE PRECISION fllx1,flly1,fllz1,fllx2,flly2,fllz2,fllx3,flly3,fllz3
 
-dxx=deltalength
 !iwx = 0; iwy = 1; iwz = 1
 !call BCgrv(101)
 !call BCgrv(102)
@@ -1291,12 +1243,12 @@ c=c+1
 
 do k = -1,Ncellz+2
 do j = -1,Ncelly+2
-bphigrdxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dxx
-bphigrdxl(j,k,0,1) = (-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dxx
-bphigrdxl(j,k,-1,1) = -(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dxx
-bphigrdxr(j,k,Ncellx+2,1) = (3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dxx
-bphigrdxr(j,k,Ncellx+1,1) = (-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dxx
-bphigrdxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dxx
+bphigrdxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dx1
+bphigrdxl(j,k,0,1) = (-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dx1
+bphigrdxl(j,k,-1,1) = -(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dx1
+bphigrdxr(j,k,Ncellx+2,1) = (3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dx1
+bphigrdxr(j,k,Ncellx+1,1) = (-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dx1
+bphigrdxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dx1
 end do
 end do
 
@@ -1304,44 +1256,44 @@ do k=-1,ndz-2
 do j=-1,ndy-2
 do i=-1,0
    bphigrdxl(i,j,k,1)= bphigrdxl(j,k,i,1) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,2)=-bphigrdxl(j,k,i,1) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,3)= bphigrdxl(j,k,i,1) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,4)=-bphigrdxl(j,k,i,1) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,5)= bphigrdxl(j,k,i,1) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,6)=-bphigrdxl(j,k,i,1) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,7)= bphigrdxl(j,k,i,1) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
    bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,1) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
 
    bphigrdxr(i+Ncell+2,j,k,1)= bphigrdxl(j,k,i+Ncell+2,1) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,2)=-bphigrdxl(j,k,i+Ncell+2,1) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,3)= bphigrdxl(j,k,i+Ncell+2,1) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,4)=-bphigrdxl(j,k,i+Ncell+2,1) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,5)= bphigrdxl(j,k,i+Ncell+2,1) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,6)=-bphigrdxl(j,k,i+Ncell+2,1) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,7)= bphigrdxl(j,k,i+Ncell+2,1) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
    bphigrdxr(i+Ncell+2,j,k,8)=-bphigrdxl(j,k,i+Ncell+2,1) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
 end do
 end do
 
 
 
-end subroutine pbstep
+end subroutine pbphigrd
 
 
 SUBROUTINE PB(pls)

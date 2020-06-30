@@ -19,7 +19,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
 DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
-double precision :: deltalength
+double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
 character(31) :: dir='/work/maedarn/3DMHD/samplecnv2/' !samplecnv2
 END MODULE comvar
@@ -53,7 +53,7 @@ DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phigrd , Phiexa
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphil,bphir
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
 integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
@@ -120,10 +120,10 @@ ALLOCATE(Phi2step(-1:ndx,-1:ndy,-1:ndz,1:4))
 
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
-ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
-ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:4))
-ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:4))
+ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ,1:wvnum))
+ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx,1:wvnum))
+ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
+ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 !*********grvwave*********
 
 !write(*,*) 'OK3'
@@ -315,7 +315,9 @@ do k = -1, Ncellz*NSPLTz+2
 end do
 
 !dx=dy=dz
-deltalength = dx_i(0)
+dx1= dx_i(0)
+dy1= dy_i(0)
+dz1= dz_i(0)
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
@@ -347,7 +349,6 @@ do k = -1, Ncellz+2
   dz(k) =  dz_i(kz)
 end do
 
-write(*,*) 'check-dx' ,dx(1),deltalength
 
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
