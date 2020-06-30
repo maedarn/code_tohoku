@@ -25,16 +25,16 @@ program computeraw
  
   !******parameter********
   core=512
-  mesh=64+2
+  mesh=16+2
   val=25
   jump=1
   ts=1
-  initime=30
-  lasttime=30
-  Ncellx=64
-  Ncelly=64
-  Ncellz=64
-  timejump=4
+  initime=0
+  lasttime=100
+  Ncellx=16
+  Ncelly=16
+  Ncellz=16
+  timejump=1
   nth=10.e0
   !***********************
 
@@ -56,7 +56,7 @@ if(core.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
    ALLOCATE(v(1:lengthx,1:lengthy,1:lengthz,1:val))
    ALLOCATE(Tn(1:lengthx,1:lengthy,1:lengthz))
-   ALLOCATE(u(1:mesh,1:mesh,1:mesh,1:val))
+   ALLOCATE(u(-1:mesh,-1:mesh,-1:mesh,1:val))
    ALLOCATE(x1shock(1:lengthy,1:lengthz),x2shock(1:lengthy,1:lengthx))
 
   
@@ -70,7 +70,7 @@ do times=initime,lasttime,timejump
          JST = usecore/NSPLTx-NSPLTy*KST
          write(*,*) IST,JST,KST,time,usecore
          write(NPE,'(I3.3)') usecore
-         open(unit=150,file=dir//'PHI'//NPE//cntc//'.dat')!,FORM='UNFORMATTED')
+         open(unit=150,file=dir//'PHI'//NPE//cntc//'.DAT',FORM='FORMATTED')
          do k = -1, Ncellz+2 !*************************************************** +1 いる？ **********************************
             do j = -1, Ncelly+2
                do i= -1, Ncellx+2
@@ -80,6 +80,7 @@ do times=initime,lasttime,timejump
                     u(i,j,k,13),u(i,j,k,14),u(i,j,k,15),u(i,j,k,16), u(i,j,k,17), &
                     u(i,j,k,18),u(i,j,k,19),u(i,j,k,20),u(i,j,k,21), u(i,j,k,22), &
                     u(i,j,k,23),u(i,j,k,24),u(i,j,k,25)
+                !write(*,*) i,j,k
                 end do
             end do
          end do
@@ -124,10 +125,11 @@ do times=initime,lasttime,timejump
    do k=1,lengthz,jump
       do j=1,lengthy,jump
          do i=1,lengthx,jump
-         write(100) sngl(v(i,j,k,1)) ,sngl(v(i,j,k,2)),sngl(v(i,j,k,3)),sngl(v(i,j,k,4)),sngl(v(i,j,k,5)),sngl(v(i,j,k,6)),sngl(v(i,j,k,7)),&
-                    sngl(v(i,j,k,8)),sngl(v(i,j,k,9)),sngl(v(i,j,k,10)),sngl(v(i,j,k,11)),sngl(v(i,j,k,12)),sngl(v(i,j,k,13)),sngl(v(i,j,k,14)),sngl(v(i,j,k,15)), &
-                    sngl(v(i,j,k,16)),sngl(v(i,j,k,17)),sngl(v(i,j,k,18)),sngl(v(i,j,k,19)),sngl(v(i,j,k,20)),sngl(v(i,j,k,21)),&
-                    sngl(v(i,j,k,22)),sngl(v(i,j,k,23)),sngl(v(i,j,k,24)),sngl(v(i,j,k,25))
+         write(100) sngl(v(i,j,k,1)) ,sngl(v(i,j,k,2)),sngl(v(i,j,k,3)),sngl(v(i,j,k,4)),sngl(v(i,j,k,5)),sngl(v(i,j,k,6)),&
+                    sngl(v(i,j,k,7)),sngl(v(i,j,k,8)),sngl(v(i,j,k,9)),sngl(v(i,j,k,10)),sngl(v(i,j,k,11)),sngl(v(i,j,k,12)),&
+                    sngl(v(i,j,k,13)),sngl(v(i,j,k,14)),sngl(v(i,j,k,15)),sngl(v(i,j,k,16)),sngl(v(i,j,k,17)),sngl(v(i,j,k,18)),&
+                    sngl(v(i,j,k,19)),sngl(v(i,j,k,20)),sngl(v(i,j,k,21)),sngl(v(i,j,k,22)),sngl(v(i,j,k,23)),sngl(v(i,j,k,24)),&
+                    sngl(v(i,j,k,25))
          end do
       end do
       write(*,*) k,u(64,64,64,1)!,data
