@@ -1267,8 +1267,8 @@ double precision :: dxx,dt,prdt=0.0d0,ratio=dsqrt(3.0d0),dddt,rx,ry,rz,rx2,ry2,r
 character(3) fn
 character(5) ciii
 !DOUBLE PRECISION , dimension(-1:ndx,1:Dim) :: slop
-DOUBLE PRECISION flx1,fly1,flz1,flx2,fly2,flz2,flx3,fly3,flz3,bc11,bc12,bc21,bc22
-DOUBLE PRECISION fllx1,flly1,fllz1,fllx2,flly2,fllz2,fllx3,flly3,fllz3
+!DOUBLE PRECISION flx1,fly1,flz1,flx2,fly2,flz2,flx3,fly3,flz3,bc11,bc12,bc21,bc22
+!DOUBLE PRECISION fllx1,flly1,fllz1,fllx2,flly2,fllz2,fllx3,flly3,fllz3
 
 dxx=deltalength
 !iwx = 0; iwy = 1; iwz = 1
@@ -1291,51 +1291,51 @@ c=c+1
 
 do k = -1,Ncellz+2
 do j = -1,Ncelly+2
-bstepxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dxx
-bstepxl(j,k,0,1) = (-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dxx
-bstepxl(j,k,-1,1) = -(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dxx
-bstepxr(j,k,Ncellx+2,1) = (3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dxx
-bstepxr(j,k,Ncellx+1,1) = (-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dxx
-bstepxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dxx
+bphigrdxl(j,k,1,1) = (3.0d0*bphil(j,k,1)-4.0d0*bphil(j,k,0)+bphil(j,k,-1))*0.5d0/dxx
+bphigrdxl(j,k,0,1) = (-bphil(j,k,-1)+bphil(j,k,1))*0.5d0/dxx
+bphigrdxl(j,k,-1,1) = -(3.0d0*bphil(j,k,-1)-4.0d0*bphil(j,k,0)+bphil(j,k,1))*0.5d0/dxx
+bphigrdxr(j,k,Ncellx+2,1) = (3.0d0*bphir(j,k,Ncellx+2)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx))*0.5d0/dxx
+bphigrdxr(j,k,Ncellx+1,1) = (-bphir(j,k,Ncellx)+bphir(j,k,Ncellx+2))*0.5d0/dxx
+bphigrdxr(j,k,Ncellx,1) = -(3.0d0*bphir(j,k,Ncellx)-4.0d0*bphir(j,k,Ncellx+1)+bphir(j,k,Ncellx+2))*0.5d0/dxx
 end do
 end do
 
 do k=-1,ndz-2
 do j=-1,ndy-2
 do i=-1,0
-   bstepxl(i,j,k,1)= bstepxl(j,k,i,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,2)=-bstepxl(j,k,i,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,3)= bstepxl(j,k,i,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,4)=-bstepxl(j,k,i,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,5)= bstepxl(j,k,i,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,6)=-bstepxl(j,k,i,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,7)= bstepxl(j,k,i,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxl(i,j,k,8)=-bstepxl(j,k,i,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,1)= bphigrdxl(j,k,i,1) &
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,2)=-bphigrdxl(j,k,i,1) &
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,3)= bphigrdxl(j,k,i,1) &
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,4)=-bphigrdxl(j,k,i,1) &
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,5)= bphigrdxl(j,k,i,1) &
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,6)=-bphigrdxl(j,k,i,1) &
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,7)= bphigrdxl(j,k,i,1) &
+                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
+   bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,1) &
+                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz
 
-   bstepxr(i+Ncell+2,j,k,1)= bstepxl(j,k,i+Ncell+2,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,2)=-bstepxl(j,k,i+Ncell+2,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,3)= bstepxl(j,k,i+Ncell+2,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,4)=-bstepxl(j,k,i+Ncell+2,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy+(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,5)= bstepxl(j,k,i+Ncell+2,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,6)=-bstepxl(j,k,i+Ncell+2,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,7)= bstepxl(j,k,i+Ncell+2,1) &
-                    -(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
-   bstepxr(i+Ncell+2,j,k,8)=-bstepxl(j,k,i+Ncell+2,1) &
-                    +(-Phiexa2(i,j-1,k)+Phiexa2(i,j+1,k))*0.5d0/dy-(-Phiexa2(i,j,k-1)+Phiexa2(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,1)= bphigrdxl(j,k,i+Ncell+2,1) &
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,2)=-bphigrdxl(j,k,i+Ncell+2,1) &
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,3)= bphigrdxl(j,k,i+Ncell+2,1) &
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,4)=-bphigrdxl(j,k,i+Ncell+2,1) &
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,5)= bphigrdxl(j,k,i+Ncell+2,1) &
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,6)=-bphigrdxl(j,k,i+Ncell+2,1) &
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,7)= bphigrdxl(j,k,i+Ncell+2,1) &
+                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
+   bphigrdxr(i+Ncell+2,j,k,8)=-bphigrdxl(j,k,i+Ncell+2,1) &
+                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz
 end do
 end do
 
