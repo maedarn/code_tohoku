@@ -491,7 +491,7 @@ dinit1=0.0d0
   !goto 6001
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
-  dinit1=1.d0
+  dinit1=1.d2
   cenx=dble(Np1x)+0.5d0
   ceny=dble(Np1y)+0.5d0
   cenz=dble(Np1z)+0.5d0
