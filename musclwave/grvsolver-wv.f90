@@ -94,7 +94,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=28,file=dir//'PHIINI/PHI'//NPENUM//countcha//'.DAT')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHIINI/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
@@ -124,10 +124,10 @@ subroutine SELFGRAVWAVE(dt,mode)
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
            do i = -1, Ncellx+2
-           write(28,*) Phiwv(i,j,k,1),Phiwv(i,j,k,2),Phiwv(i,j,k,3),Phiwv(i,j,k,4),Phiwv(i,j,k,5),Phiwv(i,j,k,6),&
-                   Phiwv(i,j,k,7),Phiwv(i,j,k,8),Phigrdwv(i,j,k,1),Phigrdwv(i,j,k,2),Phigrdwv(i,j,k,3),Phigrdwv(i,j,k,4),&
-               Phigrdwv(i,j,k,5),Phigrdwv(i,j,k,6),Phigrdwv(i,j,k,7),Phigrdwv(i,j,k,8),Phiexa(i,j,k),Phigrd(i,j,k,1),&
-               Phigrd(i,j,k,2),Phigrd(i,j,k,3),Phigrd(i,j,k,4),Phigrd(i,j,k,5),Phigrd(i,j,k,6),Phigrd(i,j,k,7),Phigrd(i,j,k,8)
+           write(28,*) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiwv(i,j,k,5)),sngl(Phiwv(i,j,k,6)),&
+                   sngl(Phiwv(i,j,k,7)),sngl(Phiwv(i,j,k,8)),sngl(Phigrdwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,2)),sngl(Phigrdwv(i,j,k,3)),sngl(Phigrdwv(i,j,k,4)),&
+               sngl(Phigrdwv(i,j,k,5)),sngl(Phigrdwv(i,j,k,6)),sngl(Phigrdwv(i,j,k,7)),sngl(Phigrdwv(i,j,k,8)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),&
+               sngl(Phigrd(i,j,k,2)),sngl(Phigrd(i,j,k,3)),sngl(Phigrd(i,j,k,4)),sngl(Phigrd(i,j,k,5)),sngl(Phigrd(i,j,k,6)),sngl(Phigrd(i,j,k,7)),sngl(Phigrd(i,j,k,8))
           enddo
         end do
      end do
