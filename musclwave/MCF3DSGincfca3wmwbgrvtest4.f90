@@ -21,7 +21,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
-character(31) :: dir='/work/maedarn/3DMHD/samplecnv2/' !samplecnv2
+character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
