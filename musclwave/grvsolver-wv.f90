@@ -774,6 +774,7 @@ IF(iwz.EQ.1) THEN
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
+endif
 !***************BC-for-Phiwv***********************
 
 
@@ -793,7 +794,7 @@ if(mode==110) then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
      !Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
-     Phiwvgrd(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
+     Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
 !     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -806,7 +807,7 @@ if(mode==110) then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
      !Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
-     Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+     Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
 !     Phicgm(IX,JY,KZ)= bphi2r(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -831,7 +832,7 @@ IF(iwy.EQ.1) THEN
   !END DO
    IF(JST.eq.0) THEN
         DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
-        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
         END DO;END DO;END DO
      END IF
    enddo
@@ -845,7 +846,7 @@ IF(iwy.EQ.1) THEN
   !END DO
    IF(JST.eq.NSPLTy-1) THEN
         DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX =  -1, Ncellx+2
-        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
         END DO;END DO;END DO
      END IF
    enddo
@@ -870,7 +871,7 @@ IF(iwz.EQ.1) THEN
   !END DO
    IF(KST.eq.0) THEN
         DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
-        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
         END DO;END DO;END DO
      END IF
    enddo
@@ -884,7 +885,7 @@ IF(iwz.EQ.1) THEN
   !END DO
    IF(KST.eq.NSPLTz-1) THEN
         DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX =  -1, Ncellx+2
-        Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+        Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
         END DO;END DO;END DO
      END IF
    enddo
@@ -892,6 +893,7 @@ IF(iwz.EQ.1) THEN
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
+endif
 !***************BC-for-Phiwvgrd***********************
 end subroutine BCgrv
 

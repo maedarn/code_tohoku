@@ -562,9 +562,9 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    cenz=dble(Np1z)+0.5d0
    rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    if(rsph .le. rrsph ) then
-      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rshp*dx1)**2
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph*dx1)**2
    else
-      Phiexa(i,j,k)=-G4pi/rshp/dx1/3.d0*dinit1*(rrsph*dx1)**3+G4pi/2.d0*dinit1*(rrsph*dx1)**2
+      Phiexa(i,j,k)=-G4pi/rsph/dx1/3.d0*dinit1*(rrsph*dx1)**3+G4pi/2.d0*dinit1*(rrsph*dx1)**2
    end if
 end do
 end do
