@@ -776,7 +776,7 @@ if(mode==110) then
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+     Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
      !Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
      END DO;END DO;END DO
   END IF
