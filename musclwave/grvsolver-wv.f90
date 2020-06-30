@@ -18,7 +18,7 @@ subroutine SELFGRAVWAVE(dt,mode)
   !**************** INITIALIZEATION **************
   if(mode==0) then
      Phi(:,:,:) = 0.0d0
-　　　Phiwv(:,:,:,:)=0.d0
+     Phiwv(:,:,:,:)=0.d0
      Phigrdwv(:,:,:,:)=0.d0
   end if
   !**************** INITIALIZEATION **************
@@ -56,11 +56,12 @@ subroutine SELFGRAVWAVE(dt,mode)
      !call  SELFGRAVWAVE(0.0d0,4)
      !write(*,*) '------pb1-------' ,Nrank
 
-     !calcurate Phi-bc
+     !****calcurate bc****
      !Call PB( 0)
      !Call PB(-1)
      !Call PB(-2)
-     call pbphigrd(dt)
+     !call pbphigrd(dt)
+     !****calcurate bc****
      call slvmuscle(dt)
   end if
 
@@ -93,7 +94,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     open(unit=28,file=dir//'PHIINI/INIPHI1step'//NPENUM//countcha//'.DAT')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHIINI/PHI'//NPENUM//countcha//'.DAT')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
@@ -123,7 +124,10 @@ subroutine SELFGRAVWAVE(dt,mode)
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
            do i = -1, Ncellx+2
-           write(28,*)
+           write(28,*) Phiwv(i,j,k,1),Phiwv(i,j,k,2),Phiwv(i,j,k,3),Phiwv(i,j,k,4),Phiwv(i,j,k,5),Phiwv(i,j,k,6),&
+                   Phiwv(i,j,k,7),Phiwv(i,j,k,8),Phigrdwv(i,j,k,1),Phigrdwv(i,j,k,2),Phigrdwv(i,j,k,3),Phigrdwv(i,j,k,4),&
+               Phigrdwv(i,j,k,5),Phigrdwv(i,j,k,6),Phigrdwv(i,j,k,7),Phigrdwv(i,j,k,8),Phiexa(i,j,k),Phigrd(i,j,k,1),&
+               Phigrd(i,j,k,2),Phigrd(i,j,k,3),Phigrd(i,j,k,4),Phigrd(i,j,k,5),Phigrd(i,j,k,6),Phigrd(i,j,k,7),Phigrd(i,j,k,8)
           enddo
         end do
      end do
@@ -359,11 +363,11 @@ subroutine slvmuscle(dt)
   integer :: i=0,n,m,l
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
 
-  !do l=-1,ndz
-  !do m=-1,ndy
-  !do n=-1,ndx
-  !   rho(n,m,l) = U(n,m,l,1)
-  !end do;end do;end do
+  do l=-1,ndz
+  do m=-1,ndy
+  do n=-1,ndx
+     rho(n,m,l) = U(n,m,l,1)
+  end do;end do;end do
 
   !do l=-1,ndz
   !do m=-1,ndy
@@ -491,37 +495,37 @@ subroutine slvmuscle(dt)
      do j=1,ndy-2
        do i=1,ndx-2
        Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx/dy &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy/dz &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz/dx
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
        Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx/dy &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy/dz &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz/dx
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
        Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx/dy &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy/dz &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz/dx
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
        Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx/dy &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy/dz &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz/dx
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
        Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx/dy &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy/dz &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz/dx
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
        Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx/dy &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy/dz &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz/dx
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
        Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx/dy &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy/dz &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz/dx
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
        Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx/dy &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy/dz &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz/dx
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
        enddo
      enddo
    enddo
@@ -658,7 +662,7 @@ subroutine BCgrv(mode,is,ie)
 
 !***************BC-for-Phigrd***********************
 if(mode==100) then
-　IF(iwx.EQ.1) THEN
+  IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
@@ -770,13 +774,12 @@ IF(iwz.EQ.1) THEN
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
-endif
 !***************BC-for-Phiwv***********************
 
 
 !***************BC-for-Phiwvgrd***********************
 if(mode==110) then
-　IF(iwx.EQ.1) THEN
+  IF(iwx.EQ.1) THEN
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
@@ -790,7 +793,7 @@ if(mode==110) then
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
      !Phiwvgrd(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
-     Phiwvgrd(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+     Phiwvgrd(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
 !     Phicgm(IX,JY,KZ)= bphi2l(JY,KZ,IX)
      END DO;END DO;END DO
   END IF
@@ -885,12 +888,10 @@ IF(iwz.EQ.1) THEN
         END DO;END DO;END DO
      END IF
    enddo
-   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
 END IF
-endif
 !***************BC-for-Phiwvgrd***********************
 end subroutine BCgrv
 
@@ -1270,6 +1271,7 @@ do i=-1,0
                     +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
 end do
 end do
+enddo
 !******x-BC********
 
 

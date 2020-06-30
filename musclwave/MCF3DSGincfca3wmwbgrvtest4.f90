@@ -54,7 +54,7 @@ DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
 integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
@@ -467,18 +467,18 @@ end do
 !end do
 
 
-do k=-1,ndz
-do j=-1,ndy
-do i=0,ndx-1
-   Phigrd(i,j,k)=(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx(1)
+!do k=-1,ndz
+!do j=-1,ndy
+!do i=0,ndx-1
+!   Phigrd(i,j,k)=(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx(1)
    !write(144,*) sngl(x(i)) , Phigrd(i) , Phiexa(i-1),Phiexa(i+1)
-end do
-Phigrd(-1,j,k)=(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx(1)
-Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx(1)
-end do
-end do
+!end do
+!Phigrd(-1,j,k)=(-Phiexa(0,j,k)+Phiexa(1,j,k))/dx(1)
+!Phigrd(ndx,j,k)=(Phiexa(ndx-1,j,k)-Phiexa(ndx-2,j,k))/dx(1)
+!end do
+!end do
 
-write(*,*) NRANK,Phigrd(0,1,1),Phigrd(Ncellx-1,1,1),dinit1
+!write(*,*) NRANK,Phigrd(0,1,1),Phigrd(Ncellx-1,1,1),dinit1
 !DEALLOCATE(Phiexa)
 close(142)
 
@@ -894,7 +894,7 @@ do in10 = 1, maxstp
     !---------------debug-------------------
     !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
     !---------------debug-------------------
-    dt=dx(1)/cg*0.025d0
+    dt=dx(1)/cg*0.5d0
     !if(ifgrv==2) then
     !   call SELFGRAVWAVE(tLMT,7)
 
