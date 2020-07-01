@@ -380,7 +380,6 @@ subroutine slvmuscle(dt)
      !source(n,m,l,2)=source(n,m,l,2)-G4pi*rho(n,m,l)
      !source(n,m,l,3)=source(n,m,l,3)-G4pi*rho(n,m,l)
   !end do;end do;end do
-
   !****************slv-wv****************
   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   iwx=1;iwy=0;iwz=0
@@ -657,9 +656,7 @@ subroutine BCgrv(mode,is,ie)
   INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   DOUBLE PRECISION  :: VECU
  
-
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-
 !***************BC-for-Phigrd***********************
 if(mode==100) then
   IF(iwx.EQ.1) THEN
@@ -667,11 +664,9 @@ if(mode==100) then
   CALL MPI_TYPE_COMMIT(VECU,IERR)
   LEFTt = LEFT; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
   RIGTt = RIGT; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
-
   do idm=is,ie
   CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
   Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
@@ -683,7 +678,6 @@ if(mode==100) then
   do idm=is,ie
   CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
   Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-
   IF(IST.eq.NSPLTx-1) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
@@ -695,7 +689,6 @@ if(mode==100) then
 CALL MPI_TYPE_FREE(VECU,IERR)
 LEFT = LEFTt; RIGT = RIGTt
 END IF
-
 
 IF(iwy.EQ.1) THEN
   CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
@@ -1176,18 +1169,12 @@ character(5) ciii
 !call BCgrv(101)
 !call BCgrv(102)
 !bphi1l(j,k,1)
-write(fn,'(i3.3)') NRANK
-write(ciii,'(i5.5)') c
+!write(fn,'(i3.3)') NRANK
+!write(ciii,'(i5.5)') c
 !open(3,file='/work/maedarn/3DMHD/test/bcstep'//fn//'.DAT')
 !open(4,file='/work/maedarn/3DMHD/test/bcstepscnd'//fn//'.DAT')
 !open(5,file='/work/maedarn/3DMHD/test/source'//fn//ciii//'.DAT')
 
-dddt=1.0d0/dt/ratio/cg
-write(*,*) 'dddt',dddt
-
-
-!close(5)
-c=c+1
 
 !******x-BC********
 do k = -1,Ncellz+2
@@ -1220,45 +1207,44 @@ bphigrdxr(:,:,:,8)=bphigrdxr(:,:,:,1)
 do k=-1,ndz
 do j=-1,ndy
 do i=-1,0
-   bphigrdxl(i,j,k,1)= bphigrdxl(j,k,i,1) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,2)=-bphigrdxl(j,k,i,2) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,3)= bphigrdxl(j,k,i,3) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,4)=-bphigrdxl(j,k,i,4) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1+(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,5)= bphigrdxl(j,k,i,5) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,6)=-bphigrdxl(j,k,i,6) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,7)= bphigrdxl(j,k,i,7) &
-                    -(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
-   bphigrdxl(i,j,k,8)=-bphigrdxl(j,k,i,8) &
-                    +(-bphil(i,j-1,k)+bphil(i,j+1,k))*0.5d0/dy1-(-bphil(i,j,k-1)+bphil(i,j,k+1))*0.5d0/dz1
+   bphigrdxl(j,k,i,1)= bphigrdxl(j,k,i,1) &
+                    +(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1+(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,2)=-bphigrdxl(j,k,i,2) &
+                    -(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1+(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,3)= bphigrdxl(j,k,i,3) &
+                    -(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1+(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,4)=-bphigrdxl(j,k,i,4) &
+                    +(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1+(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,5)= bphigrdxl(j,k,i,5) &
+                    +(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1-(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,6)=-bphigrdxl(j,k,i,6) &
+                    -(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1-(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,7)= bphigrdxl(j,k,i,7) &
+                    -(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1-(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
+   bphigrdxl(j,k,i,8)=-bphigrdxl(j,k,i,8) &
+                    +(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1-(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
 
-   bphigrdxr(i+Ncellx+2,j,k,1)= bphigrdxl(j,k,i+Ncellx+2,1) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,2)=-bphigrdxl(j,k,i+Ncellx+2,2) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,3)= bphigrdxl(j,k,i+Ncellx+2,3) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,4)=-bphigrdxl(j,k,i+Ncellx+2,4) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1+(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,5)= bphigrdxl(j,k,i+Ncellx+2,5) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,6)=-bphigrdxl(j,k,i+Ncellx+2,6) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,7)= bphigrdxl(j,k,i+Ncellx+2,7) &
-                    -(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
-   bphigrdxr(i+Ncellx+2,j,k,8)=-bphigrdxl(j,k,i+Ncellx+2,8) &
-                    +(-bphir(i,j-1,k)+bphir(i,j+1,k))*0.5d0/dy1-(-bphir(i,j,k-1)+bphir(i,j,k+1))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,1)= bphigrdxl(j,k,i+Ncellx+2,1) &
+                    +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,2)=-bphigrdxl(j,k,i+Ncellx+2,2) &
+                    -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,3)= bphigrdxl(j,k,i+Ncellx+2,3) &
+                    -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,4)=-bphigrdxl(j,k,i+Ncellx+2,4) &
+                    +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,5)= bphigrdxl(j,k,i+Ncellx+2,5) &
+                    +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,6)=-bphigrdxl(j,k,i+Ncellx+2,6) &
+                    -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,7)= bphigrdxl(j,k,i+Ncellx+2,7) &
+                    -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+   bphigrdxr(j,k,i+Ncellx+2,8)=-bphigrdxl(j,k,i+Ncellx+2,8) &
+                    +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
 end do
 end do
 end do
 !******x-BC********
 
-write(*,*) 'dddt2',dddt,bphigrdxr(Ncellx+1,1,1,1)
 
 end subroutine pbphigrd
 
