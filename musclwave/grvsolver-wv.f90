@@ -124,7 +124,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
            do i = -1, Ncellx+2
-           write(28,*) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiwv(i,j,k,5)),sngl(Phiwv(i,j,k,6)),&
+           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiwv(i,j,k,5)),sngl(Phiwv(i,j,k,6)),&
                    sngl(Phiwv(i,j,k,7)),sngl(Phiwv(i,j,k,8)),sngl(Phigrdwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,2)),sngl(Phigrdwv(i,j,k,3)),sngl(Phigrdwv(i,j,k,4)),&
                sngl(Phigrdwv(i,j,k,5)),sngl(Phigrdwv(i,j,k,6)),sngl(Phigrdwv(i,j,k,7)),sngl(Phigrdwv(i,j,k,8)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),&
                sngl(Phigrd(i,j,k,2)),sngl(Phigrd(i,j,k,3)),sngl(Phigrd(i,j,k,4)),sngl(Phigrd(i,j,k,5)),sngl(Phigrd(i,j,k,6)),sngl(Phigrd(i,j,k,7)),sngl(Phigrd(i,j,k,8))

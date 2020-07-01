@@ -6,8 +6,8 @@ program computeraw
  !integer :: i,j,k
  !parameter(nx = 100, ny = 20, nz = 50)
  !real, dimension(nx,ny,nz) :: array
- real(8), allocatable :: u(:,:,:,:) !, v(:,:,:,:)
- real(8), allocatable ::  v(:,:,:,:)
+ real(4), allocatable :: u(:,:,:,:) !, v(:,:,:,:)
+ real(4), allocatable ::  v(:,:,:,:)
  real(8), allocatable ::  pbr(:,:),pbl(:,:)
  real(8), allocatable ::  pbrall(:,:),pblall(:,:)
  double precision , allocatable :: x(:),y(:),z(:),inputlength(:)
@@ -21,7 +21,7 @@ program computeraw
  character(50) filename,data
  character(3) NPE,time,cntctj
  character(6) cntc
- character(34) :: dir='/glv0/maedarn/test-glvwave/PHIINI/'
+ character(34) :: dir='/glv0/maedarn/test-grvwave/PHIINI/'
  
   !******parameter********
   core=512
@@ -70,17 +70,16 @@ do times=initime,lasttime,timejump
          JST = usecore/NSPLTx-NSPLTy*KST
          write(*,*) IST,JST,KST,time,usecore
          write(NPE,'(I3.3)') usecore
-         open(unit=150,file=dir//'PHI'//NPE//cntc//'.DAT',FORM='FORMATTED')
+         open(unit=150,file=dir//'PHI'//cntc//NPE//'.DAT',FORM='UNFORMATTED')
          do k = -1, Ncellz+2 !*************************************************** +1 いる？ **********************************
             do j = -1, Ncelly+2
                do i= -1, Ncellx+2
-                  read(150,*) u(i,j,k,1) ,u(i,j,k,2),u(i,j,k,3),u(i,j,k,4),u(i,j,k,5), &
+                  read(150) u(i,j,k,1) ,u(i,j,k,2),u(i,j,k,3),u(i,j,k,4),u(i,j,k,5), &
                     u(i,j,k,6),u(i,j,k,7),u(i,j,k,8), &
                     u(i,j,k,9),u(i,j,k,10),u(i,j,k,11),u(i,j,k,12), &
                     u(i,j,k,13),u(i,j,k,14),u(i,j,k,15),u(i,j,k,16), u(i,j,k,17), &
                     u(i,j,k,18),u(i,j,k,19),u(i,j,k,20),u(i,j,k,21), u(i,j,k,22), &
                     u(i,j,k,23),u(i,j,k,24),u(i,j,k,25)
-                !write(*,*) i,j,k
                 end do
             end do
          end do
@@ -125,11 +124,11 @@ do times=initime,lasttime,timejump
    do k=1,lengthz,jump
       do j=1,lengthy,jump
          do i=1,lengthx,jump
-         write(100) sngl(v(i,j,k,1)) ,sngl(v(i,j,k,2)),sngl(v(i,j,k,3)),sngl(v(i,j,k,4)),sngl(v(i,j,k,5)),sngl(v(i,j,k,6)),&
-                    sngl(v(i,j,k,7)),sngl(v(i,j,k,8)),sngl(v(i,j,k,9)),sngl(v(i,j,k,10)),sngl(v(i,j,k,11)),sngl(v(i,j,k,12)),&
-                    sngl(v(i,j,k,13)),sngl(v(i,j,k,14)),sngl(v(i,j,k,15)),sngl(v(i,j,k,16)),sngl(v(i,j,k,17)),sngl(v(i,j,k,18)),&
-                    sngl(v(i,j,k,19)),sngl(v(i,j,k,20)),sngl(v(i,j,k,21)),sngl(v(i,j,k,22)),sngl(v(i,j,k,23)),sngl(v(i,j,k,24)),&
-                    sngl(v(i,j,k,25))
+         write(100) v(i,j,k,1) ,v(i,j,k,2),v(i,j,k,3),v(i,j,k,4),v(i,j,k,5),v(i,j,k,6),&
+                    v(i,j,k,7),v(i,j,k,8),v(i,j,k,9),v(i,j,k,10),v(i,j,k,11),v(i,j,k,12),&
+                    v(i,j,k,13),v(i,j,k,14),v(i,j,k,15),v(i,j,k,16),v(i,j,k,17),v(i,j,k,18),&
+                    v(i,j,k,19),v(i,j,k,20),v(i,j,k,21),v(i,j,k,22),v(i,j,k,23),v(i,j,k,24),&
+                    v(i,j,k,25)
          end do
       end do
       write(*,*) k,u(64,64,64,1)!,data
