@@ -1166,6 +1166,7 @@ integer :: i,j,k,c=0
 double precision :: dxx,dt,prdt=0.0d0,ratio=dsqrt(3.0d0),dddt,rx,ry,rz,rx2,ry2,rz2
 character(3) fn
 character(5) ciii
+character(1) lRANK
 !DOUBLE PRECISION , dimension(-1:ndx,1:Dim) :: slop
 !DOUBLE PRECISION flx1,fly1,flz1,flx2,fly2,flz2,flx3,fly3,flz3,bc11,bc12,bc21,bc22
 !DOUBLE PRECISION fllx1,flly1,fllz1,fllx2,flly2,fllz2,fllx3,flly3,fllz3
@@ -1209,6 +1210,12 @@ bphigrdxr(:,:,:,6)=bphigrdxr(:,:,:,1)
 bphigrdxr(:,:,:,7)=bphigrdxr(:,:,:,1)
 bphigrdxr(:,:,:,8)=bphigrdxr(:,:,:,1)
 
+
+!if(IST==0) then
+!do i=-1,0
+!write(fn,'(i3.3)') NRANK/NSPLTx
+!write(lRANK,'(i1.1)') i+1
+!open(12,file=dir//'bcphispcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
 do k=-1,ndz
 do j=-1,ndy
 do i=-1,0
@@ -1229,25 +1236,29 @@ do i=-1,0
    bphigrdxl(j,k,i,8)=-bphigrdxl(j,k,i,8) &
                     +(-bphil(j-1,k,i)+bphil(j+1,k,i))*0.5d0/dy1-(-bphil(j,k-1,i)+bphil(j,k+1,i))*0.5d0/dz1
 
-   bphigrdxr(j,k,i+Ncellx+2,1)= bphigrdxl(j,k,i+Ncellx+2,1) &
+   bphigrdxr(j,k,i+Ncellx+2,1)= bphigrdxr(j,k,i+Ncellx+2,1) &
                     +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,2)=-bphigrdxl(j,k,i+Ncellx+2,2) &
+   bphigrdxr(j,k,i+Ncellx+2,2)=-bphigrdxr(j,k,i+Ncellx+2,2) &
                     -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,3)= bphigrdxl(j,k,i+Ncellx+2,3) &
+   bphigrdxr(j,k,i+Ncellx+2,3)= bphigrdxr(j,k,i+Ncellx+2,3) &
                     -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,4)=-bphigrdxl(j,k,i+Ncellx+2,4) &
+   bphigrdxr(j,k,i+Ncellx+2,4)=-bphigrdxr(j,k,i+Ncellx+2,4) &
                     +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1+(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,5)= bphigrdxl(j,k,i+Ncellx+2,5) &
+   bphigrdxr(j,k,i+Ncellx+2,5)= bphigrdxr(j,k,i+Ncellx+2,5) &
                     +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,6)=-bphigrdxl(j,k,i+Ncellx+2,6) &
+   bphigrdxr(j,k,i+Ncellx+2,6)=-bphigrdxr(j,k,i+Ncellx+2,6) &
                     -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,7)= bphigrdxl(j,k,i+Ncellx+2,7) &
+   bphigrdxr(j,k,i+Ncellx+2,7)= bphigrdxr(j,k,i+Ncellx+2,7) &
                     -(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
-   bphigrdxr(j,k,i+Ncellx+2,8)=-bphigrdxl(j,k,i+Ncellx+2,8) &
+   bphigrdxr(j,k,i+Ncellx+2,8)=-bphigrdxr(j,k,i+Ncellx+2,8) &
                     +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
+
+!write(12) bphigrdxr(j,k,i+Ncellx+2,1)
 end do
 end do
+!close(12)
 end do
+!endif
 !******x-BC********
 
 
@@ -1481,9 +1492,10 @@ end do; end do
 ncy=Ncelly+2
 ncz=Ncellz+2
 
-!write(fn,'(i3.3)') NRANK
+!if(IST==0) then
+!write(fn,'(i3.3)') NRANK/NSPLTx
 !write(lRANK,'(i1.1)') pls+2
-!open(12,file=dir//'bcsave'//lRANK//fn//'.DAT')
+!open(12,file=dir//'bcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
 do k=-1,ncz!; kk= (ncy+1)*k
 do j=-1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
@@ -1501,10 +1513,11 @@ do j=-1,ncy!; n = j+kk
   bphir(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-!  write(12,*) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
+!  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
 end do
 end do
 !close(12)
+!endif
 
 DEALLOCATE(data,speq)
 DEALLOCATE(dat1,spe1,dat2,spe2)
