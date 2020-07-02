@@ -57,6 +57,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      !write(*,*) '------pb1-------' ,Nrank
 
      !****calcurate bc****
+     call collect()
      Call PB( 0)
      Call PB(-1)
      Call PB(-2)
@@ -359,15 +360,19 @@ subroutine slvmuscle(dt)
   use comvar
   use slfgrv
   INCLUDE 'mpif.h'
-  double precision :: dt,dtratio=dsqrt(3.0d0)
+  double precision :: dt,dtratio=dsqrt(3.0d0)!,rhomean
   integer :: i=0,n,m,l
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
 
-  do l=-1,ndz
-  do m=-1,ndy
-  do n=-1,ndx
-     rho(n,m,l) = U(n,m,l,1)
+  !rhomean=0.d0
+  do l=1,ndz-2
+  do m=1,ndy-2
+  do n=1,ndx-2
+     !rho(n,m,l) = U(n,m,l,1)
+     rho(n,m,l) = U(n,m,l,1)-rhomean
+  !   rhomean=rhomean+rho(i,j,k)
   end do;end do;end do
+  
 
   !do l=-1,ndz
   !do m=-1,ndy
@@ -1310,7 +1315,8 @@ nccy = Ncelly; nccz = Ncellz
 do k=1,Ncellz; kz=KST*Ncellz+k
 do j=1,Ncelly; jy=JST*Ncelly+j
 do i=-1,Ncellx+2
-  data(jy,kz,i) = U(i,j,k,1)!-rhomean
+  !data(jy,kz,i) = U(i,j,k,1)!-rhomean
+  data(jy,kz,i) = U(i,j,k,1)-rhomean
 end do;end do;end do
 
                     !count, blocklength, stride
@@ -1678,3 +1684,31 @@ subroutine timesource(Phiv,source,dt,mode)
 
   write(*,*) 'time source' , dt
 end subroutine timesource
+
+SUBROUTINE collect()
+USE comvar
+USE mpivar
+USE slfgrv
+INCLUDE 'mpif.h'
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+double precision :: tMPI(1:Ncellx,1:Ncelly,1:Ncellz,0:NPE-1)
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
+rhomean=0.d0
+do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+  tMPI(i,j,k,NRANK)=U(i,j,k,1)
+end do;end do;end do
+do Nroot=0,NPE-1
+  CALL MPI_BCAST(tMPI(1,1,1,Nroot),(Ncellx)*(Ncelly)*(Ncellz),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+do Nroot=0,NPE-1
+ ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
+do kk=1,Ncellz!; k=KSTt*Ncellz+kk
+do jj=1,Ncelly!; j=JSTt*Ncelly+jj
+do ii=1,Ncellz!; i=ISTt*Ncellx+ii
+    !u1(i,j,k) = tMPI(ii,jj,kk,Nroot)
+    rhomean = tMPI(ii,jj,kk,Nroot)+rhomean
+end do;end do;end do;end do
+rhomean=rhomean/dble(Ncellx*NSPLTx)/dble(Ncelly*NSPLTy)/dble(Ncellz*NSPLTz)
+END SUBROUTINE collect

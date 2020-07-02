@@ -25,7 +25,7 @@ character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
-INTEGER :: NPE,NRANK, NSPLTx,NSPLTy,NSPLTz, IST,JST,KST, LEFT,RIGT,BOTM,TOP,UP,DOWN
+INTEGER :: NPE,NRANK, NSPLTx,NSPLTy,NSPLTz,IST,JST,KST,LEFT,RIGT,BOTM,TOP,UP,DOWN
 INTEGER :: BCx1,BCx2,BCy1,BCy2,BCz1,BCz2, N_MPI(20)
 DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(8)
 REAL*4, dimension(:,:,:), allocatable :: DTF
@@ -46,7 +46,7 @@ DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
 !double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
-double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
+double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
 
 !DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd

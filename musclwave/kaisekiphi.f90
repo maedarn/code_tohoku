@@ -24,16 +24,16 @@ program computeraw
  character(34) :: dir='/glv0/maedarn/test-grvwave/PHIINI/'
  
   !******parameter********
-  core=512
-  mesh=16+2
+  core=8
+  mesh=64+2
   val=25
   jump=1
   ts=1
   initime=0
   lasttime=100
-  Ncellx=16
-  Ncelly=16
-  Ncellz=16
+  Ncellx=64
+  Ncelly=64
+  Ncellz=64
   timejump=1
   nth=10.e0
   !***********************
