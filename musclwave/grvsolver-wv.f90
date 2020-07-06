@@ -1525,6 +1525,267 @@ DEALLOCATE(bcspel1,bcspel2,bcl1,bcr2)
 END SUBROUTINE PB
 
 
+SUBROUTINE PBini(pls)
+USE comvar
+USE mpivar
+USE slfgrv
+INCLUDE 'mpif.h'
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+DOUBLE PRECISION  :: VECU
+
+double precision,  parameter :: pi = 3.14159265359d0
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: temp1,temp2
+
+DOUBLE PRECISION, dimension(:,:,:),  allocatable :: data
+complex*16, dimension(:,:), allocatable :: speq
+DOUBLE PRECISION :: rho
+
+DOUBLE PRECISION, dimension(:,:),  allocatable :: dat1,dat2!,bcl1,bcr2
+DOUBLE PRECISION, dimension(:,:,:),  allocatable :: bcl1,bcr2
+complex*16, dimension(:), allocatable :: spe1,spe2!,bcspel1,bcspel2
+complex*16, dimension(:,:), allocatable :: bcspel1,bcspel2
+double precision :: kap,temp1r,temp1i,temp2r,temp2i,facG,fac,dxx,dyy,dzz,zp1,zp2,LLl,LLr
+double precision, dimension(:,:,:), allocatable :: fint0,fint1
+double precision, dimension(:,:,:,:), allocatable :: bcsend
+character*4 fnum
+character(3) fn,deep
+!character(3) lname
+character(2) lcRANK
+character(1) lRANK
+integer pls,mis,mode,klrmax,npl2
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
+
+
+!MIYAMA method ---------------------------------------------------
+
+!ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,Ncellx+1),speq(Ncellz*NSPLTz,Ncellx))
+!ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
+!     dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
+
+ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:Ncellx+3),speq(Ncellz*NSPLTz,-1:Ncellx+2))
+ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
+     dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
+!allocate(bcsend(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:1,0:NPE-1))
+
+allocate(bcl1(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc),bcr2(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc))
+allocate(bcspel1(Ncellz*NSPLTz,-1:loopbc),bcspel2(Ncellz*NSPLTz,-1:loopbc))
+
+!if(mode==1) then
+!   LL=0.d0
+!end if
+
+!if(mode==2) then
+!   LL=Lbox
+!end if
+
+bcl1(:,:,:)=0.d0; bcr2(:,:,:)=0.d0; bcspel1(:,:)=(0.d0,0.d0); bcspel2(:,:)=(0.d0,0.d0)
+!nccy = Ncelly/NSPLTy; nccz = Ncellz/NSPLTz
+nccy = Ncelly; nccz = Ncellz
+do k=1,Ncellz; kz=KST*Ncellz+k
+do j=1,Ncelly; jy=JST*Ncelly+j
+do i=-1,Ncellx+2
+  !data(jy,kz,i) = U(i,j,k,1)!-rhomean
+  data(jy,kz,i) = U(i,j,k,1)-rhomean
+end do;end do;end do
+
+                    !count, blocklength, stride
+!CALL MPI_TYPE_VECTOR(Ncellz,Ncelly,Ncelly*NSPLTy,MPI_REAL8,VECU,IERR)
+!CALL MPI_TYPE_COMMIT(VECU,IERR)
+
+do nlp2 = 0 , loopbc , 1
+   klrmax = ((NSPLTy) + NSPLTy * (NSPLTz-1)) * nlp2
+
+CALL MPI_TYPE_VECTOR(Ncellz,Ncelly,Ncelly*NSPLTy,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+do Nlp = 1,NSPLTy*NSPLTz-1
+
+  isend = NRANK + NSPLTx*Nlp; if(isend.ge.NPE) isend = isend - NPE
+  KSs = isend/(NSPLTx*NSPLTy); JSs = isend/NSPLTx-NSPLTy*KSs
+  irecv = NRANK - NSPLTx*Nlp; if(irecv.lt.0  ) irecv = irecv + NPE
+  KSr = irecv/(NSPLTx*NSPLTy); JSr = irecv/NSPLTx-NSPLTy*KSr
+
+  Nis = JSs + NSPLTy*KSs
+  !kls = Nis + 1 !+ pls
+  kls = Nis - 1 + klrmax
+  Nir = JST + NSPLTy*KST
+  !klr = Nir + 1 !+ pls
+  klr = Nir - 1 + klrmax
+
+  !***************fordebug*****************
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !***************fordebug*****************
+
+  if(kls.gt.Ncellx+2) then; isend = MPI_PROC_NULL; kls = Ncellx+3; end if
+  if(klr.gt.Ncellx+2) then; irecv = MPI_PROC_NULL; klr = Ncellx+3; end if
+  CALL MPI_SENDRECV(data(JST*Ncelly+1,KST*Ncellz+1,kls),1,VECU,isend,1, & !send
+                    data(JSr*Ncelly+1,KSr*Ncellz+1,klr),1,VECU,irecv,1, MPI_COMM_WORLD,MSTATUS,IERR) !recv
+end do
+CALL MPI_TYPE_FREE(VECU,IERR)
+
+dxx = dy(1); dyy = dz(1); dzz = dx(1)
+facG = -G4pi*dzz
+
+dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
+
+!Nir = JST + NSPLTy*KST
+!klr = Nir + 1
+
+LLl = dzz*0.5d0 + dzz*dble(pls)
+LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
+
+
+
+nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
+
+if(klr.le.Ncellx+2) then
+
+  call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1)
+
+  kz = klr
+  !zp1 = x(kz)-0.5d0*dzz
+  !zp2 = Lbox - zp1
+  if((x(kz)-0.5d0*dzz > 0.d0) .and. (klr<1))then
+     goto 4269
+  end if
+  if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
+     goto 4269
+  end if
+  zp1 = (x(kz)-0.5d0*dzz)-LLl
+  zp2 = (x(kz)-0.5d0*dzz)-LLr
+!  zp2 = Lbox - zp1
+  !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
+  !zp2 = Lbox - zp1
+  zp1 = dabs(zp1)
+  zp2 = dabs(zp2)
+  !zp2 = Lbox/dble(NSPLTx) - zp1
+  !write(*,*) zp1,x(kz),kz,'write-zp',NRANK,pls
+  temp1r = dat1(1,1) - data(1,1,klr) * 0.5d0*zp1 * facG
+  temp1i = dat1(2,1) - data(2,1,klr) * 0.5d0*zp1 * facG
+  temp2r = dat2(1,1) - data(1,1,klr) * 0.5d0*zp2 * facG
+  temp2i = dat2(2,1) - data(2,1,klr) * 0.5d0*zp2 * facG
+
+  do m=1,nn2/2+1; do l=1,nn1/2
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)+1.0d-100
+    !kap = sqrt(kap)
+    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    !write(*,*) dat1(2*l-1,m),dat1(2*l  ,m),dat2(2*l-1,m),dat2(2*l  ,m),'PPPPPPPPPPPPPPPPP'
+  end do;end do
+
+  l=nn1/2+1
+  do m=1,nn2/2+1
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)+1.0d-100
+    !kap = sqrt(kap)
+    spe1(m) = spe1(m) + speq(m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    spe2(m) = spe2(m) + speq(m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+  end do
+
+  do m2=nn2/2+2,nn2; m=nn2+2-m2; do l=1,nn1/2
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)+1.0d-100
+    !kap = sqrt(kap)
+    dat1(2*l-1,m2) = dat1(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l  ,m2) = dat1(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat2(2*l-1,m2) = dat2(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+    dat2(2*l  ,m2) = dat2(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+  end do;end do
+
+  l=nn1/2+1
+  do m2=nn2/2+2,nn2; m=nn2+2-m2
+    kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
+    kap = sqrt(kap)+1.0d-100
+    !kap = sqrt(kap)
+    spe1(m2) = spe1(m2) + speq(m2,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    spe2(m2) = spe2(m2) + speq(m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
+  end do
+
+  dat1(1,1) = temp1r
+  dat1(2,1) = temp1i
+  dat2(1,1) = temp2r
+  dat2(2,1) = temp2i
+
+
+end if
+4269 continue
+do k=1,Ncellz*NSPLTz
+   do j=1,Ncelly*NSPLTy
+      dat1(j,k)=dat1(j,k)+bcl1(j,k,nlp2-1)
+      dat2(j,k)=dat2(j,k)+bcr2(j,k,nlp2-1)
+   end do
+   spe1(k)=spe1(k)+bcspel1(k,nlp2-1)
+   spe2(k)=spe2(k)+bcspel2(k,nlp2-1)
+end do
+
+do k=1,Ncellz*NSPLTz
+   do j=1,Ncelly*NSPLTy
+      bcl1(j,k,nlp2)=dat1(j,k)
+      bcr2(j,k,nlp2)=dat2(j,k)
+   end do
+   bcspel1(k,nlp2)=spe1(k)
+   bcspel2(k,nlp2)=spe2(k)
+end do
+
+end do
+
+CALL MPI_ALLREDUCE(dat1(1,1),data(1,1,1),Ncelly*NSPLTy*Ncellz*NSPLTz,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,IERR)
+CALL MPI_ALLREDUCE(spe1(1)  ,speq(  1,1),Ncellz*NSPLTz,MPI_COMPLEX16,MPI_SUM,MPI_COMM_WORLD,IERR)
+CALL MPI_ALLREDUCE(dat2(1,1),data(1,1,2),Ncelly*NSPLTy*Ncellz*NSPLTz,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,IERR)
+CALL MPI_ALLREDUCE(spe2(1)  ,speq(  1,2),Ncellz*NSPLTz,MPI_COMPLEX16,MPI_SUM,MPI_COMM_WORLD,IERR)
+
+
+call rlft3(data(1,1,1),speq(1,1),nn1,nn2,-1)
+call rlft3(data(1,1,2),speq(1,2),nn1,nn2,-1)
+
+fac = 2*(nn1/2)**2
+do j=1,nn2; do i=1,nn1
+  data(i,j,1) = data(i,j,1)/fac
+  data(i,j,2) = data(i,j,2)/fac
+end do; end do
+
+
+ncy=Ncelly+2
+ncz=Ncellz+2
+
+!if(IST==0) then
+!write(fn,'(i3.3)') NRANK/NSPLTx
+!write(lRANK,'(i1.1)') pls+2
+!open(12,file=dir//'bcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
+do k=-1,ncz!; kk= (ncy+1)*k
+do j=-1,ncy!; n = j+kk
+  jb  = JST*Ncelly + j
+  kbb = KST*Ncellz + k
+  if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 2
+  if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 2
+  if((j.eq.ncy-1).and.(JST.eq.NSPLTy-1)) jb  = 1
+  if((k.eq.ncz-1).and.(KST.eq.NSPLTz-1)) kbb = 1
+  if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+  if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+  if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
+  if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
+
+  Phiexa(1+abs(pls),j,k) = dble(data(jb,kbb,1))
+  Phiexa(Ncellx-abs(pls),j,k) = dble(data(jb,kbb,2))
+  !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
+!  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
+end do
+end do
+!close(12)
+!endif
+
+DEALLOCATE(data,speq)
+DEALLOCATE(dat1,spe1,dat2,spe2)
+DEALLOCATE(bcspel1,bcspel2,bcl1,bcr2)
+END SUBROUTINE PBini
+
+
+
 SUBROUTINE rlft3(data,speq,nn1,nn2,isign)
 INTEGER isign,nn1,nn2
 COMPLEX*16 data(nn1/2,nn2),speq(nn2)
@@ -1725,5 +1986,5 @@ do ii=1,Ncellz!; i=ISTt*Ncellx+ii
 end do;end do;end do;end do
 rhomean=rhomean/dble(Ncellx*NSPLTx)/dble(Ncelly*NSPLTy)/dble(Ncellz*NSPLTz)
 
-!rhomean=0.d0
+rhomean=0.d0
 END SUBROUTINE collect
