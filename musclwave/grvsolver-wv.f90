@@ -1652,8 +1652,8 @@ if(klr.le.Ncellx+2) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  zp1 = (x(kz)-0.5d0*dzz)-LLl
-  zp2 = (x(kz)-0.5d0*dzz)-LLr
+  zp1 = (x(kz)-0.5d0*dzz)!-LLl
+  zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
 !  zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
@@ -1769,12 +1769,13 @@ do j=-1,ncy!; n = j+kk
   if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
-  Phiexa(1+abs(pls),j,k) = dble(data(jb,kbb,1))
-  Phiexa(Ncellx-abs(pls),j,k) = dble(data(jb,kbb,2))
+  Phiexa(abs(pls),j,k) = dble(data(jb,kbb,1))
+  Phiexa(Ncellx+1-abs(pls),j,k) = dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
 end do
+!write(*,*) Phiexa(1+abs(pls),1,k),Phiexa(Ncellx-abs(pls),1,k)
 end do
 !close(12)
 !endif

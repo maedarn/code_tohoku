@@ -553,9 +553,9 @@ end do
 end do
 end do
 
-do i=0,-(Np1x-1),-1
-  call PBini(i)
-enddo
+!do i=1,Ncellx/2,-1
+!  call PBini(i)
+!enddo
 
 do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    i2 = IST*Ncellx+i
@@ -573,6 +573,13 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
 end do
 end do
 end do
+
+!call collect()
+
+do i=0,-(Ncellx/2-1),-1
+  call PBini(i)
+enddo
+!write(*,*) Phiexa(1,1,1)
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
