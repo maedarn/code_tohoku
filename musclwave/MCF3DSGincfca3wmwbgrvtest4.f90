@@ -50,7 +50,7 @@ double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
 
 !DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
-DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa
+DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa,Phiexab1,Phiexab2
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
@@ -113,6 +113,7 @@ ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
 !*********grvwave*********
 ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
+ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
 ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
@@ -138,6 +139,7 @@ DEALLOCATE(Phi)
 
 !********gravwave**********
 DEALLOCATE(Phiexa,Phigrd)
+DEALLOCATE(Phiexab1,phiexab2)
 DEALLOCATE(Phiwv,Phigrdwv)
 DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 !********gravwave**********
@@ -576,7 +578,8 @@ end do
 
 !call collect()
 
-do i=0,-(Ncellx/2-1),-1
+!do i=0,-(Ncellx/2-1),-1
+do i=1,-Ncellx,-1
   call PBini(i)
 enddo
 !write(*,*) Phiexa(1,1,1)

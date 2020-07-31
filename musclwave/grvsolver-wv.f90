@@ -128,7 +128,8 @@ subroutine SELFGRAVWAVE(dt,mode)
            write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiwv(i,j,k,5)),sngl(Phiwv(i,j,k,6)),&
                    sngl(Phiwv(i,j,k,7)),sngl(Phiwv(i,j,k,8)),sngl(Phigrdwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,2)),sngl(Phigrdwv(i,j,k,3)),sngl(Phigrdwv(i,j,k,4)),&
                sngl(Phigrdwv(i,j,k,5)),sngl(Phigrdwv(i,j,k,6)),sngl(Phigrdwv(i,j,k,7)),sngl(Phigrdwv(i,j,k,8)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),&
-               sngl(Phigrd(i,j,k,2)),sngl(Phigrd(i,j,k,3)),sngl(Phigrd(i,j,k,4)),sngl(Phigrd(i,j,k,5)),sngl(Phigrd(i,j,k,6)),sngl(Phigrd(i,j,k,7)),sngl(Phigrd(i,j,k,8))
+               sngl(Phigrd(i,j,k,2)),sngl(Phigrd(i,j,k,3)),sngl(Phigrd(i,j,k,4)),sngl(Phigrd(i,j,k,5)),sngl(Phigrd(i,j,k,6)),sngl(Phigrd(i,j,k,7)),sngl(Phigrd(i,j,k,8)),&
+               sngl(Phiexab1(i,j,k)),sngl(Phiexab2(i,j,k))
           enddo
         end do
      end do
@@ -1632,8 +1633,8 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !Nir = JST + NSPLTy*KST
 !klr = Nir + 1
 
-LLl = dzz*0.5d0 + dzz*dble(pls)
-LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
+LLl = dzz*0.5d0 + dzz*dble(pls*(IST+1))
+LLr = Lbox-dzz*0.5d0 - dzz*dble(pls*(IST+1))
 
 
 
@@ -1652,8 +1653,9 @@ if(klr.le.Ncellx+2) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  zp1 = (x(kz)-0.5d0*dzz)!-LLl
-  zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
+  zp1 = (x(kz)-0.5d0*dzz)-LLl
+  !zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
+  zp2 = (x(kz)-0.5d0*dzz)-LLr
 !  zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
@@ -1661,11 +1663,13 @@ if(klr.le.Ncellx+2) then
   zp2 = dabs(zp2)
   !zp2 = Lbox/dble(NSPLTx) - zp1
   !write(*,*) zp1,x(kz),kz,'write-zp',NRANK,pls
+  !------MIYAMA A.10-----------
+  !======MIYAMA A.8 (2)========
   temp1r = dat1(1,1) - data(1,1,klr) * 0.5d0*zp1 * facG
   temp1i = dat1(2,1) - data(2,1,klr) * 0.5d0*zp1 * facG
   temp2r = dat2(1,1) - data(1,1,klr) * 0.5d0*zp2 * facG
   temp2i = dat2(2,1) - data(2,1,klr) * 0.5d0*zp2 * facG
-
+  !======MIYMA A.8 (2)========
   do m=1,nn2/2+1; do l=1,nn1/2
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
     kap = sqrt(kap)+1.0d-100
@@ -1695,6 +1699,7 @@ if(klr.le.Ncellx+2) then
     dat2(2*l-1,m2) = dat2(2*l-1,m2) + data(2*l-1,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
     dat2(2*l  ,m2) = dat2(2*l  ,m2) + data(2*l  ,m2,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
   end do;end do
+  !------MIYAMA A.10-----------
 
   l=nn1/2+1
   do m2=nn2/2+2,nn2; m=nn2+2-m2
@@ -1769,8 +1774,8 @@ do j=-1,ncy!; n = j+kk
   if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
-  Phiexa(abs(pls),j,k) = dble(data(jb,kbb,1))
-  Phiexa(Ncellx+1-abs(pls),j,k) = dble(data(jb,kbb,2))
+  Phiexab1(abs(pls),j,k) = dble(data(jb,kbb,1))
+  Phiexab2(Ncellx+1-abs(pls),j,k) = dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
