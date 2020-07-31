@@ -1565,7 +1565,7 @@ iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
 !ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
 !     dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
 
-ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:Ncellx+3),speq(Ncellz*NSPLTz,-1:Ncellx+2))
+ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,Ncellx+1),speq(Ncellz*NSPLTz,Ncellx+1))
 ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
      dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
 !allocate(bcsend(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:1,0:NPE-1))
@@ -1586,7 +1586,7 @@ bcl1(:,:,:)=0.d0; bcr2(:,:,:)=0.d0; bcspel1(:,:)=(0.d0,0.d0); bcspel2(:,:)=(0.d0
 nccy = Ncelly; nccz = Ncellz
 do k=1,Ncellz; kz=KST*Ncellz+k
 do j=1,Ncelly; jy=JST*Ncelly+j
-do i=-1,Ncellx+2
+do i=1,Ncellx
   !data(jy,kz,i) = U(i,j,k,1)!-rhomean
   data(jy,kz,i) = U(i,j,k,1)-rhomean
 end do;end do;end do
@@ -1600,7 +1600,7 @@ do nlp2 = 0 , loopbc , 1
 
 CALL MPI_TYPE_VECTOR(Ncellz,Ncelly,Ncelly*NSPLTy,MPI_REAL8,VECU,IERR)
 CALL MPI_TYPE_COMMIT(VECU,IERR)
-do Nlp = 1,NSPLTy*NSPLTz-1
+do Nlp = 1,NSPLTy*NSPLTz-1 ! sent same IST core
 
   isend = NRANK + NSPLTx*Nlp; if(isend.ge.NPE) isend = isend - NPE
   KSs = isend/(NSPLTx*NSPLTy); JSs = isend/NSPLTx-NSPLTy*KSs
@@ -1618,8 +1618,8 @@ do Nlp = 1,NSPLTy*NSPLTz-1
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !***************fordebug*****************
 
-  if(kls.gt.Ncellx+2) then; isend = MPI_PROC_NULL; kls = Ncellx+3; end if
-  if(klr.gt.Ncellx+2) then; irecv = MPI_PROC_NULL; klr = Ncellx+3; end if
+  if(kls.gt.Ncellx) then; isend = MPI_PROC_NULL; kls = Ncellx+1; end if
+  if(klr.gt.Ncellx) then; irecv = MPI_PROC_NULL; klr = Ncellx+1; end if
   CALL MPI_SENDRECV(data(JST*Ncelly+1,KST*Ncellz+1,kls),1,VECU,isend,1, & !send
                     data(JSr*Ncelly+1,KSr*Ncellz+1,klr),1,VECU,irecv,1, MPI_COMM_WORLD,MSTATUS,IERR) !recv
 end do
@@ -1633,21 +1633,21 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !Nir = JST + NSPLTy*KST
 !klr = Nir + 1
 
-LLl = dzz*0.5d0 + dzz*dble(pls*(IST+1))
-LLr = Lbox-dzz*0.5d0 - dzz*dble(pls*(IST+1))
+LLl = dzz*0.5d0 + dzz*dble(pls)   !z'
+LLr = Lbox-dzz*0.5d0 - dzz*dble(pls) !z'
 
 
 
 nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
 
-if(klr.le.Ncellx+2) then
+if(klr.le.Ncellx) then
 
-  call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1)
+  call rlft3(data(1,1,klr),speq(1,klr),nn1,nn2,1) ! deta=\hat{\rho}(z)
 
   kz = klr
   !zp1 = x(kz)-0.5d0*dzz
   !zp2 = Lbox - zp1
-  if((x(kz)-0.5d0*dzz > 0.d0) .and. (klr<1))then
+  if((x(kz)-0.5d0*dzz > 0.d0) .and. (klr<1))then !only use boundary x<0,x>Lbox
      goto 4269
   end if
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
@@ -1674,7 +1674,7 @@ if(klr.le.Ncellx+2) then
     kap = 4.d0*( sin(pi*(l-1)/nn1)**2/dxx**2 + sin(pi*(m-1)/nn2)**2/dyy**2 )
     kap = sqrt(kap)+1.0d-100
     !kap = sqrt(kap)
-    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
+    dat1(2*l-1,m) = dat1(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG       !\hat{\rho}*G(m,n,z)
     dat1(2*l  ,m) = dat1(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp1*kap)/kap *facG
     dat2(2*l-1,m) = dat2(2*l-1,m) + data(2*l-1,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
     dat2(2*l  ,m) = dat2(2*l  ,m) + data(2*l  ,m,klr)* 0.5d0*exp(-zp2*kap)/kap *facG
@@ -1761,6 +1761,8 @@ ncz=Ncellz+2
 !write(fn,'(i3.3)') NRANK/NSPLTx
 !write(lRANK,'(i1.1)') pls+2
 !open(12,file=dir//'bcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
+
+if(pls/Ncellx==IST) then
 do k=-1,ncz!; kk= (ncy+1)*k
 do j=-1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
@@ -1774,14 +1776,15 @@ do j=-1,ncy!; n = j+kk
   if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
-  Phiexab1(abs(pls),j,k) = dble(data(jb,kbb,1))
-  Phiexab2(Ncellx+1-abs(pls),j,k) = dble(data(jb,kbb,2))
+  Phiexab1(abs(pls)+1,j,k) = dble(data(jb,kbb,1))
+  Phiexab2(Ncellx-abs(pls),j,k) = dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
 end do
 !write(*,*) Phiexa(1+abs(pls),1,k),Phiexa(Ncellx-abs(pls),1,k)
 end do
+endif
 !close(12)
 !endif
 

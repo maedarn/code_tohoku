@@ -89,6 +89,8 @@ if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
 if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
 
+!loopbc=NSPLTy*NSPLTz/(ndx-2)-1
+
    !write(*,*) 'OK1',NRANK
    !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
    !write(*,*) 'OK2',NRANK
@@ -579,7 +581,7 @@ end do
 !call collect()
 
 !do i=0,-(Ncellx/2-1),-1
-do i=1,-Ncellx,-1
+do i=0,Ncellx*NSPLTx-1
   call PBini(i)
 enddo
 !write(*,*) Phiexa(1,1,1)
