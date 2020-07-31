@@ -1393,8 +1393,8 @@ if(klr.le.Ncellx+2) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  !zp1 = (x(kz)-0.5d0*dzz)-LLl
-  zp1 = x(kz)-LLl
+  zp1 = (x(kz)-0.5d0*dzz)-LLl
+  !zp1 = x(kz)-LLl
   !zp2 = (x(kz)-0.5d0*dzz)-LLr
   zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
@@ -1656,8 +1656,8 @@ if(klr.le.Ncellx) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  !zp1 = (x(kz)-0.5d0*dzz)-LLl
-  zp1 = x(kz)-LLl
+  zp1 = (x(kz)-0.5d0*dzz)-LLl
+  !zp1 = x(kz)-LLl
   !zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
   !zp2 = -(x(kz)-0.5d0*dzz)+LLr
   zp2 = Lbox - zp1
