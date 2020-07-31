@@ -1657,8 +1657,8 @@ if(klr.le.Ncellx) then
   end if
   zp1 = (x(kz)-0.5d0*dzz)-LLl
   !zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
-  zp2 = (x(kz)-0.5d0*dzz)-LLr
-  !zp2 = Lbox - zp1
+  !zp2 = -(x(kz)-0.5d0*dzz)+LLr
+  zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
   zp1 = dabs(zp1)
