@@ -1254,7 +1254,7 @@ do i=-1,0
    bphigrdxr(j,k,i+Ncellx+2,8)=-bphigrdxr(j,k,i+Ncellx+2,8) &
                     +(-bphir(j-1,k,i+Ncellx+2)+bphir(j+1,k,i+Ncellx+2))*0.5d0/dy1-(-bphir(j,k-1,i+Ncellx+2)+bphir(j,k+1,i+Ncellx+2))*0.5d0/dz1
 
-!write(12) bphigrdxr(j,k,i+Ncellx+2,1)
+!write(12) bphigrdxr(j,k,i+Ncellx+2,1),bphigrdxl(j,k,i,1)
 end do
 end do
 !close(12)
@@ -1373,9 +1373,9 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !Nir = JST + NSPLTy*KST
 !klr = Nir + 1
 
-!LLl = dzz*0.5d0 + dzz*dble(pls)
-!LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
 LLl = dzz*0.5d0 + dzz*dble(pls)
+LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
+!LLl = dzz*0.5d0 + dzz*dble(pls)
 
 
 nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
@@ -1395,8 +1395,9 @@ if(klr.le.Ncellx+2) then
   end if
   zp1 = (x(kz)-0.5d0*dzz)-LLl
   !zp1 = x(kz)-LLl
-  !zp2 = (x(kz)-0.5d0*dzz)-LLr
-  zp2 = Lbox - zp1
+  zp2 = (x(kz)-0.5d0*dzz)-LLr !おそらくtot .ne. Lboxが原因？(PBini との違い)
+  !zp2 = Lbox - zp1
+  !zp2 = Lbox+4.0*dzz - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
   zp1 = dabs(zp1)
