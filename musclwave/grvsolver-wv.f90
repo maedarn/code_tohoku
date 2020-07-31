@@ -1636,7 +1636,7 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !klr = Nir + 1
 
 LLl = dzz*0.5d0 + dzz*dble(pls)   !z'
-LLr = Lbox-dzz*0.5d0 - dzz*dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx))) !z'
+LLr = Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx)))!-dzz*dble(((IST+1)*Ncellx-mod(pls,Ncellx))) !- dzz*dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx))) !z'
 
 
 
@@ -1658,7 +1658,7 @@ if(klr.le.Ncellx) then
   zp1 = (x(kz)-0.5d0*dzz)-LLl
   !zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
   zp2 = (x(kz)-0.5d0*dzz)-LLr
-!  zp2 = Lbox - zp1
+  !zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
   zp1 = dabs(zp1)
@@ -1779,7 +1779,7 @@ do j=-1,ncy!; n = j+kk
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
   Phiexab1(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,1)) !dble(pls)!dble(data(jb,kbb,1))
-  Phiexab2(Ncellx-mod(pls,Ncellx),j,k) =dble(data(jb,kbb,2))! dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2))
+  Phiexab2(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,2)) !dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2)) dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
@@ -1787,6 +1787,30 @@ end do
 !write(*,*) Phiexa(1+abs(pls),1,k),Phiexa(Ncellx-abs(pls),1,k)
 end do
 endif
+
+!if((NSPLTx-1-pls/Ncellx)==IST) then
+!do k=-1,ncz!; kk= (ncy+1)*k
+!do j=-1,ncy!; n = j+kk
+!  jb  = JST*Ncelly + j
+!  kbb = KST*Ncellz + k
+!  if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 2
+!  if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 2
+!  if((j.eq.ncy-1).and.(JST.eq.NSPLTy-1)) jb  = 1
+!  if((k.eq.ncz-1).and.(KST.eq.NSPLTz-1)) kbb = 1
+!  if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+!  if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+!  if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
+!  if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
+
+  !Phiexab1(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,1)) !dble(pls)!dble(data(jb,kbb,1))
+!  Phiexab2(mod(pls,Ncellx)+1,j,k) =dble(data(jb,kbb,2))!Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx))) !dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2)) dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
+  !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
+  !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
+!  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
+!end do
+ !write(*,*) Phiexa(1+abs(pls),1,k),Phiexa(Ncellx-abs(pls),1,k)
+!end do
+!endif
 !close(12)
 !endif
 
