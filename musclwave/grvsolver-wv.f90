@@ -1373,9 +1373,9 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !Nir = JST + NSPLTy*KST
 !klr = Nir + 1
 
+!LLl = dzz*0.5d0 + dzz*dble(pls)
+!LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
 LLl = dzz*0.5d0 + dzz*dble(pls)
-LLr = Lbox-dzz*0.5d0 - dzz*dble(pls)
-
 
 
 nn1 = Ncelly*NSPLTy; nn2 = Ncellz*NSPLTz
@@ -1393,9 +1393,10 @@ if(klr.le.Ncellx+2) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  zp1 = (x(kz)-0.5d0*dzz)-LLl
-  zp2 = (x(kz)-0.5d0*dzz)-LLr
-!  zp2 = Lbox - zp1
+  !zp1 = (x(kz)-0.5d0*dzz)-LLl
+  zp1 = x(kz)-LLl
+  !zp2 = (x(kz)-0.5d0*dzz)-LLr
+  zp2 = Lbox - zp1
   !zp1 = (x(kz) - 2.0d0*dzz )-0.5d0*dzz + dzz*dble(pls)
   !zp2 = Lbox - zp1
   zp1 = dabs(zp1)
@@ -1655,7 +1656,8 @@ if(klr.le.Ncellx) then
   if((x(kz)-0.5d0*dzz < Lbox) .and. (klr>Ncellx))then
      goto 4269
   end if
-  zp1 = (x(kz)-0.5d0*dzz)-LLl
+  !zp1 = (x(kz)-0.5d0*dzz)-LLl
+  zp1 = x(kz)-LLl
   !zp2 = (x(Ncellx+1-kz)-0.5d0*dzz)!-LLr
   !zp2 = -(x(kz)-0.5d0*dzz)+LLr
   zp2 = Lbox - zp1
