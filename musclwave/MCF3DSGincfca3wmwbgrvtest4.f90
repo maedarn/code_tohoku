@@ -581,8 +581,8 @@ end do
 !call collect()
 
 !do i=0,-(Ncellx/2-1),-1
-do i=0,Ncellx*NSPLTx-1
-  call PBini(i)
+do pls=0,Ncellx*NSPLTx-1
+  call PBini(pls)
 enddo
 !write(*,*) Phiexa(1,1,1)
 

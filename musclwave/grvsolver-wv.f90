@@ -1609,10 +1609,12 @@ do Nlp = 1,NSPLTy*NSPLTz-1 ! sent same IST core
 
   Nis = JSs + NSPLTy*KSs
   !kls = Nis + 1 !+ pls
-  kls = Nis - 1 + klrmax
+  kls = Nis + 1 + klrmax
+  !kls = Nis - 1 + klrmax
   Nir = JST + NSPLTy*KST
   !klr = Nir + 1 !+ pls
-  klr = Nir - 1 + klrmax
+  klr = Nir + 1  + klrmax
+  !klr = Nir - 1 + klrmax
 
   !***************fordebug*****************
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -1634,7 +1636,7 @@ dat1(:,:)=0.d0; dat2(:,:)=0.d0; spe1(:)=(0.d0,0.d0); spe2(:)=(0.d0,0.d0)
 !klr = Nir + 1
 
 LLl = dzz*0.5d0 + dzz*dble(pls)   !z'
-LLr = Lbox-dzz*0.5d0 - dzz*dble(pls) !z'
+LLr = Lbox-dzz*0.5d0 - dzz*dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx))) !z'
 
 
 
@@ -1762,7 +1764,7 @@ ncz=Ncellz+2
 !write(lRANK,'(i1.1)') pls+2
 !open(12,file=dir//'bcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
 
-if(pls/Ncellx==IST) then
+if((pls/Ncellx)==IST) then
 do k=-1,ncz!; kk= (ncy+1)*k
 do j=-1,ncy!; n = j+kk
   jb  = JST*Ncelly + j
@@ -1776,8 +1778,8 @@ do j=-1,ncy!; n = j+kk
   if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
-  Phiexab1(abs(pls)+1,j,k) = dble(data(jb,kbb,1))
-  Phiexab2(Ncellx-abs(pls),j,k) = dble(data(jb,kbb,2))
+  Phiexab1(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,1)) !dble(pls)!dble(data(jb,kbb,1))
+  Phiexab2(Ncellx-mod(pls,Ncellx),j,k) =dble(data(jb,kbb,2))! dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
