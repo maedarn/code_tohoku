@@ -2024,5 +2024,5 @@ do ii=1,Ncellz!; i=ISTt*Ncellx+ii
 end do;end do;end do;end do
 rhomean=rhomean/dble(Ncellx*NSPLTx)/dble(Ncelly*NSPLTy)/dble(Ncellz*NSPLTz)
 
-rhomean=0.d0
+!rhomean=0.d0
 END SUBROUTINE collect

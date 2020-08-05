@@ -578,7 +578,7 @@ end do
 end do
 end do
 
-!call collect()
+call collect()
 
 !do i=0,-(Ncellx/2-1),-1
 do pls=0,Ncellx*NSPLTx-1
