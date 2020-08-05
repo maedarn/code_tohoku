@@ -361,9 +361,11 @@ subroutine slvmuscle(dt)
   use comvar
   use slfgrv
   INCLUDE 'mpif.h'
-  double precision :: dt,dtratio=dsqrt(3.0d0)!,rhomean
-  integer :: i=0,n,m,l
+  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+  integer :: i=0,n,m,l,countn
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
+  double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
+                      Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
 
   !rhomean=0.d0
   do l=1,ndz-2
@@ -496,6 +498,81 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
    call BCgrv(110,1,8)
+  
+!  do countn=1,8
+!   do k=1,ndz-2
+!     do j=1,ndy-2
+!       do i=1,ndx-2
+
+!      coeffx=1.d0
+!      coeffy=1.d0
+!      coeffz=1.d0
+!      Phiwvdffxpyp=Phiwv(i+1,j+1,k,countn)
+!      Phiwvdffxmyp=Phiwv(i-1,j+1,k,countn)
+!      Phiwvdffxpym=Phiwv(i+1,j-1,k,countn)
+!      Phiwvdffxmym=Phiwv(i-1,j-1,k,countn)
+!      Phiwvdffypzp=Phiwv(i,j+1,k+1,countn)
+!      Phiwvdffymzp=Phiwv(i,j-1,k+1,countn)
+!      Phiwvdffypzm=Phiwv(i,j+1,k-1,countn)
+!      Phiwvdffymzm=Phiwv(i,j-1,k-1,countn)
+!      Phiwvdffzpxp=Phiwv(i+1,j,k+1,countn)
+!      Phiwvdffzmxp=Phiwv(i+1,j,k-1,countn)
+!      Phiwvdffzpxm=Phiwv(i-1,j,k+1,countn)
+!      Phiwvdffzmxm=Phiwv(i-1,j,k-1,countn)
+!      if(i==1)then
+!       coeffx=2.d0
+!       Phiwvdffxmyp=Phiwv(i,j+1,k,countn)
+!       Phiwvdffxmym=Phiwv(i,j-1,k,countn)
+!       Phiwvdffzpxm=Phiwv(i,j,k+1,countn)
+!       Phiwvdffzmxm=Phiwv(i,j,k-1,countn)
+!      endif
+!      if(i==ndx-2)then
+!       coeffx=2.d0
+!       Phiwvdffxpyp=Phiwv(i,j+1,k,countn)
+!       Phiwvdffxpym=Phiwv(i,j-1,k,countn)
+!       Phiwvdffzpxp=Phiwv(i,j,k+1,countn)
+!       Phiwvdffzmxp=Phiwv(i,j,k-1,countn)
+!      endif
+!       if(j==1)then
+!        coeffy=2.d0
+!        Phiwvdffxpym=Phiwv(i+1,j,k,countn)
+!        Phiwvdffxmym=Phiwv(i-1,j,k,countn)
+!        Phiwvdffymzp=Phiwv(i,j,k+1,countn)
+!        Phiwvdffymzm=Phiwv(i,j,k-1,countn)
+!       endif
+!       if(j==ndy-2)then
+!        coeffy=2.d0
+!        Phiwvdffxpyp=Phiwv(i+1,j,k,countn)
+!        Phiwvdffxmyp=Phiwv(i-1,j,k,countn)
+!        Phiwvdffypzp=Phiwv(i,j,k+1,countn)
+!        Phiwvdffypzm=Phiwv(i,j,k-1,countn)
+!       endif
+!       if(k==1)then
+!        coeffz=2.d0
+!        Phiwvdffypzm=Phiwv(i,j+1,k,countn)
+!        Phiwvdffymzm=Phiwv(i,j-1,k,countn)
+!        Phiwvdffzmxp=Phiwv(i+1,j,k,countn)
+!        Phiwvdffzmxm=Phiwv(i-1,j,k,countn)
+!       endif
+!       if(k==ndz-2)then
+!        coeffz=2.d0
+!        Phiwvdffypzp=Phiwv(i,j+1,k,countn)
+!        Phiwvdffymzp=Phiwv(i,j-1,k,countn)
+!        Phiwvdffzpxp=Phiwv(i+1,j,k,countn)
+!        Phiwvdffzpxm=Phiwv(i-1,j,k,countn)
+!       endif
+
+       
+!       Phigrdwv(i,j,k,countn) = Phigrdwv(i,j,k,countn)-cg*G4pi*rho(i,j,k)*dt &
+!       -0.5d0*dt*cg*(Phiwvdffxpyp-Phiwvdffxpym-Phiwvdffxmyp+Phiwvdffxmym)/dx1/dy1 &
+!       -0.5d0*dt*cg*(Phiwvdffypzp-Phiwvdffypzm-Phiwvdffymzp+Phiwvdffymzm)/dy1/dz1 &
+!       -0.5d0*dt*cg*(Phiwvdffzpxp-Phiwvdffzpxm-Phiwvdffzmxp+Phiwvdffzmxm)/dz1/dx1
+!       enddo
+!     enddo
+!   enddo
+!  enddo
+  
+
    do k=1,ndz-2
      do j=1,ndy-2
        do i=1,ndx-2
