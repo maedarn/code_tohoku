@@ -391,6 +391,7 @@ subroutine slvmuscle(dt)
   !****************slv-wv****************
   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   iwx=1;iwy=0;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -399,8 +400,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
@@ -409,8 +411,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -419,7 +422,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
         do i=1,ndx-2
@@ -434,9 +437,10 @@ subroutine slvmuscle(dt)
         enddo
      enddo
    enddo
-   iwx=1;iwy=1;iwz=1
-   call BCgrv(100,1,8)
+   !iwx=1;iwy=1;iwz=1
+   !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -445,8 +449,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
@@ -455,8 +460,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -465,12 +471,13 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
 
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
    iwx=1;iwy=0;iwz=0
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
@@ -479,8 +486,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
@@ -489,8 +497,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
    iwx=0;iwy=0;iwz=1
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
@@ -499,7 +508,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
   
 !  do countn=1,8
 !   do k=1,ndz-2
@@ -574,7 +583,9 @@ subroutine slvmuscle(dt)
 !   enddo
 !  enddo
   
-   call collectPhi()
+   !call collectPhi()
+   iwx=1;iwy=1;iwz=1
+   call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
        do i=1,ndx-2
@@ -613,8 +624,8 @@ subroutine slvmuscle(dt)
        enddo
      enddo
    enddo
-   iwx=1;iwy=1;iwz=1
-   call BCgrv(110,1,8)
+   !iwx=1;iwy=1;iwz=1
+   !call BCgrv(110,1,8)
 
 !do k=1+1,ndz-2-1
 !  do j=1+1,ndy-2-1
@@ -882,6 +893,7 @@ subroutine slvmuscle(dt)
   !enddo
 
    iwx=0;iwy=0;iwz=1
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
@@ -890,8 +902,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
@@ -900,8 +913,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
    iwx=1;iwy=0;iwz=0
+   call BCgrv(110,1,8)
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
@@ -910,12 +924,13 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
-   call BCgrv(110,1,8)
+   !call BCgrv(110,1,8)
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
 
   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   iwx=1;iwy=0;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -924,8 +939,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
@@ -934,8 +950,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -944,7 +961,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
         do i=1,ndx-2
@@ -959,9 +976,10 @@ subroutine slvmuscle(dt)
         enddo
      enddo
    enddo
-   iwx=1;iwy=1;iwz=1
-   call BCgrv(100,1,8)
+   !iwx=1;iwy=1;iwz=1
+   !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -970,8 +988,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
@@ -980,8 +999,9 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
+   call BCgrv(100,1,8)
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
@@ -990,7 +1010,7 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
    call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
    call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   call BCgrv(100,1,8)
+   !call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   !****************slv-wv****************
 
@@ -1847,8 +1867,10 @@ ncz=Ncellz+2
 !write(fn,'(i3.3)') NRANK/NSPLTx
 !write(lRANK,'(i1.1)') pls+2
 !open(12,file=dir//'bcsave'//lRANK//fn//'.DAT',FORM='UNFORMATTED')
-do k=-1,ncz!; kk= (ncy+1)*k
-do j=-1,ncy!; n = j+kk
+!do k=-1,ncz!; kk= (ncy+1)*k
+!do j=-1,ncy!; n = j+kk
+do k=-1-2,ncz+2!; kk= (ncy+1)*k
+do j=-1-2,ncy+2
   jb  = JST*Ncelly + j
   kbb = KST*Ncellz + k
   if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 2
@@ -1859,6 +1881,15 @@ do j=-1,ncy!; n = j+kk
   if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
   if((j.eq.-1  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-1
   if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
+
+  if((j.eq.ncy+2).and.(JST.eq.NSPLTy-1)) jb  = 4
+  if((k.eq.ncz+2).and.(KST.eq.NSPLTz-1)) kbb = 4
+  if((j.eq.ncy+1).and.(JST.eq.NSPLTy-1)) jb  = 3
+  if((k.eq.ncz+1).and.(KST.eq.NSPLTz-1)) kbb = 3
+  if((j.eq.-2  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-2
+  if((k.eq.-2  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-2
+  if((j.eq.-3  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy-3
+  if((k.eq.-3  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-3
 
   bphil(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   bphir(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
