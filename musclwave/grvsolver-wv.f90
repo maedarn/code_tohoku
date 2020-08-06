@@ -434,6 +434,7 @@ subroutine slvmuscle(dt)
         enddo
      enddo
    enddo
+   iwx=1;iwy=1;iwz=1
    call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
@@ -612,6 +613,7 @@ subroutine slvmuscle(dt)
        enddo
      enddo
    enddo
+   iwx=1;iwy=1;iwz=1
    call BCgrv(110,1,8)
 
 !do k=1+1,ndz-2-1
@@ -890,7 +892,6 @@ subroutine slvmuscle(dt)
    call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
    call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
-   iwx=0;iwy=1;iwz=0
    call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
    call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
    call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
@@ -958,6 +959,7 @@ subroutine slvmuscle(dt)
         enddo
      enddo
    enddo
+   iwx=1;iwy=1;iwz=1
    call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
