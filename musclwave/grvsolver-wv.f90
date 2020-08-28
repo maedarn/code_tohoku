@@ -1041,49 +1041,49 @@ if(mode==100) then
   do idm=is,ie
   CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
   Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF((IST.eq.0).and.(mod(idm,2)==1)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
-     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-     END DO;END DO;END DO
-  END IF
-  IF((IST.eq.0).and.(mod(idm,2)==0)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
-     Phiwv(IX,JY,KZ,idm)=Phiwv(IX+1,JY,KZ,idm)
-     END DO;END DO;END DO
-  END IF
-  !IF(IST.eq.0) THEN
+  !IF((IST.eq.0).and.(mod(idm,2)==1)) THEN
   !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
   !   Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
      !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
   !   END DO;END DO;END DO
   !END IF
+  !IF((IST.eq.0).and.(mod(idm,2)==0)) THEN
+  !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
+  !   Phiwv(IX,JY,KZ,idm)=Phiwv(IX+1,JY,KZ,idm)
+  !   END DO;END DO;END DO
+  !END IF
+  IF(IST.eq.0) THEN
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
+     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
+     Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
+     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+     END DO;END DO;END DO
+  END IF
   enddo
   do idm=is,ie
   CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
   Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
-  IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==0)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
-     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-     END DO;END DO;END DO
-  END IF
-  IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==1)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX =Ncellx+N_ol, Ncellx+1, -1
-     Phiwv(IX,JY,KZ,idm)=Phiwv(IX-1,JY,KZ,idm)
-     END DO;END DO;END DO
-  END IF
-  !IF(IST.eq.NSPLTx-1) THEN
+  !IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==0)) THEN
   !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
   !   Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
      !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
   !   END DO;END DO;END DO
   !END IF
+  !IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==1)) THEN
+  !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX =Ncellx+N_ol, Ncellx+1, -1
+  !   Phiwv(IX,JY,KZ,idm)=Phiwv(IX-1,JY,KZ,idm)
+  !   END DO;END DO;END DO
+  !END IF
+  IF(IST.eq.NSPLTx-1) THEN
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
+     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
+     Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
+     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+     END DO;END DO;END DO
+  END IF
   enddo
 CALL MPI_TYPE_FREE(VECU,IERR)
 LEFT = LEFTt; RIGT = RIGTt
@@ -1166,50 +1166,50 @@ if(mode==110) then
   Phigrdwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
 
-  IF((IST.eq.0).and.(mod(idm,2)==0)) THEN
+  !IF((IST.eq.0).and.(mod(idm,2)==0)) THEN
+  !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
+     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
+  !   Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+     !Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
+  !   END DO;END DO;END DO
+  !END IF
+  !IF((IST.eq.0).and.(mod(idm,2)==1)) THEN
+  !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
+  !   Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX+1,JY,KZ,idm)
+  !   END DO;END DO;END DO
+  !END IF
+
+  IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
      Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
      !Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
      END DO;END DO;END DO
   END IF
-  IF((IST.eq.0).and.(mod(idm,2)==1)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
-     Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX+1,JY,KZ,idm)
-     END DO;END DO;END DO
-  END IF
-
-!  IF(IST.eq.0) THEN
-!     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-!     Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
-     !Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
-!     END DO;END DO;END DO
-!  END IF
   enddo
   do idm=is,ie
   CALL MPI_SENDRECV(Phigrdwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
   Phigrdwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
-  IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==1)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
-     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
-     !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
-     END DO;END DO;END DO
-  END IF
-  IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==0)) THEN
-     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX =Ncellx+N_ol, Ncellx+1, -1
-     Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX-1,JY,KZ,idm)
-     END DO;END DO;END DO
-  END IF
-  !IF(IST.eq.NSPLTx-1) THEN
+  !IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==1)) THEN
   !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
   !   Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
      !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
   !   END DO;END DO;END DO
   !END IF
+  !IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==0)) THEN
+  !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX =Ncellx+N_ol, Ncellx+1, -1
+     Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX-1,JY,KZ,idm)
+  !   END DO;END DO;END DO
+  !END IF
+  IF(IST.eq.NSPLTx-1) THEN
+     DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
+     !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
+     Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
+     !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+     END DO;END DO;END DO
+  END IF
   enddo
 
 CALL MPI_TYPE_FREE(VECU,IERR)
