@@ -54,6 +54,7 @@ subroutine SELFGRAVWAVE(dt,mode)
      iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(2,1)
      !---debug---
      !call  SELFGRAVWAVE(0.0d0,4)
+     !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
      !write(*,*) '------pb1-------' ,Nrank
 
      !****calcurate bc****
@@ -1200,7 +1201,7 @@ if(mode==110) then
   !END IF
   !IF((IST.eq.NSPLTx-1).and.(mod(idm,2)==0)) THEN
   !   DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX =Ncellx+N_ol, Ncellx+1, -1
-     Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX-1,JY,KZ,idm)
+  !   Phigrdwv(IX,JY,KZ,idm)= Phigrdwv(IX-1,JY,KZ,idm)
   !   END DO;END DO;END DO
   !END IF
   IF(IST.eq.NSPLTx-1) THEN

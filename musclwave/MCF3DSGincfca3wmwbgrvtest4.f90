@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -104,6 +104,7 @@ TOP  = NRANK + NSPLTx       ; if(JST.eq.NSPLTy-1) TOP  = NRANK - NSPLTx*(NSPLTy-
 DOWN = NRANK - NSPLTx*NSPLTy; if(KST.eq.0       ) DOWN = NRANK + NSPLTx*NSPLTy*(NSPLTz-1)
 UP   = NRANK + NSPLTx*NSPLTy; if(KST.eq.NSPLTz-1) UP   = NRANK - NSPLTx*NSPLTy*(NSPLTz-1)
 !----------------------------------------------------------------------!
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !write(*,*) 'OK2'
 ALLOCATE( U(-1:ndx,-1:ndy,-1:ndz,8) )
 ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,-1:ndz),ndHe(-1:ndx,-1:ndy,-1:ndz), &
@@ -193,6 +194,8 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv
 close(8)
 
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'OK3'
 !WNM ntot = 1.024
 !goto 10000
  pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
@@ -459,6 +462,8 @@ do k=-1,Ncellz+2
    end do
 end do
 
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'OK4'
 !do k=-1,Ncellz+2
 !   do j=-1,Ncelly+2
 !      do pls = 0,2,1
@@ -790,6 +795,8 @@ if(ifgrv.eq.2) then
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
 end if
  !write(*,*) 'posgrv1'
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'OK6'
 END SUBROUTINE INITIA
 
 
@@ -887,7 +894,7 @@ do in10 = 1, maxstp
     !stt= dt_mpi(NRANK)
 
     !---------------debug-------------------
-    write(*,*) '-------------4-----------',NRANK,in20,in10
+    write(*,*) '---------4-----------',NRANK,in20,in10
     !---------------debug-------------------
 
 
@@ -1030,7 +1037,8 @@ goto 342
     !---------------debug-------------------
     !write(*,*) '-------------10-----------',NRANK
     !---------------debug-------------------
-
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'OK7'
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
     !call SOURCE(0.5d0*dt)
@@ -1051,6 +1059,8 @@ goto 342
 
     end if
 
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'OK8'
     !*********************************!収束判定
     !call SELFGRAVWAVE(0.0d0,8) !収束判定
     !if(shusoku1 > 1.0d0) then
