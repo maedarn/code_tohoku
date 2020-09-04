@@ -32,7 +32,7 @@ END MODULE comvar
 !======================================================================*
 
 PROGRAM MAIN
-
+!coment
 call INITIA
 call EVOLVE
 
