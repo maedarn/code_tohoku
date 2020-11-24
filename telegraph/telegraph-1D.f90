@@ -62,9 +62,9 @@ program muscl1D
      enddo
      !call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
-     !call BC(155)
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
      call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
@@ -92,8 +92,8 @@ program muscl1D
      enddo
 
      !call osr(dt*1.d0,1,0)
-     call BC(1)
-     !call BC(156)
+     !call BC(1)
+     call BC(156)
      !call BC(55)
      call muslcslv1D(Phicgp,Phi1step,dt,1)
      call muslcslv1D(Phicgm,Phi2step,dt,2)
@@ -123,9 +123,9 @@ program muscl1D
         +(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
      enddo
 
-     call BC(4)
-     call BC(3)
-     !call BC(155)
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
      !call muslcslv1D(Phi1step,rho,dt,1)
@@ -137,13 +137,13 @@ program muscl1D
 
      !write(*,*)'end'
   end do
-  call BC(3)
-  call BC(4)
-  call BC(1)
+  !call BC(3)
+  !call BC(4)
+  !call BC(1)
   !call BC(5)
   !call BC(55)
-  !call BC(155)
-  !call BC(156)
+  call BC(155)
+  call BC(156)
   call saveu(sv)
 end program muscl1D
 
@@ -182,12 +182,12 @@ subroutine INITIAL()
   Phicgp(:)=0.0d0
   Phicgm(:)=0.0d0
 
-  amp=1.d0
-  k=3.1415926535d0*2.d0/Lbox * 5.d0
-  do i=-1,ndx
-  Phicgp(i)=amp*dsin(k*x(i))
-  Phicgm(i)=amp*dsin(k*x(i))
-  enddo
+  !amp=1.d0
+  !k=3.1415926535d0*2.d0/Lbox * 5.d0
+  !do i=-1,ndx
+  !Phicgp(i)=amp*dsin(k*x(i))
+  !Phicgm(i)=amp*dsin(k*x(i))
+  !enddo
   !---------Phi-------------
 
   !-------Phi1step-----------
@@ -195,10 +195,10 @@ subroutine INITIAL()
   Phi2step(:)=0.0d0
   !Phi1step(:)=+G4pi*meanrho*cg*Lbox
   !Phi2step(:)=0.0d0
-  do i=-1,ndx
-  Phi1step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*cg/k*dcos(k*x(i)) - amp*cg*k*dcos(k*x(i))) !b+2T(db/dt-c*db/cx)
-  Phi2step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*cg/k*dcos(k*x(i)) + amp*cg*k*dcos(k*x(i)))
-  enddo
+  !do i=-1,ndx
+  !Phi1step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*cg/k*dcos(k*x(i)) - amp*cg*k*dcos(k*x(i))) !b+2T(db/dt-c*db/cx)
+  !Phi2step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*cg/k*dcos(k*x(i)) + amp*cg*k*dcos(k*x(i)))
+  !enddo
   !-------Phi1step-----------
 
   !-------Phidt-----------
@@ -235,7 +235,7 @@ subroutine INITIAL()
   !Phi1step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
   !Phi2step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
 
-  rho(:)=0.d0
+  !rho(:)=0.d0
   !---------rho-------------
 
 
