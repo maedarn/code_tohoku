@@ -1,9 +1,15 @@
+module comvar
+implicit none
+double precision :: cg
+end module comvar
+
 program telegraphexa
+use comvar
 implicit none
 integer, parameter :: ndx=130
 integer :: i,j,loop,n,nloop
 double precision, dimension(-1:ndx) :: Phiexa,x,Phiadv,Phicgp,Phicgm
-double precision :: f,omega,t=0.d0,cg,Tdiff,xpc,xmc,tmx,bessi0,bessi1,kappa,alxp,alxm
+double precision :: f,omega,t=0.d0,Tdiff,xpc,xmc,tmx,bessi0,bessi1,kappa,alxp,alxm
 double precision :: Lbox,dx,dalph,int0=0.d0,int1=0.d0,alph,elm,amp,inf0,inf1,k,dt,coeff=0.5d0,lag
 double precision :: intcgp0,intcgp1,intcgm0,intcgm1
 character(62) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/exa/'
@@ -21,8 +27,8 @@ elm=1.d-8
 amp=1.d0
 k=3.1415926535d0*2.d0/Lbox * 5.d0
 kappa=0.5d0/Tdiff
-nloop=2000
-lag=20
+nloop=800
+lag=4
 !dt=cg*Lbox/dble(100)
 !****************
 
@@ -243,8 +249,10 @@ END FUNCTION inf0
 
 
 FUNCTION inf1(x,k,amp)
+use comvar
 double precision inf1,x
 double precision k,amp
 
-inf1=amp*dcos(k*x)
+!inf1=amp*dcos(k*x)
+inf1=amp*cg/k*dcos(k*x)
 END FUNCTION inf1
