@@ -2,7 +2,7 @@ module comvar
   implicit none
   integer, parameter :: ndx=130,laststep=800,ist=1,ien=2,svnum=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
-  DOUBLE PRECISION :: cg = 0.5d0 , dx, Tdiff=1.0d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 0.5d0 , dx, Tdiff=2.0d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d0 , h=0.2d0 , hcen=0.5d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho!,  kappa=1.0d0/3.0d0
@@ -581,7 +581,7 @@ subroutine BC(mode)
     end if
 
    if(mode==155) then
-      Phi1step(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      Phi1step(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1) ! b=cg/kappa * da/dx + a
       Phi1step(0) =+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
       Phi1step(ndx)  = +cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
       Phi1step(ndx-1)= +cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
@@ -589,9 +589,9 @@ subroutine BC(mode)
       !Phi1step(0) =-cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
       !Phi1step(ndx)  = -cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
       !Phi1step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
-      !write(*,*) -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx), -cg*2.d0*Tdiff*Phigrd(ndx), Phiexa(ndx), Phigrd(ndx)
+      write(*,*) -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx), -cg*2.d0*Tdiff*Phigrd(ndx), Phiexa(ndx), Phigrd(ndx)
 
-      Phi2step(-1)=-cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      Phi2step(-1)=-cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1) ! b=-cg/kappa * db/dx + b
       Phi2step(0) =-cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
       Phi2step(ndx)  = -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
       Phi2step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
