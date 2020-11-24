@@ -1,19 +1,21 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,laststep=520000,ist=1,ien=2,svnum=1000 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=130,laststep=2000,ist=1,ien=2,svnum=20 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
-  DOUBLE PRECISION :: cg = 1.0d0 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
+  DOUBLE PRECISION :: cg = 0.5d0 , dx, Tdiff=1.0d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  double precision :: Lbox=1.0d0 , h=0.2d0 , hcen=0.5d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
+  double precision :: osromega=0.001d0*3.1415926535d0
+  character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/simu/'
 end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=514 !パラメータ属性必要
-  DOUBLE PRECISION , dimension(-1:ndx2) :: x , Phicgm ,rho, Phi1step , Phi2step ,Phicgp
-  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa,
+  integer, parameter :: ndx2=130 !パラメータ属性必要
+  DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phicgm,rho,Phi1step,Phi2step,Phicgp
+  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa
 end module grvvar
 
 program muscl1D
@@ -22,62 +24,122 @@ program muscl1D
   use grvvar
   implicit none
   DOUBLE PRECISION :: dt=0.0d0
-  integer :: i,sv=0,iws,ws=2
+  integer :: i,sv=0,iws,ws=2,ii
 
 
   call INITIAL()
   call BC(1)
   !call muslcslv1D(Phi,Phi1step,dt,13)
+  call saveu(sv)
 
   do i=1,laststep
+     if(mod(i,svnum)==0) then
+        call saveu(sv)
+     end if
+
      call time(dt)
-     write(*,*) i ,'step'
 
-     call split
+     !call BC(4)
+     !call BC(3)
+     !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
 
-     call BC(4)
-     call BC(3)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
-!     call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
+     !call osr(dt*0.5d0,2,1)
+     !call BC(5)
+     do ii=1,ndx-2
+        !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
+        !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
+        Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     !write(*,*) dexp(-0.5d0/Tdiff * dt*0.5d0),-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii),1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0)
+     enddo
+     do ii=1,ndx-2
+        !Phi2step(ii) = dt*0.5d0*(Phicgm(ii)-Phi2step(ii))*0.5d0/Tdiff &
+        !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi2step(ii) !dt*-cg^2*2T*4piG
+        Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+     !call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
+     !call osr(dt*0.5d0,2,0)
+     !call BC(5)
      call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-!     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
      !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
 
-     call BC(4)
-     call BC(3)
-     call BC(1)
+ 
+     !call BC(4)
+     !call BC(3)
+     !call BC(1)
+     !call BC(55)
      !Phidt(:)=Phi(:)
 !     call muslcslv1D(Phicgp,Phi2step,dt,4)
-     call muslcslv1D(Phicgm,Phi1step,dt,4)
-     call BC(1)
+     !call muslcslv1D(Phicgm,Phi1step,dt,4)
+     !call osr(dt*1.d0,1,1)
+     do ii=1,ndx-2
+     !Phicgp(ii) = dt*(-Phicgp(ii)+Phi1step(ii))*0.5d0/Tdiff +Phicgp(ii)
+     Phicgp(ii) = Phicgp(ii)*dexp(-0.5d0/Tdiff * dt) &
+     + Phi1step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
+     enddo
+     do ii=1,ndx-2
+     !Phicgm(ii) = dt*(-Phicgm(ii)+Phi2step(ii))*0.5d0/Tdiff +Phicgm(ii)
+     Phicgm(ii) = Phicgm(ii)*dexp(-0.5d0/Tdiff * dt) &
+     + Phi2step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
+     enddo
+
+     !call osr(dt*1.d0,1,0)
+     !call BC(1)
+     call BC(156)
+     !call BC(55)
      call muslcslv1D(Phicgp,Phi1step,dt,1)
-!     call muslcslv1D(Phicgm,Phi2step,dt,2)
+     call muslcslv1D(Phicgm,Phi2step,dt,2)
      !call BC(1)
 
-     call BC(4)
-     call BC(3)
+     !call BC(4)
+     !call BC(3)
+     !call osr(dt*0.5d0,2,1)
+     !call BC(5)
      !call muslcslv1D(Phi1step,rho,dt,3)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+     !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
 !     call muslcslv1D(Phi2step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
+
+     
+     do ii=1,ndx-2
+        !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
+        !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
+        Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+     do ii=1,ndx-2
+        !Phi2step(ii) = dt*0.5d0*(Phicgm(ii)-Phi2step(ii))*0.5d0/Tdiff &
+        !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi2step(ii) !dt*-cg^2*2T*4piG
+        Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
+     !call osr(dt*0.5d0,2,0)
+     !call BC(5)
      !call muslcslv1D(Phi1step,rho,dt,1)
      call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-!     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
      !call BC(3)
      !call BC(4)
      !call BC(1)
 
-     if(mod(i,svnum)==1) then
-        call saveu(sv)
-     end if
+     !write(*,*)'end'
   end do
   call BC(3)
   call BC(4)
   call BC(1)
+  !call BC(5)
+  !call BC(55)
+  !call BC(155)
+  !call BC(156)
   call saveu(sv)
 end program muscl1D
 
@@ -97,7 +159,7 @@ subroutine INITIAL()
   use comvar
   use grvvar
   integer :: i
-  double precision :: amp,pi=3.1415926535d0,haba
+  double precision :: amp,pi=3.1415926535d0,haba,k,meanphi
 
   dinit1 = 2.0d0/G4pi/90.d0
 
@@ -115,6 +177,13 @@ subroutine INITIAL()
   !---------Phi-------------
   Phicgp(:)=0.0d0
   Phicgm(:)=0.0d0
+
+  !amp=1.d0
+  !k=3.1415926535d0*2.d0/Lbox * 5.d0
+  !do i=-1,ndx
+  !Phicgp(i)=amp*dsin(k*x(i))
+  !Phicgm(i)=amp*dsin(k*x(i))
+  !enddo
   !---------Phi-------------
 
   !-------Phi1step-----------
@@ -122,6 +191,10 @@ subroutine INITIAL()
   Phi2step(:)=0.0d0
   !Phi1step(:)=+G4pi*meanrho*cg*Lbox
   !Phi2step(:)=0.0d0
+  !do i=-1,ndx
+  !Phi1step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*dcos(k*x(i)) - cg*k*dcos(k*x(i))) !b+2T(db/dt-c*db/cx)
+  !Phi2step(i)=amp*dsin(k*x(i))+2.d0*Tdiff*(amp*dcos(k*x(i)) + cg*k*dcos(k*x(i)))
+  !enddo
   !-------Phi1step-----------
 
   !-------Phidt-----------
@@ -150,31 +223,44 @@ subroutine INITIAL()
   meanrho=meanrho/dble(ndx-2)
 
   do i = -1,ndx
-     rho(i)=rho(i)-meanrho
+     rho(i)=rho(i)!-meanrho
   end do
+  
 
 
-  Phi1step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
-  Phi2step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
+  !Phi1step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
+  !Phi2step(:)=0.d0 !+G4pi*meanrho*cg*Lbox
+
+  !rho(:)=0.d0
   !---------rho-------------
 
 
 
   !--------Phiexa-----------
   !goto 200
-  open(142,file='/Users/maeda/Desktop/Dropbox/kaiseki-desktpo/testmuscle/phiexact.DAT')
-  open(143,file='/Users/maeda/Desktop/Dropbox/kaiseki-desktpo/testmuscle/INIden.DAT')
-  open(144,file='/Users/maeda/Desktop/Dropbox/kaiseki-desktpo/testmuscle/phigrd.DAT')
+  open(142,file=dir//'phiexact.DAT')
+  open(143,file=dir//'INIden.DAT')
+  open(144,file=dir//'phigrd.DAT')
+  meanphi=0.d0
   do i= -1,ndx
      if( dabs(x(i) - hcen) .le. h ) then
         Phiexa(i) = G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2
+        !Phiexa(i) = G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2 - G4pi * dinit1 * (x(i) - hcen )
         write(142,*) sngl(x(i)) ,  sngl(G4pi/2.0d0 * dinit1 * (x(i) - hcen )**2)
      else
         Phiexa(i) = G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
+        !Phiexa(i) = G4pi * dinit1 * h * x(i)  - G4pi/2.0d0 * dinit1 * h**2 - G4pi * dinit1 * h * hcen
+        !Phiexa(i) = G4pi * dinit1 * (h - hcen) * x(i)  + G4pi/2.0d0 * dinit1 * (-h**2+hcen**2)
         write(142,*) sngl(x(i)) , sngl(G4pi * dinit1 * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2)
      end if
      write(143,*) sngl(rho(i))
+     meanphi=meanphi+Phiexa(i)
   end do
+
+  !do i= -1,ndx
+  !   Phiexa(i)=Phiexa(i)-meanphi
+  !   rho(i)=rho(i)-meanrho
+  !enddo
 
 
   do i=0,ndx-1
@@ -211,19 +297,25 @@ subroutine INITIAL()
 
 
   !---------wave--------
+!  goto 201
+!  do i = -1, ndx
+!     amp = 1.d-3
+!     !Phi(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
+!     Phi1step(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
+!     Phi2step(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
+!     Phicgp(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
+!     Phicgm(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
+!  end do
+
   goto 201
-  !do i = -1, ndx
-  !   amp = 1.d-3
-  !   Phi(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
-  !   Phi1step(i) =  amp*dsin(2.d0*pi*x(i)/Lbox)
-  !end do
-
-
   do i = -1, ndx
      amp = 1.d-3
      haba=10.0d0
      !Phi(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
      Phi1step(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     Phi2step(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     Phicgp(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
+     Phicgm(i) =  amp*dexp(-(x(i) - 0.5d0*Lbox)**2 /(2.0d0 * haba**2))
   end do
   201 continue
   !---------wave--------
@@ -255,7 +347,45 @@ subroutine INITIAL()
 !  Phi2step(:)= Phigrd(-1)
   !-------Phi1step-----------
   !--------const------------
+
+write(*,*)'INITIAL'
 end subroutine INITIAL
+
+subroutine osr(dt,mode,tmode)
+use comvar
+use grvvar
+double precision :: dt,t1=0.d0,t2=0.d0,amp1=1.d0
+integer mode,tmode
+
+if(mode==1)then
+if(tmode==1)then
+t1=dt+t1
+!write(*,*)'aa',t1,dt
+endif
+
+Phicgp((ndx-1)/2)=amp1*dsin(osromega*t1)
+Phicgm((ndx-1)/2)=amp1*dsin(osromega*t1)
+!Phicgp(ndx/2)=amp1*dsin(osromega*t1)
+!Phicgm(ndx/2)=amp1*dsin(osromega*t1)
+!write(*,*)Phicgp((ndx-1)/2),Phi1step((ndx-1)/2)
+!write(*,*)'aa'
+endif
+
+if(mode==2) then
+if(tmode==1)then
+t2=dt+t2
+!write(*,*)'bb',t2,dt
+endif
+
+Phi1step((ndx-1)/2)=2.d0*Tdiff*(amp1*osromega*dcos(osromega*t2)- cg*0.5d0*(Phicgp(ndx/2+1)-Phicgp(ndx/2-1))/dx &
+                +0.5d0/Tdiff*dsin(osromega*t2))
+Phi2step((ndx-1)/2)=2.d0*Tdiff*(amp1*osromega*dcos(osromega*t2)+ cg*0.5d0*(Phicgm(ndx/2+1)-Phicgm(ndx/2-1))/dx &
+                +0.5d0/Tdiff*dsin(osromega*t2))
+!write(*,*)'bb'
+endif
+write(*,*)'osr',Phicgp((ndx-1)/2),Phi1step((ndx-1)/2),t1,t2
+end subroutine osr
+
 
 
 
@@ -416,18 +546,122 @@ subroutine BC(mode)
 
   if(mode==5) then
      !--------free--------------
-     goto 112
+!     goto 112
      !-------Phi1step-----------
-     Phi1step(1)= Phi1step(2)
-     Phi1step(0)= Phi1step(1)
+!     Phi1step(1)= Phi1step(2)
      Phi1step(-1)=Phi1step(0)
-     Phi1step(ndx-2)= Phi1step(ndx-3)
-     Phi1step(ndx-1)= Phi1step(ndx-2)
+     Phi1step(0)= Phi1step(1)
+!     Phi1step(ndx-2)= Phi1step(ndx-3)
      Phi1step(ndx)= Phi1step(ndx-1)
+     Phi1step(ndx-1)= Phi1step(ndx-2)
+
+     Phi2step(-1)=Phi2step(0)
+     Phi2step(0) =Phi2step(1)
+     Phi2step(ndx)  = Phi2step(ndx-1)
+     Phi2step(ndx-1)= Phi2step(ndx-2)
+     
      !-------Phi1step-----------
-112  continue
+!112  continue
      !--------free--------------
   end if
+  if(mode==55) then
+       Phicgp(-1)=Phicgp(0)
+       Phicgp(0) =Phicgp(1)
+       Phicgp(ndx)  = Phicgp(ndx-1)
+       Phicgp(ndx-1)= Phicgp(ndx-2)
+
+       Phicgm(-1)=Phicgm(0)
+       Phicgm(0) =Phicgm(1)
+       Phicgm(ndx)  = Phicgm(ndx-1)
+       Phicgm(ndx-1)= Phicgm(ndx-2)
+    end if
+
+   if(mode==155) then
+      !Phi1step(-1)=-cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      !Phi1step(0) =-cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+      !Phi1step(ndx)  = -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+      !Phi1step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+
+      !Phi2step(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      !Phi2step(0) =+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+      !Phi2step(ndx)  = +cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+      !Phi2step(ndx-1)= +cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+
+    Phi1step(-1)=Phiexa(-1)
+    Phi1step(0) =Phiexa(0)
+    Phi1step(ndx)  =Phiexa(ndx)
+    Phi1step(ndx-1)=Phiexa(ndx-1)
+
+    Phi2step(-1)=Phiexa(-1)
+    Phi2step(0) =Phiexa(0)
+    Phi2step(ndx)  =Phiexa(ndx)
+    Phi2step(ndx-1)=Phiexa(ndx-1)
+
+     !Phi1step(-1)=Phi1step(0)
+     !Phi1step(0) =Phi1step(1)
+     !Phi1step(ndx)  = -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+     !Phi1step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+
+     !Phi2step(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+     !Phi2step(0) =+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+     !Phi2step(ndx)  = Phi2step(ndx-1)
+     !Phi2step(ndx-1)= Phi2step(ndx-2)
+
+
+        !Phi1step(-1)=(-cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1))*2.d0
+        !Phi1step(0) =(-cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0))*2.d0
+        !Phi1step(ndx)  = (-cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx))*2.d0
+        !Phi1step(ndx-1)= (-cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1))*2.d0
+
+        !Phi2step(-1)=(+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1))*2.d0
+        !Phi2step(0) =(+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0))*2.d0
+        !Phi2step(ndx)  =( +cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx))*2.d0
+        !Phi2step(ndx-1)=( +cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1))*2.d0
+
+      
+    !Phi1step(ndx-1)=cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+    !Phi1step(ndx)  =cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+    !Phi1step(0)  = -cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+    !Phi1step(-1) = -cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+
+    !Phi2step(ndx-1)=-cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+    !Phi2step(ndx)  =-cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+    !Phi2step(0)  = cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+    !Phi2step(-1) = cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+   end if
+
+if(mode==156) then
+   Phicgp(-1)=Phiexa(-1)
+   Phicgp(0) =Phiexa(0)
+   Phicgp(ndx)  = Phiexa(ndx)
+   Phicgp(ndx-1)= Phiexa(ndx-1)
+
+   Phicgm(-1)=Phiexa(-1)
+   Phicgm(0) =Phiexa(0)
+   Phicgm(ndx)  = Phiexa(ndx)
+   Phicgm(ndx-1)= Phiexa(ndx-1)
+
+   !Phicgp(-1)=Phiexa(-1)
+   !Phicgp(0) =Phiexa(0)
+   !Phicgp(ndx)  = Phicgp(ndx-1)
+   !Phicgp(ndx-1)= Phicgp(ndx-2)
+
+   !Phicgm(-1)=Phicgm(0)
+   !Phicgm(0) =Phicgm(1)
+   !Phicgm(ndx)  = Phiexa(ndx)
+   !Phicgm(ndx-1)= Phiexa(ndx-1)
+
+   !Phicgp(-1)=Phiexa(-1)*2.d0
+   !Phicgp(0) =Phiexa(0)*2.d0
+   !Phicgp(ndx)  = Phiexa(ndx)*2.d0
+   !Phicgp(ndx-1)= Phiexa(ndx-1)*2.d0
+
+   !Phicgm(-1)=Phiexa(-1)*2.d0
+   !Phicgm(0) =Phiexa(0)*2.d0
+   !Phicgm(ndx)  = Phiexa(ndx)*2.d0
+   !Phicgm(ndx-1)= Phiexa(ndx-1)*2.d0
+end if
+  
 
 
   if(mode==6) then
@@ -768,14 +1002,18 @@ subroutine saveu(in1)
   character(5) name
 
   write(name,'(i5.5)') in1
-  open(21,file='/Users/maeda/Desktop/Dropbox/kaiseki-desktpo/testmuscle/phi'//name//'.dat')
-  do j=1,ndx-2
-  do i=1,ndx-2
-        write(21,*) x(i),y(j), Phicgp(i,j),Phi1step(i,j) , Phicgm(i,j),Phi1step(i,j),Phi2step(i,j) ,rho(i,j)
-     end do
-     write(21,*)
-     end do
+  open(20,file = dir//'phi'//name//'.dat')
+  open(21,file = dir//'phi'//name//'.csv')
+  open(22,file = dir//'phi'//name//'.txt')
+  write(21,*) 'x,','Phicgp,','Phicgm,','Phi1step,','Phi2step,','rho','Phiexa','Phigrd'
+  do i=-1,ndx
+    write(21,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
+    write(20,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
+    write(22,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
+  end do
   close(21)
+  close(20)
+  close(22)
   write(*,*) 'save step : ',in1
   in1=in1+1
 end subroutine saveu
@@ -795,7 +1033,7 @@ subroutine fluxcal(preuse,pre,u,ep,kappa,mode)
              * ((1.0d0-slop(i)*kappa)*(pre(i)-pre(i-1)) + (1.0d0+slop(i)*kappa)*(pre(i+1) - pre(i))) !i+1/2
         u(i)=ul(i)
      end do
-     write(*,*) slop(127),'127slop'
+     !write(*,*) slop(127),'127slop'
      !u(:)=ul(:)
   end if
 

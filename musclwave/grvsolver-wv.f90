@@ -3,11 +3,12 @@ subroutine SELFGRAVWAVE(dt,mode)
   USE mpivar
   USE slfgrv
   INCLUDE 'mpif.h'
-  integer :: mode,MRANK,count=0,rdnum
+  integer :: mode,MRANK,count=0,rdnum,rddmy
   DOUBLE PRECISION  :: dt,dxi
   !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
   INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   DOUBLE PRECISION  :: VECU
+  real(4) :: dmy(1:28)
   character(3) NPENUM
   character(6) countcha
   double precision tfluid , cs
@@ -25,6 +26,7 @@ subroutine SELFGRAVWAVE(dt,mode)
 
   !****************read INITIAL CONDITION**************
   if(mode==1) then
+     goto 5401
      WRITE(NPENUM,'(I3.3)') NRANK
      open(unit= 8,file=dir//'PHIINI/PHIINIwv'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      open(unit=18,file=dir//'PHIINI/PHIGRDwv'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
@@ -44,6 +46,53 @@ subroutine SELFGRAVWAVE(dt,mode)
         end do
      end do
      close(18)
+     5401 continue
+
+     count=100
+     WRITE(NPENUM,'(I3.3)') NRANK
+     WRITE(countcha,'(I6.6)') count
+     !open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     !open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     !open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     !open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHIINI/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED')
+     do k = -1, Ncellz+2
+        do j = -1, Ncelly+2
+           do i = -1, Ncellx+2
+           read(28) (dmy(rddmy),rddmy=1,28)
+
+Phiwv(i,j,k,1) = dble(dmy(1))
+Phiwv(i,j,k,2) = dble(dmy(2))
+Phiwv(i,j,k,3) = dble(dmy(3))
+Phiwv(i,j,k,4) = dble(dmy(4))
+Phiwv(i,j,k,5) = dble(dmy(5))
+Phiwv(i,j,k,6) = dble(dmy(6))
+Phiwv(i,j,k,7) = dble(dmy(7))
+Phiwv(i,j,k,8) = dble(dmy(8))
+Phigrdwv(i,j,k,1) = dble(dmy(9))
+Phigrdwv(i,j,k,2) = dble(dmy(10))
+Phigrdwv(i,j,k,3) = dble(dmy(11))
+Phigrdwv(i,j,k,4) = dble(dmy(12))
+Phigrdwv(i,j,k,5) = dble(dmy(13))
+Phigrdwv(i,j,k,6) = dble(dmy(14))
+Phigrdwv(i,j,k,7) = dble(dmy(15))
+Phigrdwv(i,j,k,8) = dble(dmy(16))
+Phiexa(i,j,k) = dble(dmy(17))
+Phigrd(i,j,k,1) = dble(dmy(18))
+Phigrd(i,j,k,2) = dble(dmy(19))
+Phigrd(i,j,k,3) = dble(dmy(20))
+Phigrd(i,j,k,4) = dble(dmy(21))
+Phigrd(i,j,k,5) = dble(dmy(22))
+Phigrd(i,j,k,6) = dble(dmy(23))
+Phigrd(i,j,k,7) = dble(dmy(24))
+Phigrd(i,j,k,8) = dble(dmy(25))
+Phiexab1(i,j,k) = dble(dmy(26))
+Phiexab2(i,j,k) = dble(dmy(27))
+U(i,j,k,1) = dble(dmy(28))
+          enddo
+        end do
+     end do
+     close(28)
   end if
   !****************read INITIAL CONDITION**************
 
@@ -2457,6 +2506,33 @@ rhomean=rhomean/dble(Ncellx*NSPLTx)/dble(Ncelly*NSPLTy)/dble(Ncellz*NSPLTz)
 
 !rhomean=0.d0
 END SUBROUTINE collect
+
+SUBROUTINE collectrho()
+USE comvar
+USE mpivar
+USE slfgrv
+INCLUDE 'mpif.h'
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+double precision :: meanrho(0:NPE-1)
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
+meanrho(:)=0.d0
+rhomean=0.d0
+do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+  meanrho(NRANK)=U(i,j,k,1)+meanrho(NRANK)
+end do;end do;end do
+meanrho(NRANK)=meanrho(NRANK)/(dble(Ncellx*Ncelly*Ncellz))
+do Nroot=0,NPE-1
+  CALL MPI_BCAST(tMPI(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+do Nroot=0,NPE-1
+    rhomean = meanrho(Nroot)+rhomean
+end do;end do;end do;end do
+rhomean=rhomean/dble(NPE)
+
+!rhomean=0.d0
+END SUBROUTINE collectrho
 
 SUBROUTINE collectPhi()
 USE comvar
