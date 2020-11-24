@@ -50,6 +50,8 @@ program muscl1D
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
         Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
         +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+        !Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        !+(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
      !write(*,*) dexp(-0.5d0/Tdiff * dt*0.5d0),-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii),1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0)
      enddo
      do ii=1,ndx-2
@@ -111,6 +113,8 @@ program muscl1D
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
         Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
         +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+        !Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        !+(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
      enddo
      do ii=1,ndx-2
         !Phi2step(ii) = dt*0.5d0*(Phicgm(ii)-Phi2step(ii))*0.5d0/Tdiff &
@@ -581,21 +585,30 @@ subroutine BC(mode)
       !Phi1step(0) =-cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
       !Phi1step(ndx)  = -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
       !Phi1step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+      Phi1step(-1)=-cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+      Phi1step(0) =-cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+      Phi1step(ndx)  = -cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      Phi1step(ndx-1)= -cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+      write(*,*) -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx), -cg*2.d0*Tdiff*Phigrd(ndx), Phiexa(ndx), Phigrd(ndx)
 
       !Phi2step(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
       !Phi2step(0) =+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
       !Phi2step(ndx)  = +cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
       !Phi2step(ndx-1)= +cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+      Phi2step(-1)=+cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+      Phi2step(0) =+cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+      Phi2step(ndx)  = +cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+      Phi2step(ndx-1)= +cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
 
-    Phi1step(-1)=Phiexa(-1)
-    Phi1step(0) =Phiexa(0)
-    Phi1step(ndx)  =Phiexa(ndx)
-    Phi1step(ndx-1)=Phiexa(ndx-1)
+    !Phi1step(-1)=Phiexa(-1)
+    !Phi1step(0) =Phiexa(0)
+    !Phi1step(ndx)  =Phiexa(ndx)
+    !Phi1step(ndx-1)=Phiexa(ndx-1)
 
-    Phi2step(-1)=Phiexa(-1)
-    Phi2step(0) =Phiexa(0)
-    Phi2step(ndx)  =Phiexa(ndx)
-    Phi2step(ndx-1)=Phiexa(ndx-1)
+    !Phi2step(-1)=Phiexa(-1)
+    !Phi2step(0) =Phiexa(0)
+    !Phi2step(ndx)  =Phiexa(ndx)
+    !Phi2step(ndx-1)=Phiexa(ndx-1)
 
      !Phi1step(-1)=Phi1step(0)
      !Phi1step(0) =Phi1step(1)
@@ -627,19 +640,29 @@ subroutine BC(mode)
     !Phi2step(ndx-1)=-cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
     !Phi2step(ndx)  =-cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
     !Phi2step(0)  = cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
-    !Phi2step(-1) = cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+    !Phi2step(-1) = cg*2.d0*Tdiff*Ph                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   igrd(-1)+Phiexa(-1)
    end if
 
 if(mode==156) then
-   Phicgp(-1)=Phiexa(-1)
-   Phicgp(0) =Phiexa(0)
-   Phicgp(ndx)  = Phiexa(ndx)
-   Phicgp(ndx-1)= Phiexa(ndx-1)
+Phicgp(-1)=Phiexa(-1)
+Phicgp(0) =Phiexa(0)
+Phicgp(ndx)  = Phiexa(ndx)
+Phicgp(ndx-1)= Phiexa(ndx-1)
 
-   Phicgm(-1)=Phiexa(-1)
-   Phicgm(0) =Phiexa(0)
-   Phicgm(ndx)  = Phiexa(ndx)
-   Phicgm(ndx-1)= Phiexa(ndx-1)
+Phicgm(-1)=Phiexa(-1)
+Phicgm(0) =Phiexa(0)
+Phicgm(ndx)  = Phiexa(ndx)
+Phicgm(ndx-1)= Phiexa(ndx-1)
+
+   !Phicgp(-1)=-cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+   !Phicgp(0) =-cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+   !Phicgp(ndx)  = -cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+   !Phicgp(ndx-1)= -cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
+
+   !Phicgm(-1)=+cg*2.d0*Tdiff*Phigrd(-1)+Phiexa(-1)
+   !Phicgm(0) =+cg*2.d0*Tdiff*Phigrd(0)+Phiexa(0)
+   !Phicgm(ndx)  = +cg*2.d0*Tdiff*Phigrd(ndx)+Phiexa(ndx)
+   !Phicgm(ndx-1)= +cg*2.d0*Tdiff*Phigrd(ndx-1)+Phiexa(ndx-1)
 
    !Phicgp(-1)=Phiexa(-1)
    !Phicgp(0) =Phiexa(0)
