@@ -1,11 +1,11 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=130,ndy=130,laststep=5000,istx=1,ienx=2,isty=1,ieny=2,svnum=50, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=66,ndy=66,laststep=1000,istx=1,ienx=2,isty=1,ieny=2,svnum=10, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
   DOUBLE PRECISION :: cg = 1.0d0, Tdiff=2.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=5.d0
+double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=5.d0, rch=1.d0,Cnst=-5.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,dim) :: Phigrd
@@ -17,7 +17,7 @@ end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=130 , ndy2=130 , dim2=4 !パラメータ属性必要
+  integer, parameter :: ndx2=66 , ndy2=66 , dim2=4 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1-1:ndx2+1) :: x
   DOUBLE PRECISION , dimension(-1-1:ndy2+1) :: y
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidtn  , fx , fy
@@ -754,18 +754,18 @@ subroutine INITIAL()
 !  end do
   3060 continue
 
-dinit1=dinit1*rsph**3/(0.9d0*rsph)**3
-rsph=0.9d0*rsph
+dinit1=dinit1*rsph**3/(rch*rsph)**3
+rsph=rch*rsph
 
   do j= -1-1,ndy+1
   do i= -1-1,ndx+1
      if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
-        Phiexa2(i,j) = G4pi/4.0d0 * rho(i,j) * ((x(i) - hcen)**2+(y(j) - hcen)**2) !pi*G*rho*r^2
+        Phiexa2(i,j) = G4pi/4.0d0 * rho(i,j) * ((x(i) - hcen)**2+(y(j) - hcen)**2)+Cnst !pi*G*rho*r^2
         write(142,*) sngl(x(i)),sngl(y(j)) ,  sngl(Phiexa(i,j))
         meanphi=meanphi+G4pi/2.0d0 * rho(i,j) * (x(i) - hcen )**2
      else
         Phiexa2(i,j) = G4pi/2.0d0 * dinit1 * rsph **2 *dlog(dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)) &
-             + ( G4pi/4.0d0 * dinit1 * rsph**2 - G4pi/2.0d0 * dinit1 * rsph**2 * dlog(rsph))
+             + ( G4pi/4.0d0 * dinit1 * rsph**2 - G4pi/2.0d0 * dinit1 * rsph**2 * dlog(rsph))+Cnst
         write(142,*) sngl(x(i)),sngl(y(j)) , sngl(Phiexa(i,j))
         meanphi=meanphi+G4pi * rho(i,j) * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
      end if
@@ -781,6 +781,13 @@ rsph=0.9d0*rsph
  !Phiexa2(i,j) = -G4pi / 3.d0 * dinit1 * rsph**3.d0 / (dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2+1.0d-10))!+1.d0
  !end do
  !end do
+
+  !πGmλ/d
+  !do j= -1-1,ndy+1
+  !do i= -1-1,ndx+1
+  !Phiexa2(i,j) = -G4pi / 4.d0 * 3.141592d0 * rsph * rsph *  dinit1 / (dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2+1.0d-10))!+1.d0
+  !end do
+  !end do
   
   do j=-1,ndy
   do i=-1,ndx
