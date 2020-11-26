@@ -754,6 +754,8 @@ subroutine INITIAL()
 !  end do
   3060 continue
 
+dinit1=dinit1*rsph**3/(0.9d0*rsph)**3
+rsph=0.9d0*rsph
 
   do j= -1-1,ndy+1
   do i= -1-1,ndx+1
@@ -774,11 +776,11 @@ subroutine INITIAL()
   end do
   
  !Point source
- do j= -1-1,ndy+1
- do i= -1-1,ndx+1
- Phiexa2(i,j) = -G4pi / 3.d0 * dinit1 * rsph**3.d0 / (dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2+1.0d-10))!+1.d0
- end do
- end do
+ !do j= -1-1,ndy+1
+ !do i= -1-1,ndx+1
+ !Phiexa2(i,j) = -G4pi / 3.d0 * dinit1 * rsph**3.d0 / (dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2+1.0d-10))!+1.d0
+ !end do
+ !end do
   
   do j=-1,ndy
   do i=-1,ndx
