@@ -5,9 +5,9 @@ module comvar
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
   DOUBLE PRECISION :: cg = 1.0d0, Tdiff=2.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=5.d0, rch=1.d0,Cnst=-5.d0
+  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=0.5d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa
-  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,dim) :: Phigrd
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
@@ -600,6 +600,7 @@ subroutine INITIAL()
   use grvvar
   integer :: i,j
   double precision :: amp,pi=3.1415926535d0,haba,meanphi
+  double precision :: rdmy=0.d0,rdmyx=0.d0,rdmyy=0.d0
 
   dinit1 = 2.0d0/G4pi/90.d0
 
@@ -704,6 +705,18 @@ subroutine INITIAL()
      !meanrho=meanrho!+rho(i,j)
   end do
   end do
+
+  !do i = -1-1,ndx+1
+  !do j = -1-1,ndy+1
+  !if(i==j)then
+  !Qgr(i,j)=(3.d0*(x(i)-hcen)*(y(j)-hcen)-(x(i)-hcen)**2-(y(j)-hcen)**2)*rho(i,j)*dx*dy
+  !endif
+  !if(i.ne.j) then
+  !Qgr(i,j)=(3.d0*(x(i)-hcen)*(y(j)-hcen))*rho(i,j)*dx*dy
+  !endif
+  !end do
+  !end do
+
 !  meanrho=meanrho/dble(ndx+2)/dble(ndy+2)
   meanrho=0.d0
   !rho(:,:)=rho(:,:)-meanrho
@@ -786,6 +799,17 @@ rsph=rch*rsph
   !do j= -1-1,ndy+1
   !do i= -1-1,ndx+1
   !Phiexa2(i,j) = -G4pi / 4.d0 * 3.141592d0 * rsph * rsph *  dinit1 / (dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2+1.0d-10))!+1.d0
+  !end do
+  !end do
+
+  !do j= -1-1,ndy+1
+  !do i= -1-1,ndx+1
+  !rdmy=dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)
+  !rdmyx=x(i) - hcen
+  !rdmyy=y(j) - hcen
+  !Phiexa2(i,j) = -G4pi / 3.d0 * dinit1 * rsph**3.d0 / (rdmy**2+1.0d-10)- &
+  !G4pi/8.d0/3.141592d0*(Qgr(i,i)*rdmyx*rdmyx/(rdmy**5)+Qgr(i,j)*rdmyx*rdmyy/(rdmy**5)&
+  !+Qgr(j,i)*rdmyy*rdmyx/(rdmy**5)+Qgr(j,j)*rdmyy*rdmyy/(rdmy**5))
   !end do
   !end do
   
