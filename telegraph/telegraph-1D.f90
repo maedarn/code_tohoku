@@ -45,33 +45,35 @@ program muscl1D
 
      !call osr(dt*0.5d0,2,1)
      !call BC(5)
-     !do ii=1,ndx-2
+     do ii=1,ndx-2
         !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
         
         !non-iso
-        !Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-        !+(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+        Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
         
-     !   Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-     !   +(Phicgp(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
-     !enddo
-     !do ii=1,ndx-2
+        !iso
+        !Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        !+(Phicgp(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+     do ii=1,ndx-2
         !Phi2step(ii) = dt*0.5d0*(Phicgm(ii)-Phi2step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi2step(ii) !dt*-cg^2*2T*4piG
 
         !non-iso
-        !Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-        !+(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+        Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
 
-     !   Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-     !   +(Phicgm(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
-     !enddo
+        !iso
+        !Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        !+(Phicgm(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
      !call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     call BC(4)
-     call BC(3)
-     !call BC(155)
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
      !call BC(255)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
@@ -89,36 +91,38 @@ program muscl1D
      !call muslcslv1D(Phicgm,Phi1step,dt,4)
      !call osr(dt*1.d0,1,1)
      
-     !do ii=1,ndx-2
+     do ii=1,ndx-2
      !Phicgp(ii) = dt*(-Phicgp(ii)+Phi1step(ii))*0.5d0/Tdiff +Phicgp(ii)
 
      !non-iso
-     !Phicgp(ii) = Phicgp(ii)*dexp(-0.5d0/Tdiff * dt) &
-     !+ Phi1step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
+     Phicgp(ii) = Phicgp(ii)*dexp(-0.5d0/Tdiff * dt) &
+     + Phi1step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
 
+     !iso
      !Phicgp(ii) = Phicgp(ii)*dexp(-0.5d0/Tdiff * dt) &
      !+(Phi1step(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-     !enddo
-     !do ii=1,ndx-2
+     enddo
+     do ii=1,ndx-2
      !Phicgm(ii) = dt*(-Phicgm(ii)+Phi2step(ii))*0.5d0/Tdiff +Phicgm(ii)
 
      !non-iso
-     !Phicgm(ii) = Phicgm(ii)*dexp(-0.5d0/Tdiff * dt) &
-     !+ Phi2step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
+     Phicgm(ii) = Phicgm(ii)*dexp(-0.5d0/Tdiff * dt) &
+     + Phi2step(ii)*(1.d0-dexp(-0.5d0/Tdiff * dt))
 
+     !iso
      !Phicgm(ii) = Phicgm(ii)*dexp(-0.5d0/Tdiff * dt) &
      !+(Phi2step(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-     !enddo
+     enddo
 
      !call osr(dt*1.d0,1,0)
-     call BC(1)
-     !call BC(156)
+     !call BC(1)
+     call BC(156)
      !call BC(256)
      !call BC(55)
-     !call muslcslv1D(Phicgp,Phi1step,dt,1)
-     !call muslcslv1D(Phicgm,Phi2step,dt,2)
-     call muslcslv1D(Phicgp,Phi1step,0.5d0*dt,1)
-     call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
+     call muslcslv1D(Phicgp,Phi1step,dt,1)
+     call muslcslv1D(Phicgm,Phi2step,dt,2)
+     !call muslcslv1D(Phicgp,Phi1step,0.5d0*dt,1)
+     !call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
      
      !*****-4piGrho******
      !dmyphi(:)=Phicgp(:)
@@ -139,28 +143,28 @@ program muscl1D
      !enddo
 
     !*****-4piGrho******
-    dmyphi(:)=Phicgp(:)
-    dmystep(:)=Phi1step(:)
-    do ii=1,ndx-2
-    Phicgp(ii)  =0.5d0*dmyphi(ii) *(1.d0+dexp(-dt/Tdiff))+0.5d0*dmystep(ii)*(1.d0-dexp(-dt/Tdiff)) &
-    -cg*cg*Tdiff*G4pi*rho(ii)*dt
-    Phi1step(ii)=0.5d0*dmystep(ii)*(1.d0+dexp(-dt/Tdiff))+0.5d0*dmyphi(ii)* (1.d0-dexp(-dt/Tdiff)) &
-    -cg*cg*Tdiff*G4pi*rho(ii)*dt
-    enddo
-    dmyphi(:)=Phicgm(:)
-    dmystep(:)=Phi2step(:)
-    do ii=1,ndx-2
-    Phicgm(ii)  =0.5d0*dmyphi(ii) *(1.d0+dexp(-dt/Tdiff))+0.5d0*dmystep(ii)*(1.d0-dexp(-dt/Tdiff)) &
-    -cg*cg*Tdiff*G4pi*rho(ii)*dt
-    Phi2step(ii)=0.5d0*dmystep(ii)*(1.d0+dexp(-dt/Tdiff))+0.5d0*dmyphi(ii)* (1.d0-dexp(-dt/Tdiff)) &
-    -cg*cg*Tdiff*G4pi*rho(ii)*dt
-    enddo
+    !dmyphi(:)=Phicgp(:)
+    !dmystep(:)=Phi1step(:)
+    !do ii=1,ndx-2
+    !Phicgp(ii)  =0.5d0*dmyphi(ii) *(1.d0+dexp(-dt/Tdiff))+0.5d0*dmystep(ii)*(1.d0-dexp(-dt/Tdiff)) &
+    !-cg*cg*Tdiff*G4pi*rho(ii)*dt
+    !Phi1step(ii)=0.5d0*dmystep(ii)*(1.d0+dexp(-dt/Tdiff))+0.5d0*dmyphi(ii)* (1.d0-dexp(-dt/Tdiff)) &
+    !-cg*cg*Tdiff*G4pi*rho(ii)*dt
+    !enddo
+    !dmyphi(:)=Phicgm(:)
+    !dmystep(:)=Phi2step(:)
+    !do ii=1,ndx-2
+    !Phicgm(ii)  =0.5d0*dmyphi(ii) *(1.d0+dexp(-dt/Tdiff))+0.5d0*dmystep(ii)*(1.d0-dexp(-dt/Tdiff)) &
+    !-cg*cg*Tdiff*G4pi*rho(ii)*dt
+    !Phi2step(ii)=0.5d0*dmystep(ii)*(1.d0+dexp(-dt/Tdiff))+0.5d0*dmyphi(ii)* (1.d0-dexp(-dt/Tdiff)) &
+    !-cg*cg*Tdiff*G4pi*rho(ii)*dt
+    !enddo
 
      !call BC(256)
      !call BC(55)
-     call BC(1)
-     call muslcslv1D(Phicgp,Phi1step,0.5d0*dt,1)
-     call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
+     !call BC(1)
+     !call muslcslv1D(Phicgp,Phi1step,0.5d0*dt,1)
+     !call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
      !call BC(1)
 
      !call BC(4)
@@ -172,31 +176,33 @@ program muscl1D
 !     call muslcslv1D(Phi2step,rho,0.5d0*dt,3)
 
      
-    !do ii=1,ndx-2
+    do ii=1,ndx-2
         !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
         
         !non-iso
+        Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+
+        !iso
         !Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-        !+(Phicgp(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
-        
-     !   Phi1step(ii) = Phi1step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-     !   +(Phicgp(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
-     !enddo
-     !do ii=1,ndx-2
+        !+(Phicgp(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+     do ii=1,ndx-2
         !Phi2step(ii) = dt*0.5d0*(Phicgm(ii)-Phi2step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi2step(ii) !dt*-cg^2*2T*4piG
 
         !non-iso
-        !Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-        !+(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+        Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        +(Phicgm(ii) - cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
 
-     !   Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
-     !   +(Phicgm(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
-     !enddo
-     call BC(4)
-     call BC(3)
-     !call BC(155)
+        !iso
+        !Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
+        !+(Phicgm(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
+     enddo
+     !call BC(4)
+     !call BC(3)
+     call BC(155)
      !call BC(255)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
@@ -209,13 +215,13 @@ program muscl1D
 
      !write(*,*)'end'
   end do
-  call BC(3)
-  call BC(4)
-  call BC(1)
+  !call BC(3)
+  !call BC(4)
+  !call BC(1)
   !call BC(5)
   !call BC(55)
-  !call BC(155)
-  !call BC(156)
+  call BC(155)
+  call BC(156)
   !call BC(255)
   !call BC(256)
   call saveu(sv)
