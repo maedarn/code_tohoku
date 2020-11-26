@@ -1,16 +1,16 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,ndy=66,laststep=2000,istx=1,ienx=2,isty=1,ieny=2,svnum=20, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=66,ndy=66,laststep=1000,istx=1,ienx=2,isty=1,ieny=2,svnum=10, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=2.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=10.0d0 , dx,dy,ratiodini=1.d3 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,dim) :: Phigrd
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
-  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
+  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
 end module comvar
@@ -625,7 +625,7 @@ subroutine INITIAL()
   double precision :: amp,pi=3.1415926535d0,haba,meanphi
   double precision :: rdmy=0.d0,rdmyx=0.d0,rdmyy=0.d0
 
-  dinit1 = 2.0d0/G4pi/90.d0
+  dinit1 = 2.0d0/G4pi/90.d0*ratiodini
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)

@@ -302,16 +302,16 @@ wp2(j,k,4) = wp2(j,k,4)*dexp(-kappa * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-kappa *
     do k=1,ndy-2
       do j=1,ndx-2
 wp1(j,k,1) = wp1(j,k,1)*dexp(-kappa * dt)+(wp2(j,k,1) &
--4.d0*1.d0/kappa/2.d0*cg*cg*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
+-8.d0*1.d0/kappa/2.d0/kappa/2.d0*cg*cg*0.25d0*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
 -cg*cg*4.d0*1.d0/kappa/2.d0*1.d0/kappa/2.d0*G4pi*rho(j,k))*(1.d0-dexp(-kappa * dt))
 wp1(j,k,2) = wp1(j,k,2)*dexp(-kappa * dt)+(wp2(j,k,2) &
--4.d0*1.d0/kappa/2.d0*cg*cg*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
+-8.d0*1.d0/kappa/2.d0/kappa/2.d0*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
 -cg*cg*4.d0*1.d0/kappa/2.d0*1.d0/kappa/2.d0*G4pi*rho(j,k))*(1.d0-dexp(-kappa * dt))
 wp1(j,k,3) = wp1(j,k,3)*dexp(-kappa * dt)+(wp2(j,k,3) &
-+4.d0*1.d0/kappa/2.d0*cg*cg*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
++8.d0*1.d0/kappa/2.d0/kappa/2.d0*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
 -cg*cg*4.d0*1.d0/kappa/2.d0*1.d0/kappa/2.d0*G4pi*rho(j,k))*(1.d0-dexp(-kappa * dt))
 wp1(j,k,4) = wp1(j,k,4)*dexp(-kappa * dt)+(wp2(j,k,4) &
-+4.d0*1.d0/kappa/2.d0*cg*cg*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
++8.d0*1.d0/kappa/2.d0/kappa/2.d0*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
 -cg*cg*4.d0*1.d0/kappa/2.d0*1.d0/kappa/2.d0*G4pi*rho(j,k))*(1.d0-dexp(-kappa * dt))
       enddo
     enddo
