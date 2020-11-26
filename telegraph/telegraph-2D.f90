@@ -304,16 +304,16 @@ wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0
       do j=1,ndx-2
 
 wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
--4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
+-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
 wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
--4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
+-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
 wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
-+4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
++2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
 wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
-+4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
++2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
 !call vanalbada(k,0,wp2(j,k,1),flmtel1(:,1),0,ndx-1,ndx)
 !call vanalbada(j,0,wp2(j,k,1),flmtel1(:,1),0,ndy-1,ndy)
