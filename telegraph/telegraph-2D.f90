@@ -1,10 +1,10 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,ndy=66,laststep=1000,istx=1,ienx=2,isty=1,ieny=2,svnum=10, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=66,ndy=66,laststep=2000,istx=1,ienx=2,isty=1,ieny=2,svnum=20, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=1.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=2.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
@@ -20,6 +20,7 @@ module grvvar
   integer, parameter :: ndx2=66 , ndy2=66 , dim2=4 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1-1:ndx2+1) :: x
   DOUBLE PRECISION , dimension(-1-1:ndy2+1) :: y
+  DOUBLE PRECISION , dimension(-1:ndx2,dim2) :: flmtel1,flmtel2,flmtel3,flmtel4
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidtn  , fx , fy
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,dim2) :: wp1 ,wp2, wppre1 ,wppre2 !wp->telegraph
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,dim2) :: fp1 ,fp2 !fp->wave
@@ -301,6 +302,7 @@ wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0
     if(itel==1) then
     do k=1,ndy-2
       do j=1,ndx-2
+
 wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
 -4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
@@ -313,6 +315,27 @@ wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
 wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
 +4.d0*Tdiff*cg*cg*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!call vanalbada(k,0,wp2(j,k,1),flmtel1(:,1),0,ndx-1,ndx)
+!call vanalbada(j,0,wp2(j,k,1),flmtel1(:,1),0,ndy-1,ndy)
+!call vanalbada(k,0,wp2(j,k,2),flmtel1(:,2),0,ndx-1,ndx)
+!call vanalbada(j,0,wp2(j,k,2),flmtel1(:,2),0,ndy-1,ndy)
+!call vanalbada(k,0,wp2(j,k,3),flmtel1(:,3),0,ndx-1,ndx)
+!call vanalbada(j,0,wp2(j,k,3),flmtel1(:,3),0,ndy-1,ndy)
+!call vanalbada(k,0,wp2(j,k,4),flmtel1(:,4),0,ndx-1,ndx)
+!call vanalbada(j,0,wp2(j,k,4),flmtel1(:,4),0,ndy-1,ndy)
+!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
+!-8.d0*Tdiff*Tdiff*cg*cg*(flmtel1(i,1)*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1))-flmtel2(j,1)*(wp2(j-1,k+1,1)+wp2(j-1,k-1,1)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
+!-8.d0*Tdiff*Tdiff*cg*cg*(flmtel1(i,2)*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2))-flmtel2(j,2)*(wp2(j-1,k+1,2)+wp2(j-1,k-1,2)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
+!+8.d0*Tdiff*Tdiff*cg*cg*(flmtel1(i,3)*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3))-flmtel2(j,3)*(wp2(j-1,k+1,3)+wp2(j-1,k-1,3)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
+!+8.d0*Tdiff*Tdiff*cg*cg*(flmtel1(i,4)*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4))-flmtel2(j,4)*(wp2(j-1,k+1,4)+wp2(j-1,k-1,4)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!write(*,*)'----',wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4)
       enddo
     enddo
     endif
