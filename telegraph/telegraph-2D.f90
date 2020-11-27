@@ -1,23 +1,24 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,ndy=66,laststep=1000,istx=1,ienx=2,isty=1,ieny=2,svnum=10, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=130,ndy=130,laststep=2000,istx=1,ienx=2,isty=1,ieny=2,svnum=20, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=10.0d0 , dx,dy,ratiodini=1.d3 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=1.0d1 , dx,dy,ratiodini=1.d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  double precision :: Lbox=1.0d2 , h=50.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,dim) :: Phigrd
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
-  character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
+  !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
+  character(79) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T10-rho1-cen-128/'
 end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=66 , ndy2=66 , dim2=4 !パラメータ属性必要
+  integer, parameter :: ndx2=130 , ndy2=130 , dim2=4 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1-1:ndx2+1) :: x
   DOUBLE PRECISION , dimension(-1-1:ndy2+1) :: y
   DOUBLE PRECISION , dimension(-1:ndx2,dim2) :: flmtel1,flmtel2,flmtel3,flmtel4
@@ -1118,7 +1119,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
   if(mode==1) then
      call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
-     write(*,*) Phiu(1,1)
+     !write(*,*) Phiu(1,1)
      !------------calcurate dt/2------------
 !     DO Lnum = 1, Ncl-2
         DO Mnum = 1, Ncm-2
