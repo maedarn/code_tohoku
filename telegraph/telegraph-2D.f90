@@ -4,7 +4,7 @@ module comvar
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=1.0d1 , dx,dy,ratiodini=1.d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=1.0d0 , dx,dy,ratiodini=1.d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=50.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
@@ -13,7 +13,7 @@ module comvar
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-  character(79) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T10-rho1-cen-128/'
+  character(78) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T1-rho1-cen-128/'
 end module comvar
 
 module grvvar
@@ -1408,10 +1408,12 @@ subroutine saveu(in1)
   use grvvar
   integer :: i,in1,j
   character(5) name
-  double precision meanphi1,meanphi2,errphi1,errphi2
+  double precision meanphi1,meanphi2,errphi1,errphi2,phimax,phimin
   
-  meanphi1=0.d0
-  meanphi2=0.d0
+  !meanphi1=0.d0
+  !meanphi2=0.d0
+  phimax=-1.d10
+  phimin= 1.d10
   write(*,*) 'here2'!,in1,x(1),y(1),wp1(1,1),wp2(1,1),rho(1,1)
   write(name,'(i5.5)') in1
   open(21,file=dir//'phi2D'//name//'.dat')
@@ -1427,10 +1429,13 @@ subroutine saveu(in1)
         ,fp2(i,j,1),fp2(i,j,2),fp2(i,j,3),fp2(i,j,4)&
         ,0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),rho(i,j),Phicrr(i,j),Phiexa(i,j),Phigrd(i,j,1),&
         Phigrd(i,j,2),Phigrd(i,j,3),Phigrd(i,j,4),wp2(i,j,1)-Phiexa(i,j),wp1(i,j,1)-Phigrd(i,j,1)
+
+        phimax=dmax1(phimax,Phiexa(i,j))
+        phimin=dmin1(phimin,Phiexa(i,j))
      end do
      write(21,*)
-     meanphi1=0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4))+meanphi1
-     meanphi2=wp2(i,j,1)+meanphi2
+     !meanphi1=0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4))+meanphi1
+     !meanphi2=wp2(i,j,1)+meanphi2
   end do
   close(21)
   !write(*,*) 'here3'
@@ -1441,17 +1446,23 @@ subroutine saveu(in1)
   end do
   close(22)
   
+
+  errphi1=0.d0
+  errphi2=0.d0
   do j=1,ndy-2
      do i=1,ndx-2
-     errphi1=(Phiexa(i,j)+meanphi1-meanphiexa)**2
-     errphi2=(Phiexa(i,j)+meanphi2-meanphiexa)**2
+     !errphi1=(Phiexa(i,j)+meanphi1-meanphiexa)**2
+     !errphi2=(Phiexa(i,j)+meanphi2-meanphiexa)**2
+     errphi1=(Phiexa(i,j)-wp2(i,j,1))**2
+     errphi2=(Phiexa(i,j)+0.25d0*(-wp2(i,j,1)-wp2(i,j,2)-wp2(i,j,3)-wp2(i,j,4)))**2
      enddo
   end do
-  errphi1=dsqrt(errphi1)
-  errphi2=dsqrt(errphi2)
+  errphi1=dsqrt(errphi1/dble(ndx-2)/dble(ndy-2))
+  errphi2=dsqrt(errphi2/dble(ndx-2)/dble(ndy-2))
   
-  open(850,file=dir//'err.dat',FORM='FORMATTED',position='append')
-  write(850,*) in1, errphi1, errphi2, meanphiexa, meanphi1, meanphi2, errphi1/meanphi1, errphi2/meanphi2
+  open(850,file=dir//'err-phi.dat',FORM='FORMATTED',position='append')
+  write(850,*) in1*svnum,',', errphi1,',', errphi2,',', phimax-phimin
+  close(850)
 
   write(*,*) 'save step : ',in1
   in1=in1+1
