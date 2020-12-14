@@ -1,10 +1,10 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=130,ndy=130,laststep=2000,istx=1,ienx=2,isty=1,ieny=2,svnum=20, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=34,ndy=34,laststep=201,istx=1,ienx=2,isty=1,ieny=2,svnum=1, dim=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=1
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=1.0d0 , dx,dy,ratiodini=1.d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=50.0d0 , dx,dy,ratiodini=1.d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=50.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phiexa2,rho, Qgr
@@ -13,12 +13,12 @@ module comvar
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-  character(78) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T1-rho1-cen-128/'
+  character(85) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T50-rho1-cen-32-1000st/'
 end module comvar
 
 module grvvar
   implicit none
-  integer, parameter :: ndx2=130 , ndy2=130 , dim2=4 !パラメータ属性必要
+  integer, parameter :: ndx2=34 , ndy2=34 , dim2=4 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1-1:ndx2+1) :: x
   DOUBLE PRECISION , dimension(-1-1:ndy2+1) :: y
   DOUBLE PRECISION , dimension(-1:ndx2,dim2) :: flmtel1,flmtel2,flmtel3,flmtel4
@@ -47,12 +47,22 @@ program muscl1D
   do i=1,laststep
 
      if(mod(i,svnum)==0) then
+     iwx=1;iwy=1
+     call BC(wp2(:,:,1),3,3,3,3,1)
+     call BC(wp2(:,:,2),3,3,3,3,2)
+     call BC(wp2(:,:,3),3,3,3,3,3)
+     call BC(wp2(:,:,4),3,3,3,3,4)
+     call BC(wp1(:,:,1),4,4,4,4,1)
+     call BC(wp1(:,:,2),4,4,4,4,2)
+     call BC(wp1(:,:,3),4,4,4,4,3)
+     call BC(wp1(:,:,4),4,4,4,4,4)
      call saveu(sv)
      end if
 
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
      write(*,*) i ,dt,'step'
+     write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
 
     !goto 4545
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -300,6 +310,15 @@ wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0
     endif
     !call BCtest()
 
+    iwx=1;iwy=1
+    if(itel==1) then
+    call BC(wp2(:,:,1),3,2,3,2,1)
+    call BC(wp2(:,:,2),3,3,3,3,2)
+    call BC(wp2(:,:,3),3,3,3,3,3)
+    call BC(wp2(:,:,4),3,3,3,3,4)
+    endif
+
+
     if(itel==1) then
     do k=1,ndy-2
       do j=1,ndx-2
@@ -307,6 +326,24 @@ wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0
 wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
 -2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,1)-wp2(j+1,k-1,1)-wp2(j-1,k+1,1)+wp2(j-1,k-1,1))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+
+!if(k==1 .and. j==1)then
+!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
+!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*(wp2(j+1,k+1,1)-wp2(j+1,k,1)-wp2(j,k+1,1)+wp2(j,k,1))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!endif
+
+!if(k==1 .and. j==1)then
+!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
+!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(-3.d0*(-3.d0*wp2(j,k,1)+4.d0*wp2(j,k+1,1)-wp2(j,k+2,1))+4.d0*(-3.d0*wp2(j+1,k,1)+&
+!4.d0*wp2(j+1,k+1,1)-wp2(j+1,k+2,1))-(-3.d0*wp2(j+2,k,1)+4.d0*wp2(j+2,k+1,1)-wp2(j+2,k+2,1)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
+!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(3.d0*(3.d0*wp2(j,k,1)-4.d0*wp2(j,k-1,1)+wp2(j,k-2,1))-4.d0*(3.d0*wp2(j-1,k,1)-&
+!4.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))+(3.d0*wp2(j-2,k,1)-4.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1)))/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!endif
+
 wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
 -2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
 -cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
@@ -539,12 +576,12 @@ fp1(j,k,4) = fp1(j,k,4)-cg*G4pi*rho(j,k)*dt &
        !call BC(wp2(:,:,4),3,3,3,3,4)
        !call BCtest()
        iwx=0;iwy=1
-       !call BC(wp2(:,:,1),0,0,3,2,1)
+       call BC(wp2(:,:,1),0,0,3,2,1)
        !call BC(wp2(:,:,2),0,0,2,3,2)
        !call BC(wp2(:,:,3),0,0,2,3,3)
        !call BC(wp2(:,:,4),0,0,3,2,4)
        if(itel==1) then
-       call BC(wp2(:,:,1),0,0,3,3,1)
+       !call BC(wp2(:,:,1),0,0,3,3,1)
        call BC(wp2(:,:,2),0,0,3,3,2)
        call BC(wp2(:,:,3),0,0,3,3,3)
        call BC(wp2(:,:,4),0,0,3,3,4)
@@ -573,12 +610,12 @@ fp1(j,k,4) = fp1(j,k,4)-cg*G4pi*rho(j,k)*dt &
        endif
        !call BCtest()
        iwx=1;iwy=0
-       !call BC(wp2(:,:,1),3,2,0,0,1)
+       call BC(wp2(:,:,1),3,2,0,0,1)
        !call BC(wp2(:,:,2),2,3,0,0,2)
        !call BC(wp2(:,:,3),3,2,0,0,3)
        !call BC(wp2(:,:,4),2,3,0,0,4)
        if(itel==1) then
-       call BC(wp2(:,:,1),3,3,0,0,1)
+       !call BC(wp2(:,:,1),3,3,0,0,1)
        call BC(wp2(:,:,2),3,3,0,0,2)
        call BC(wp2(:,:,3),3,3,0,0,3)
        call BC(wp2(:,:,4),3,3,0,0,4)
@@ -873,6 +910,19 @@ rsph=rch*rsph
   end do
   meanphiexa=meanphiexa/dble(ndx-2)/dble(ndy-2)
 
+!  wp1(:,:,:)=Phiexa(0,0)
+!  wp2(:,:,:)=Phiexa(0,0)
+  !wppre1(:,:,:)=Phiexa(0,0,:)
+  !wppre2(:,:,:)=Phiexa(0,0,:)
+!wppre1(:,:,1)=Phigrd(0,0,1)
+!wppre2(:,:,1)=Phigrd(0,0,1)
+!wppre1(:,:,2)=Phigrd(0,0,2)
+!wppre2(:,:,2)=Phigrd(0,0,2)
+!wppre1(:,:,3)=Phigrd(0,0,3)
+!wppre2(:,:,3)=Phigrd(0,0,3)
+!wppre1(:,:,4)=Phigrd(0,0,4)
+!wppre2(:,:,4)=Phigrd(0,0,4)
+
 
 
   close(142)
@@ -967,6 +1017,31 @@ if(modey1==2)then
 U(:,ndy  )=U(:,ndy-1)
 U(:,ndy-1)=U(:,ndy-2)
 endif
+
+!if(modex0==2)then
+!do i=-1,ndx
+!U(-1,i)    =(U(0,i) + dsqrt(2.d0)*U(-1,i))/(1.d0+dsqrt(2.d0))
+!U( 0,i)    =(U(1,i) + dsqrt(2.d0)*U( 0,i))/(1.d0+dsqrt(2.d0))
+!enddo
+!endif
+!if(modex1==2)then
+!do i=-1,ndx
+!U(ndx  ,i)    =(dsqrt(2.d0)*U(ndx  ,i) + U(ndx-1,i))/(1.d0+dsqrt(2.d0))
+!U(ndx-1,i)    =(dsqrt(2.d0)*U(ndx-1,i) + U(ndx-2,i))/(1.d0+dsqrt(2.d0))
+!enddo
+!endif
+!if(modey0==2)then
+!do i=-1,ndx
+!U(i,-1)    =(U(i,0)+ dsqrt(2.d0)*U(i,-1))/(1.d0+dsqrt(2.d0))
+!U(i, 0)    =(U(i,1)+ dsqrt(2.d0)*U(i, 0))/(1.d0+dsqrt(2.d0))
+!enddo
+!endif
+!if(modey1==2)then
+!do i=-1,ndx
+!U(i,ndy  )    =(dsqrt(2.d0)*U(i,ndy  ) + U(i,ndy-1))/(1.d0+dsqrt(2.d0))
+!U(i,ndy-1)    =(dsqrt(2.d0)*U(i,ndy-1) + U(i,ndy-2))/(1.d0+dsqrt(2.d0))
+!enddo
+!endif
 !*************free********************
 
 !************exact(wp->telegraph)********************
@@ -1419,21 +1494,21 @@ subroutine saveu(in1)
   open(21,file=dir//'phi2D'//name//'.dat')
   do j=-1,ndy
      do i=-1,ndx
-      !  write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
-      !,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
-      !,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',Phigrd(i,j,1),',',&
-      !Phigrd(i,j,2),',',Phigrd(i,j,3),',',Phigrd(i,j,4),',',wp2(i,j,1)-Phiexa(i,j),',',wp1(i,j,1)-Phigrd(i,j,1)
-        write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &
-        ,wp2(i,j,1),wp2(i,j,2),wp2(i,j,3),wp2(i,j,4)&
-        ,fp1(i,j,1),fp1(i,j,2),fp1(i,j,3),fp1(i,j,4) &
-        ,fp2(i,j,1),fp2(i,j,2),fp2(i,j,3),fp2(i,j,4)&
-        ,0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),rho(i,j),Phicrr(i,j),Phiexa(i,j),Phigrd(i,j,1),&
-        Phigrd(i,j,2),Phigrd(i,j,3),Phigrd(i,j,4),wp2(i,j,1)-Phiexa(i,j),wp1(i,j,1)-Phigrd(i,j,1)
+        write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
+      ,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
+      ,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',Phigrd(i,j,1),',',&
+      Phigrd(i,j,2),',',Phigrd(i,j,3),',',Phigrd(i,j,4),',',wp2(i,j,1)-Phiexa(i,j),',',wp1(i,j,1)-Phigrd(i,j,1)
+        !write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &
+        !,wp2(i,j,1),wp2(i,j,2),wp2(i,j,3),wp2(i,j,4)&
+        !,fp1(i,j,1),fp1(i,j,2),fp1(i,j,3),fp1(i,j,4) &
+        !,fp2(i,j,1),fp2(i,j,2),fp2(i,j,3),fp2(i,j,4)&
+        !,dabs(wp2(i,j,1)-Phiexa(i,j)),rho(i,j),Phicrr(i,j),Phiexa(i,j),Phigrd(i,j,1),&
+        !Phigrd(i,j,2),Phigrd(i,j,3),Phigrd(i,j,4),wp2(i,j,1)-Phiexa(i,j),wp1(i,j,1)-Phigrd(i,j,1)
 
         phimax=dmax1(phimax,Phiexa(i,j))
         phimin=dmin1(phimin,Phiexa(i,j))
      end do
-     write(21,*)
+     !write(21,*)
      !meanphi1=0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4))+meanphi1
      !meanphi2=wp2(i,j,1)+meanphi2
   end do
@@ -1453,18 +1528,19 @@ subroutine saveu(in1)
      do i=1,ndx-2
      !errphi1=(Phiexa(i,j)+meanphi1-meanphiexa)**2
      !errphi2=(Phiexa(i,j)+meanphi2-meanphiexa)**2
-     errphi1=(Phiexa(i,j)-wp2(i,j,1))**2
-     errphi2=(Phiexa(i,j)+0.25d0*(-wp2(i,j,1)-wp2(i,j,2)-wp2(i,j,3)-wp2(i,j,4)))**2
+     errphi1=(Phiexa(i,j)-wp2(i,j,1))**2.d0+errphi1
+     errphi2=(Phiexa(i,j)+0.25d0*(-wp2(i,j,1)-wp2(i,j,2)-wp2(i,j,3)-wp2(i,j,4)))**2.d0+errphi2
      enddo
   end do
   errphi1=dsqrt(errphi1/dble(ndx-2)/dble(ndy-2))
   errphi2=dsqrt(errphi2/dble(ndx-2)/dble(ndy-2))
   
-  open(850,file=dir//'err-phi.dat',FORM='FORMATTED',position='append')
+  open(850,file=dir//'err-phi-exa2.dat',FORM='FORMATTED',position='append')
   write(850,*) in1*svnum,',', errphi1,',', errphi2,',', phimax-phimin
   close(850)
 
   write(*,*) 'save step : ',in1
   in1=in1+1
 end subroutine saveu
+
 

@@ -1,14 +1,15 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=130,laststep=800,ist=1,ien=2,svnum=4 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=130,laststep=1000,ist=1,ien=2,svnum=10 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
-  DOUBLE PRECISION :: cg = 0.5d0 , dx, Tdiff=10.0d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+DOUBLE PRECISION :: cg = 1.d0 , dx, Tdiff=0.10d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d0 , h=0.2d0 , hcen=0.5d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   double precision :: osromega=0.001d0*3.1415926535d0
-  character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/simu/'
+  !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/simu/'
+  character(86) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/cg1-T01-rho1-cen-128-1000st/'
 end module comvar
 
 module grvvar
@@ -1129,6 +1130,7 @@ subroutine saveu(in1)
   use grvvar
   integer :: i,in1,j
   character(5) name
+  double precision errphi1,errphi2
 
   write(name,'(i5.5)') in1
   open(20,file = dir//'phi'//name//'.dat')
@@ -1144,7 +1146,26 @@ subroutine saveu(in1)
   close(20)
   close(22)
   write(*,*) 'save step : ',in1
-  in1=in1+1
+
+
+errphi1=0.d0
+errphi2=0.d0
+
+do i=1,ndx-2
+   !errphi1=(Phiexa(i,j)+meanphi1-meanphiexa)**2
+   !errphi2=(Phiexa(i,j)+meanphi2-meanphiexa)**2
+   errphi1=(Phiexa(i)-Phicgp(i))**2.d0+errphi1
+   errphi2=(Phiexa(i)-(0.5d0*(Phicgp(i)+Phicgm(i))))**2.d0+errphi2
+end do
+errphi1=dsqrt(errphi1/dble(ndx-2))
+errphi2=dsqrt(errphi2/dble(ndx-2))
+
+open(850,file=dir//'err-phi-exa2.dat',FORM='FORMATTED',position='append')
+write(850,*) in1*svnum,',', errphi1,',', errphi2
+close(850)
+
+
+in1=in1+1
 end subroutine saveu
 
 

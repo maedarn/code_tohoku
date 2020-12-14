@@ -2286,8 +2286,7 @@ endif
 !  if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
   !Phiexab1(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,1)) !dble(pls)!dble(data(jb,kbb,1))
-!  Phiexab2(mod(pls,Ncellx)+1,j,k) =dble(data(jb,kbb,2))!Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx)))
-!dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2)) dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
+!  Phiexab2(mod(pls,Ncellx)+1,j,k) =dble(data(jb,kbb,2))!Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx))) !dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2)) dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
 !  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
@@ -2525,11 +2524,11 @@ do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
 end do;end do;end do
 meanrho(NRANK)=meanrho(NRANK)/(dble(Ncellx*Ncelly*Ncellz))
 do Nroot=0,NPE-1
-  CALL MPI_BCAST(meanrho(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(tMPI(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
 do Nroot=0,NPE-1
     rhomean = meanrho(Nroot)+rhomean
-end do
+end do;end do;end do;end do
 rhomean=rhomean/dble(NPE)
 
 !rhomean=0.d0
