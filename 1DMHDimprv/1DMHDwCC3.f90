@@ -7,13 +7,15 @@ MODULE comvar
 INTEGER, parameter :: nd=1024+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
+integer, dimension(-1:nd,8) :: is
+double precision, dimension(-1:nd,4) :: ns
 
 double precision  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 double precision  :: CFL,facdep,tfinal,time
 double precision  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncell,maxstp,nitera
 INTEGER :: iflag,ifchem,ifthrm,ifrad
-INTEGER :: BCx1,BCx2
+INTEGER :: BCx1,BCx2,nsink
 
 double precision, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 double precision, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0
@@ -264,11 +266,11 @@ do in10 = 1, maxstp
     if(time+dt.gt.tfinal) dt = tfinal - time
 
 !***** Source parts *****
-!    call SOURCE(dt*0.5d0)
+    call SOURCE(dt*0.5d0)
 !***** Godunov parts *****
     call MHD(dt)
 !***** Source parts *****
-!    call SOURCE(dt*0.5d0)
+    call SOURCE(dt*0.5d0)
 !************************
     time = time + dt
   end do
@@ -281,6 +283,32 @@ END SUBROUTINE EVOLVE
 
 
 !----------------------------------------------------------- SAVE VARIABLES ---!
+
+SUBROUTINE sink
+USE comvar
+integer ix
+
+is(:)=0
+nsink=1
+do ix=1,nd-2
+if(U(ix,1) > 1.d4) then
+is(nsink)=ix
+nsink=nsink+1
+endif
+enddo
+
+do ix=1,nsink
+if(U(is(ix),1)<U(is(ix+1),1) .and. U(is(ix),1)<U(is(ix-1),1)) then
+is(ix)=0
+endif
+if(((U(is(ix+1),2)-U(is(ix),2))<0.d0) .and. ((U(is(ix-1),2)-U(is(ix),2))<0.d0)) then
+is(ix)=0
+endif
+enddo
+
+
+END SUBROUTINE sink
+
 
 SUBROUTINE SAVEU(nunit,dt,t,msig)
 USE comvar

@@ -16,7 +16,7 @@ module grvvar
   implicit none
   integer, parameter :: ndx2=130 !パラメータ属性必要
   DOUBLE PRECISION , dimension(-1:ndx2) :: x,Phicgm,rho,Phi1step,Phi2step,Phicgp
-  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phigrd,Phiexa,dmyphi,dmystep
+  DOUBLE PRECISION , dimension(-1:ndx2) :: Phidt,Phidtn,Phigrd,Phiexa,dmyphi,dmystep
 end module grvvar
 
 program muscl1D
@@ -46,6 +46,7 @@ program muscl1D
 
      !call osr(dt*0.5d0,2,1)
      !call BC(5)
+     call bndb(dt)
      do ii=1,ndx-2
         !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
@@ -471,7 +472,29 @@ endif
 write(*,*)'osr',Phicgp((ndx-1)/2),Phi1step((ndx-1)/2),t1,t2
 end subroutine osr
 
+subroutine bndb(dt)
+use comvar
+use grvvar
+integer i
+double precision :: dt,sp1,sm1,s1,sp2,sm2,s2,eps=1.d-8,kp
 
+kp=1.d0/3.d0
+do i=1,ndx-2
+!****i****
+sm1=Phiexa(i)-Phiexa(i-1)
+sp1=Phiexa(i+1)-Phiexa(i)
+s1 =(2.d0*sp*sm+eps)/(sp**2.d0+sm**2.d0+eps)
+!****i+1****
+sm2=Phiexa(i+1)-Phiexa(i)
+sp2=Phiexa(i+2)-Phiexa(i+1)
+s2 =(2.d0*sp*sm+eps)/(sp**2.d0+sm**2.d0+eps)
+
+Phidtn(i)=Phiexa(i+1)-Phiexa(i)-0.25d0*s2*((1.d0-kp*s2)*sp2+(1.d0+kp*s2)*sm2)&
+-0.25d0*s1*((1.d0-kp*s1)*sp1+(1.d0+kp*s1)*sm1)
+
+Phidt(i)=Phiexa(i)-Phidtn(i)*dt*cg/dx/(-1.d0+dexp(dt*0.5d0/Tdiff))
+enddo
+end subroutine bndb
 
 
 subroutine BC(mode)
@@ -1139,7 +1162,7 @@ subroutine saveu(in1)
   write(21,*) 'x,','Phicgp,','Phicgm,','Phi1step,','Phi2step,','rho','Phiexa','Phigrd'
   do i=-1,ndx
     write(21,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
-    write(20,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
+    write(20,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i),',',Phidt(i)
     write(22,*) x(i),',',Phicgp(i),',',Phicgm(i),',',Phi1step(i),',',Phi2step(i),',',rho(i),',',Phiexa(i),',',phigrd(i)
   end do
   close(21)
