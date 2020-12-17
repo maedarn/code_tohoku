@@ -411,7 +411,7 @@ subroutine slvmuscle(dt)
   use comvar
   use slfgrv
   INCLUDE 'mpif.h'
-  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0,invdxy,invdyz,invdzx!,rhomean
   integer :: i=0,n,m,l,countn
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
   double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
@@ -632,7 +632,9 @@ subroutine slvmuscle(dt)
 !     enddo
 !   enddo
 !  enddo
-  
+   invdxy=1.d0/dx1/dy1
+   invdyz=1.d0/dy1/dz1
+   invdzx=1.d0/dz1/dx1
    !call collectPhi()
    iwx=1;iwy=1;iwz=1
    call BCgrv(100,1,8)
@@ -640,37 +642,37 @@ subroutine slvmuscle(dt)
      do j=1,ndy-2
        do i=1,ndx-2
        Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
        Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
        Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
        Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
        Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
        Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
+       -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
        Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
-       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
-       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
+       -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
+       +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
        Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
-       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
-       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
+       +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
+       +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
+       -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
        enddo
      enddo
    enddo
@@ -681,37 +683,37 @@ subroutine slvmuscle(dt)
 !  do j=1+1,ndy-2-1
 !    do i=1+1,ndx-2-1
 !    Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
+!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
+!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
+!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
 !    Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
+!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
+!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
+!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
 !    Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
+!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
+!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
+!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
 !    Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
+!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
+!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
+!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
 !    Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
+!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
+!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
+!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
 !    Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
+!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
+!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
+!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
 !    Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
+!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
+!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
+!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
 !    Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
+!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
+!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
+!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
 !    enddo
 !  enddo
 !enddo
@@ -722,111 +724,111 @@ subroutine slvmuscle(dt)
   !do j=1,ndy-2
   !  do i=1,ndx-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
   !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
   !  enddo
   !enddo
   !j=1
   !do k=1,ndz-2
   !  do i=1,ndx-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
   !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
   !  enddo
   !enddo
   !i=1
   !do j=1,ndy-2
   !  do k=1,ndz-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
   !Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))/dx1/dy1 &
-  ! +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
+  ! +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
+  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
   !  enddo
   !enddo
 
@@ -834,111 +836,111 @@ subroutine slvmuscle(dt)
   !do j=1,ndy-2
   !  do i=1,ndx-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
-  !+0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
+  !+0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
   !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
+  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
+  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
   !  enddo
   !enddo
   !j=ndy-2
   !do k=1,ndz-2
   !  do i=1,ndx-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
   !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
+  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
   !  enddo
   !enddo
   !i=ndx-2
   !do j=1,ndy-2
   !  do k=1,ndz-2
   !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
   !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
   !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
   !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
   !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
   !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))/dz1/dx1
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
   !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))/dx1/dy1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))/dy1/dz1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
   !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))/dx1/dy1 &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))/dy1/dz1 &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))/dz1/dx1
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
+  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
+  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
   !  enddo
   !enddo
 
@@ -2286,10 +2288,14 @@ endif
 !  if((k.eq.-1  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz-1
 
   !Phiexab1(mod(pls,Ncellx)+1,j,k) = dble(data(jb,kbb,1)) !dble(pls)!dble(data(jb,kbb,1))
-!  Phiexab2(mod(pls,Ncellx)+1,j,k) =dble(data(jb,kbb,2))!Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx))) !dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2)) dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
+!  Phiexab2(mod(pls,Ncellx)+1,j,k) =dble(data(jb,kbb,2))
+!Lbox+dzz*0.5d0-dzz*dble(NSPLTx*Ncellx-(IST*Ncellx+mod(pls,Ncellx)))
+!dble((IST+1)*Ncellx-mod(pls,Ncellx))!dble(data(jb,kbb,2))
+!dble(NSPLTx*Ncellx-((IST+1)*Ncellx-mod(pls,Ncellx)))!dble(data(jb,kbb,2))
   !bphi2l(j,k,1-abs(pls)) = dble(data(jb,kbb,1))
   !bphi2r(j,k,Ncellx+abs(pls)) = dble(data(jb,kbb,2))
-!  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
+!  write(12) bphil(j,k,1-abs(pls)),bphir(j,k,Ncellx+abs(pls))
+!,bphi2l(j,k,1-abs(pls)), bphi2r(j,k,Ncellx+abs(pls))
 !end do
  !write(*,*) Phiexa(1+abs(pls),1,k),Phiexa(Ncellx-abs(pls),1,k)
 !end do
@@ -2524,11 +2530,11 @@ do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
 end do;end do;end do
 meanrho(NRANK)=meanrho(NRANK)/(dble(Ncellx*Ncelly*Ncellz))
 do Nroot=0,NPE-1
-  CALL MPI_BCAST(tMPI(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(meanrho(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
 do Nroot=0,NPE-1
     rhomean = meanrho(Nroot)+rhomean
-end do;end do;end do;end do
+end do!;end do;end do;end do
 rhomean=rhomean/dble(NPE)
 
 !rhomean=0.d0

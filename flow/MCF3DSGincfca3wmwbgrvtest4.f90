@@ -21,7 +21,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
-character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
+character(27) :: dir='/data/group1/z43764r/grvwv/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
@@ -937,35 +937,35 @@ do in10 = 1, maxstp
  !---------------debug-------------------
  !write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
-goto 342
+!goto 342
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
-    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
-    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
+!    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
+!    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
-    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
-                    dt_gat       ,1,MPI_REAL8,   &
-                    0            ,MPI_COMM_WORLD,IERR)
-    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
-                    st_gat       ,1,MPI_INTEGER, &
-                    0            ,MPI_COMM_WORLD,IERR)
-    IF(NRANK.EQ.0)  THEN
-      dt  = tfinal
-      dtt = tfinal
-      do i_t = 0, NPE-1
-         dt  = dmin1( dt, dt_gat(i_t) )
+!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
+!                    dt_gat       ,1,MPI_REAL8,   &
+!                    0            ,MPI_COMM_WORLD,IERR)
+!    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
+!                    st_gat       ,1,MPI_INTEGER, &
+!                    0            ,MPI_COMM_WORLD,IERR)
+!    IF(NRANK.EQ.0)  THEN
+!      dt  = tfinal
+!      dtt = tfinal
+!      do i_t = 0, NPE-1
+!         dt  = dmin1( dt, dt_gat(i_t) )
          !write(*,*) '--------------dt--------------' , dt
-        if(dt.lt.dtt) st = st_gat(i_t)
-        dtt = dt
-      end do
-   END IF
-    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-    CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+!        if(dt.lt.dtt) st = st_gat(i_t)
+!        dtt = dt
+!      end do
+!   END IF
+!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!    CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
     !if(NRANK.eq.0) write(*,*) in20,time,dt
-    if(time+dt.gt.tfinal) dt = tfinal - time
-    if(time+dt.gt.tsave ) dt = tsave  - time
+!    if(time+dt.gt.tfinal) dt = tfinal - time
+!    if(time+dt.gt.tsave ) dt = tsave  - time
 
     !write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
@@ -979,7 +979,7 @@ goto 342
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
     !***** Godunov parts *****
 
-342 continue
+!342 continue
 
 
     !---------------------------skip-----------------------------
