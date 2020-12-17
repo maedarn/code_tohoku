@@ -1,7 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
@@ -14,6 +15,7 @@ DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
+double precision :: dx1,dy1,dz1
 character(28) :: dir='/data/group1/z43764r/mltgrd/'
 END MODULE comvar
 
@@ -37,6 +39,7 @@ DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
 DOUBLE PRECISION :: Lbox
+DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
@@ -93,6 +96,8 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
 ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
 ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
+ALLOCATE(Phiexa(-1:ndx,-1:ndy,-1:ndz))
+
 !write(*,*) 'OK3'
 
 call INITIA
@@ -105,6 +110,7 @@ DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
 DEALLOCATE(DTF)
 DEALLOCATE(Phi)
+DEALLOCATE(Phiexa)
 
 CALL MPI_FINALIZE(IERR)
 
@@ -131,9 +137,10 @@ double precision :: ampn(2048),ampn0(2048)
 character*3 :: NPENUM
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
-integer i3,i4
+integer i3,i4,i2y,i2z,rsph2,pls,i2x
+double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
 
-open(8,file='/work/maedarn/3DMHD/test/INPUT3D.DAT')
+open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -299,16 +306,22 @@ do k = -1, Ncellz+2
   dz(k) =  dz_i(kz)
 end do
 
+!dx=dy=dz
+dx1= dx_i(0)
+dy1= dy_i(0)
+dz1= dz_i(0)
+!dx=dy=dz
+
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
-  open(4,file='/work/maedarn/3DMHD/test/cdnt.DAT')
+  open(4,file=dir//'cdnt.DAT')
     write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
     write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
     write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
   close(4)
 END IF
 
-open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+open(2,file=dir//'tsave.DAT')
   read(2,'(1p1d25.17)') amp
   read(2,'(i8)') nunit
   close(2)
@@ -317,7 +330,7 @@ open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
   !********purtube yz plane***********!
   goto 1333
   ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
-  open(unit=28,file='/work/maedarn/3DMHD/test/delta2.dat',FORM='UNFORMATTED')
+  open(unit=28,file=dir//'delta2.dat',FORM='UNFORMATTED')
   do c=-1,Ncellz*NSPLTz+2
      do b=-1,Ncelly*NSPLTy+2
         read(28) plane(b,c)
@@ -414,6 +427,96 @@ endif
 1334 continue
 !***************sourse-gravity**************
 
+  !********************sphere***********************
+  !goto 6001
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1=1.d2
+  cenx=dble(Np1x)+0.5d0
+  ceny=dble(Np1y)+0.5d0
+  cenz=dble(Np1z)+0.5d0
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  rrsph = dble(Np1x)*0.2d0
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2x = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   rsph=dsqrt( (cenx-dble(i2x))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if(rsph .le. rrsph ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = 0.0d0
+      ndp(i,j,k)   = 0.0d0
+      ndH2(i,j,k)  = 0.0d0
+      ndHe(i,j,k)  = 0.0d0
+      ndHep(i,j,k) = 0.0d0
+      ndC(i,j,k)   = 0.0d0
+      ndCO(i,j,k)  = 0.0d0
+      ndCp(i,j,k)  = 0.0d0
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+
+!do i=1,Ncellx/2,-1
+!  call PBini(i)
+!enddo
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2x = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   rsph=dsqrt( (cenx-dble(i2x))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   if(rsph .le. rrsph ) then
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph*dx1)**2
+   else
+      Phiexa(i,j,k)=-G4pi/rsph/dx1/3.d0*dinit1*(rrsph*dx1)**3+G4pi/2.d0*dinit1*(rrsph*dx1)**2
+   end if
+end do
+end do
+end do
+
+dinit1=0.0d0
+ !6001 continue
+!********************sphere***********************
 
 
   !********purtube yz plane***********!
@@ -446,7 +549,7 @@ end do; end do; end do
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
       WRITE(NPENUM,'(I3.3)') MRANK
-      open(unit=8,file='/work/maedarn/3DMHD/test/DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+      open(unit=8,file=dir//'DTF/D'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
       do k = 1, Ncellz
       do j = 1, Ncelly
         read(8) (DTF(i,j,k),i=Ncellx*IS+1,Ncellx*IS+Ncellx)
@@ -493,7 +596,7 @@ DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCAT
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
-  open(unit=8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(unit=8,file=dir//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     read(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -557,25 +660,25 @@ character*7 stb(3)
 character*3 fnunit,fnpe
 
 
-open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+open(2,file=dir//'tsave.DAT')
   read(2,*) time
   read(2,*) nunit
 close(2)
-open(2,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
+open(2,file=dir//'tsave2D.DAT')
   read(2,*) nunit2D
 close(2)
-open(3,file='/work/maedarn/3DMHD/test/time.DAT')
+open(3,file=dir//'time.DAT')
 do i = 1, nunit
   read(3,'(1p1d25.17)') t(i)
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file='/work/maedarn/3DMHD/test/test.DAT')
+!  open(2,file=dir//'test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
-open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//'.DAT')
-!open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//fnpe//'.DAT')
+open(5,file=dir//'info'//fnunit//'.DAT')
+!open(5,file=dir//'info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -757,8 +860,8 @@ CHARACTER*3 NPENUM
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat')
-open(10,FILE='/work/maedarn/3DMHD/test/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(10,file=dir//''//filenm//NPENUM//'.dat')
+open(10,FILE=dir//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
   do k = 1, Ncellz+1
@@ -786,7 +889,7 @@ close(10)
 
 IF(NRANK.EQ.0) THEN
   t(nunit) = time
-  open(3,file='/work/maedarn/3DMHD/test/time.DAT')
+  open(3,file=dir//'time.DAT')
   do i = 1, nunit
     write(3,'(1p1d25.17)') t(i)
   end do
@@ -800,13 +903,13 @@ nunit = nunit + 1
   IF(NRANK.EQ.0) THEN
     write(5,'(a,1p1e11.3,1p1e11.3)') 'Done ! Time =', time, Tfinal
 !    close(5)
-    open(2,file='/work/maedarn/3DMHD/test/tsave.DAT')
+    open(2,file=dir//'tsave.DAT')
     write(2,'(1p1d25.17)') time
     write(2,'(i8)') nunit-1
     close(2)
   END IF
 
-  open(8,file='/work/maedarn/3DMHD/test/000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+  open(8,file=dir//'000'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   do k = 1, Ncellz+1
   do j = 1, Ncelly+1
     write(8) (U(i,j,k,1),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),U(i,j,k,5),U(i,j,k,6),U(i,j,k,7),U(i,j,k,8), &
@@ -832,7 +935,7 @@ CHARACTER*3 NPENUM
 !write(*,*) Ncellx,Ncelly
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit2D
-open(11,FILE='/work/maedarn/3DMHD/test/2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+open(11,FILE=dir//'2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
   k=1; do j=1,Ncelly
     write(11) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
                sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
@@ -845,7 +948,7 @@ close(11)
 nunit2D = nunit2D + 1
 
 IF(NRANK.EQ.0) THEN
-  open(3,file='/work/maedarn/3DMHD/test/tsave2D.DAT')
+  open(3,file=dir//'tsave2D.DAT')
     write(3,*) nunit2D
     write(3,*) time
   close(3)

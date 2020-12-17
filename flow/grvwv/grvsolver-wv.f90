@@ -1339,9 +1339,17 @@ subroutine muslcslv1D(Phiv,dt,mode)
   double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam ,deltalen !kappa -> comver  better?
   integer :: direction , mode , invdt , loopmode , dloop,cnt=0
   DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,Phiv,Phi2dt,Phiu
+  DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur,pre,preuse,uin
   character(5) name
+  integer :: i,j,k
   integer Ncell,Ncm,Ncl,ix,jy,kz,Lnum,Mnum,hazi,is,ie,idm
+  integer ixp,jyp,kzp,ixm,jym,kzm
   DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
+  double precision :: ep=1.d0 , kappa=1.d0/3.d0
+  DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
+  double precision :: delp , delm ,flmt,eps=1.0d-10
+  integer i_sta,i_end,kvan,dmein
+  integer :: ivan , ip , im
 
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
@@ -1362,7 +1370,29 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   Phipre(:,:,:) = Phiv(:,:,:)
   !------------ul.solver.+cg-------------
   if(mode==1) then
-     call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
      !------------calcurate dt/2------------
      DO Lnum = 1, Ncl-2
@@ -1383,7 +1413,39 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
      !------------calcurate dt/2------------
-     call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
      !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
      !write(*,*) Phiu(127),'127-2'
      !do i = ist , ndx-ien
@@ -1411,8 +1473,28 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   !------------ul.solver.-cg-------------
   if(mode==2) then
 
-     call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
      !------------calcurate dt/2------------
      DO Lnum = 1, Ncl-2
         DO Mnum = 1, Ncm-2
@@ -1432,9 +1514,42 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
      !------------calcurate dt/2------------
-     call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
      !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
 
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
      !do i = ist , ndx-ien
      DO Lnum = 1, Ncl-2
         DO Mnum = 1, Ncm-2
