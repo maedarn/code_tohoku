@@ -51,10 +51,6 @@ subroutine SELFGRAVWAVE(dt,mode)
      count=100
      WRITE(NPENUM,'(I3.3)') NRANK
      WRITE(countcha,'(I6.6)') count
-     !open(unit=28,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     !open(unit=38,file='/work/maedarn/3DMHD/test/PHIDTINI/INIPHI'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED')!,FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     !open(unit=8,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgp'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-     !open(unit=18,file='/work/maedarn/3DMHD/test/PHIINI/INIPHIcgm'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      open(unit=28,file=dir//'PHIINI/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED')
      do k = -1, Ncellz+2
         do j = -1, Ncelly+2
@@ -416,6 +412,22 @@ subroutine slvmuscle(dt)
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
   double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
                       Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
+    double precision :: nu2 , w=6.0d0 , dt2  , deltap,deltam ,deltalen !kappa -> comver  better?
+    integer :: direction , mode , invdt , loopmode , dloop,cnt=0
+    DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,Phiv,Phi2dt,Phiu
+    DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur,pre,preuse,uin
+    character(5) name
+    integer :: j,k
+    integer Ncell,Ncm,Ncl,ix,jy,kz,Lnum,Mnum,hazi,is,ie,idm
+    integer ixp,jyp,kzp,ixm,jym,kzm
+    !DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
+    double precision :: ep=1.d0 , kappa=1.d0/3.d0
+    DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
+    double precision :: delp , delm ,flmt,eps=1.0d-10
+    integer i_sta,i_end,kvan,dmein
+    integer :: ivan , ip , im ,loopwv
+
+    integer :: modewv(1:wvnum)
 
   !rhomean=0.d0
   do l=1,ndz-2
@@ -442,36 +454,741 @@ subroutine slvmuscle(dt)
   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
   iwx=1;iwy=0;iwz=0
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+   !call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+   !call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+   !call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+   !call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+   !call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+   !call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+   !call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+   !call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+
+!subroutine muslcslv1D(Phiv,dt,mode)
+modewv(1)=1
+modewv(2)=2
+modewv(3)=1
+modewv(4)=2
+modewv(5)=1
+modewv(6)=2
+modewv(7)=1
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
+
    !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+modewv(1)=1
+modewv(2)=2
+modewv(3)=2
+modewv(4)=1
+modewv(5)=1
+modewv(6)=2
+modewv(7)=2
+modewv(8)=1
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+modewv(1)=1
+modewv(2)=1
+modewv(3)=1
+modewv(4)=1
+modewv(5)=2
+modewv(6)=2
+modewv(7)=2
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
@@ -491,36 +1208,738 @@ subroutine slvmuscle(dt)
    !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+modewv(1)=1
+modewv(2)=1
+modewv(3)=1
+modewv(4)=1
+modewv(5)=2
+modewv(6)=2
+modewv(7)=2
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+modewv(1)=1
+modewv(2)=2
+modewv(3)=2
+modewv(4)=1
+modewv(5)=1
+modewv(6)=2
+modewv(7)=2
+modewv(8)=1
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
    call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+!   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+!   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+modewv(1)=1
+modewv(2)=2
+modewv(3)=1
+modewv(4)=2
+modewv(5)=1
+modewv(6)=2
+modewv(7)=1
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.25d0 / deltalen
+  Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
@@ -528,110 +1947,741 @@ subroutine slvmuscle(dt)
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
    iwx=1;iwy=0;iwz=0
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+modewv(1)=2
+modewv(2)=1
+modewv(3)=2
+modewv(4)=1
+modewv(5)=2
+modewv(6)=1
+modewv(7)=2
+modewv(8)=1
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+modewv(1)=2
+modewv(2)=1
+modewv(3)=1
+modewv(4)=2
+modewv(5)=2
+modewv(6)=1
+modewv(7)=1
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=0;iwz=1
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
    !call BCgrv(110,1,8)
-  
-!  do countn=1,8
-!   do k=1,ndz-2
-!     do j=1,ndy-2
-!       do i=1,ndx-2
+modewv(1)=2
+modewv(2)=2
+modewv(3)=2
+modewv(4)=2
+modewv(5)=1
+modewv(6)=1
+modewv(7)=1
+modewv(8)=1
 
-!      coeffx=1.d0
-!      coeffy=1.d0
-!      coeffz=1.d0
-!      Phiwvdffxpyp=Phiwv(i+1,j+1,k,countn)
-!      Phiwvdffxmyp=Phiwv(i-1,j+1,k,countn)
-!      Phiwvdffxpym=Phiwv(i+1,j-1,k,countn)
-!      Phiwvdffxmym=Phiwv(i-1,j-1,k,countn)
-!      Phiwvdffypzp=Phiwv(i,j+1,k+1,countn)
-!      Phiwvdffymzp=Phiwv(i,j-1,k+1,countn)
-!      Phiwvdffypzm=Phiwv(i,j+1,k-1,countn)
-!      Phiwvdffymzm=Phiwv(i,j-1,k-1,countn)
-!      Phiwvdffzpxp=Phiwv(i+1,j,k+1,countn)
-!      Phiwvdffzmxp=Phiwv(i+1,j,k-1,countn)
-!      Phiwvdffzpxm=Phiwv(i-1,j,k+1,countn)
-!      Phiwvdffzmxm=Phiwv(i-1,j,k-1,countn)
-!      if(i==1)then
-!       coeffx=2.d0
-!       Phiwvdffxmyp=Phiwv(i,j+1,k,countn)
-!       Phiwvdffxmym=Phiwv(i,j-1,k,countn)
-!       Phiwvdffzpxm=Phiwv(i,j,k+1,countn)
-!       Phiwvdffzmxm=Phiwv(i,j,k-1,countn)
-!      endif
-!      if(i==ndx-2)then
-!       coeffx=2.d0
-!       Phiwvdffxpyp=Phiwv(i,j+1,k,countn)
-!       Phiwvdffxpym=Phiwv(i,j-1,k,countn)
-!       Phiwvdffzpxp=Phiwv(i,j,k+1,countn)
-!       Phiwvdffzmxp=Phiwv(i,j,k-1,countn)
-!      endif
-!       if(j==1)then
-!        coeffy=2.d0
-!        Phiwvdffxpym=Phiwv(i+1,j,k,countn)
-!        Phiwvdffxmym=Phiwv(i-1,j,k,countn)
-!        Phiwvdffymzp=Phiwv(i,j,k+1,countn)
-!        Phiwvdffymzm=Phiwv(i,j,k-1,countn)
-!       endif
-!       if(j==ndy-2)then
-!        coeffy=2.d0
-!        Phiwvdffxpyp=Phiwv(i+1,j,k,countn)
-!        Phiwvdffxmyp=Phiwv(i-1,j,k,countn)
-!        Phiwvdffypzp=Phiwv(i,j,k+1,countn)
-!        Phiwvdffypzm=Phiwv(i,j,k-1,countn)
-!       endif
-!       if(k==1)then
-!        coeffz=2.d0
-!        Phiwvdffypzm=Phiwv(i,j+1,k,countn)
-!        Phiwvdffymzm=Phiwv(i,j-1,k,countn)
-!        Phiwvdffzmxp=Phiwv(i+1,j,k,countn)
-!        Phiwvdffzmxm=Phiwv(i-1,j,k,countn)
-!       endif
-!       if(k==ndz-2)then
-!        coeffz=2.d0
-!        Phiwvdffypzp=Phiwv(i,j+1,k,countn)
-!        Phiwvdffymzp=Phiwv(i,j-1,k,countn)
-!        Phiwvdffzpxp=Phiwv(i+1,j,k,countn)
-!        Phiwvdffzpxm=Phiwv(i-1,j,k,countn)
-!       endif
+do loopwv=1,wvnum
 
-       
-!       Phigrdwv(i,j,k,countn) = Phigrdwv(i,j,k,countn)-cg*G4pi*rho(i,j,k)*dt &
-!       -0.5d0*dt*cg*(Phiwvdffxpyp-Phiwvdffxpym-Phiwvdffxmyp+Phiwvdffxmym)/dx1/dy1 &
-!       -0.5d0*dt*cg*(Phiwvdffypzp-Phiwvdffypzm-Phiwvdffymzp+Phiwvdffymzm)/dy1/dz1 &
-!       -0.5d0*dt*cg*(Phiwvdffzpxp-Phiwvdffzpxm-Phiwvdffzmxp+Phiwvdffzmxm)/dz1/dx1
-!       enddo
-!     enddo
-!   enddo
-!  enddo
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
+
    invdxy=1.d0/dx1/dy1
    invdyz=1.d0/dy1/dz1
    invdzx=1.d0/dz1/dx1
@@ -679,391 +2729,2237 @@ subroutine slvmuscle(dt)
    !iwx=1;iwy=1;iwz=1
    !call BCgrv(110,1,8)
 
-!do k=1+1,ndz-2-1
-!  do j=1+1,ndy-2-1
-!    do i=1+1,ndx-2-1
-!    Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
-!    Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
-!    Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
-!    Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
-!    Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
-!    Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
-!    Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
-!    -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
-!    Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-!    +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
-!    +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
-!    -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
-!    enddo
-!  enddo
-!enddo
-
- 
-  
-  !k=1
-  !do j=1,ndy-2
-  !  do i=1,ndx-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
-  !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
-  !j=1
-  !do k=1,ndz-2
-  !  do i=1,ndx-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
-  !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
-  !i=1
-  !do j=1,ndy-2
-  !  do k=1,ndz-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,1)-Phiwv(i+1,j-1,k,1)+3.d0*Phiwv(i-1,j,k,1)-4.d0*Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j+2,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,1)-Phiwv(i,j+1,k-1,1)+3.d0*Phiwv(i,j-1,k,1)-4.d0*Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k+2,1))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,1)-Phiwv(i-1,j,k+1,1)+3.d0*Phiwv(i,j,k-1,1)-4.d0*Phiwv(i+1,j,k-1,1)+Phiwv(i+2,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,2)-Phiwv(i+1,j-1,k,2)+3.d0*Phiwv(i-1,j,k,2)-4.d0*Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j+2,k,2))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,2)-Phiwv(i,j+1,k-1,2)+3.d0*Phiwv(i,j-1,k,2)-4.d0*Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k+2,2))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,2)-Phiwv(i-1,j,k+1,2)+3.d0*Phiwv(i,j,k-1,2)-4.d0*Phiwv(i+1,j,k-1,2)+Phiwv(i+2,j,k-1,2))*invdzx
-  !Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,3)-Phiwv(i+1,j-1,k,3)+3.d0*Phiwv(i-1,j,k,3)-4.d0*Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j+2,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,3)-Phiwv(i,j+1,k-1,3)+3.d0*Phiwv(i,j-1,k,3)-4.d0*Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k+2,3))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,3)-Phiwv(i-1,j,k+1,3)+3.d0*Phiwv(i,j,k-1,3)-4.d0*Phiwv(i+1,j,k-1,3)+Phiwv(i+2,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,4)-Phiwv(i+1,j-1,k,4)+3.d0*Phiwv(i-1,j,k,4)-4.d0*Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j+2,k,4))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,4)-Phiwv(i,j+1,k-1,4)+3.d0*Phiwv(i,j-1,k,4)-4.d0*Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k+2,4))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,4)-Phiwv(i-1,j,k+1,4)+3.d0*Phiwv(i,j,k-1,4)-4.d0*Phiwv(i+1,j,k-1,4)+Phiwv(i+2,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,5)-Phiwv(i+1,j-1,k,5)+3.d0*Phiwv(i-1,j,k,5)-4.d0*Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j+2,k,5))*invdxy &
-  ! +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,5)-Phiwv(i,j+1,k-1,5)+3.d0*Phiwv(i,j-1,k,5)-4.d0*Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k+2,5))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,5)-Phiwv(i-1,j,k+1,5)+3.d0*Phiwv(i,j,k-1,5)-4.d0*Phiwv(i+1,j,k-1,5)+Phiwv(i+2,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j+1,k,6)-Phiwv(i+1,j-1,k,6)+3.d0*Phiwv(i-1,j,k,6)-4.d0*Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j+2,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,6)-Phiwv(i,j+1,k-1,6)+3.d0*Phiwv(i,j-1,k,6)-4.d0*Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k+2,6))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,6)-Phiwv(i-1,j,k+1,6)+3.d0*Phiwv(i,j,k-1,6)-4.d0*Phiwv(i+1,j,k-1,6)+Phiwv(i+2,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,7)-Phiwv(i+1,j-1,k,7)+3.d0*Phiwv(i-1,j,k,7)-4.d0*Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j+2,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(Phiwv(i,j+1,k+1,7)-Phiwv(i,j+1,k-1,7)+3.d0*Phiwv(i,j-1,k,7)-4.d0*Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k+2,7))*invdyz &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j,k+1,7)-Phiwv(i-1,j,k+1,7)+3.d0*Phiwv(i,j,k-1,7)-4.d0*Phiwv(i+1,j,k-1,7)+Phiwv(i+2,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(Phiwv(i+1,j+1,k,8)-Phiwv(i+1,j-1,k,8)+3.d0*Phiwv(i-1,j,k,8)-4.d0*Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j+2,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(Phiwv(i,j+1,k+1,8)-Phiwv(i,j+1,k-1,8)+3.d0*Phiwv(i,j-1,k,8)-4.d0*Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k+2,8))*invdyz &
-  !  -0.5d0*dt*cg*(Phiwv(i+1,j,k+1,8)-Phiwv(i-1,j,k+1,8)+3.d0*Phiwv(i,j,k-1,8)-4.d0*Phiwv(i+1,j,k-1,8)+Phiwv(i+2,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
-
-  !k=ndz-2
-  !do j=1,ndy-2
-  !  do i=1,ndx-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
-  !+0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
-  !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
-  !j=ndy-2
-  !do k=1,ndz-2
-  !  do i=1,ndx-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
-  !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
-  ! -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
-  !i=ndx-2
-  !do j=1,ndy-2
-  !  do k=1,ndz-2
-  !  Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,1)-4.d0*Phiwv(i+1,j-1,k,1)+Phiwv(i+1,j-2,k,1)-Phiwv(i-1,j+1,k,1)+Phiwv(i-1,j-1,k,1))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,1)-4.d0*Phiwv(i,j+1,k-1,1)+Phiwv(i,j+1,k-2,1)-Phiwv(i,j-1,k+1,1)+Phiwv(i,j-1,k-1,1))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,1)-4.d0*Phiwv(i-1,j,k+1,1)+Phiwv(i-2,j,k+1,1)-Phiwv(i+1,j,k-1,1)+Phiwv(i-1,j,k-1,1))*invdzx
-  !  Phigrdwv(i,j,k,2) = Phigrdwv(i,j,k,2)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,2)-4.d0*Phiwv(i+1,j-1,k,2)+Phiwv(i+1,j-2,k,2)-Phiwv(i-1,j+1,k,2)+Phiwv(i-1,j-1,k,2))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,2)-4.d0*Phiwv(i,j+1,k-1,2)+Phiwv(i,j+1,k-2,2)-Phiwv(i,j-1,k+1,2)+Phiwv(i,j-1,k-1,2))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,2)-4.d0*Phiwv(i-1,j,k+1,2)+Phiwv(i-2,j,k+1,2)-Phiwv(i+1,j,k-1,2)+Phiwv(i-1,j,k-1,2))*invdzx
-  !  Phigrdwv(i,j,k,3) = Phigrdwv(i,j,k,3)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,3)-4.d0*Phiwv(i+1,j-1,k,3)+Phiwv(i+1,j-2,k,3)-Phiwv(i-1,j+1,k,3)+Phiwv(i-1,j-1,k,3))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,3)-4.d0*Phiwv(i,j+1,k-1,3)+Phiwv(i,j+1,k-2,3)-Phiwv(i,j-1,k+1,3)+Phiwv(i,j-1,k-1,3))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,3)-4.d0*Phiwv(i-1,j,k+1,3)+Phiwv(i-2,j,k+1,3)-Phiwv(i+1,j,k-1,3)+Phiwv(i-1,j,k-1,3))*invdzx
-  !  Phigrdwv(i,j,k,4) = Phigrdwv(i,j,k,4)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,4)-4.d0*Phiwv(i+1,j-1,k,4)+Phiwv(i+1,j-2,k,4)-Phiwv(i-1,j+1,k,4)+Phiwv(i-1,j-1,k,4))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,4)-4.d0*Phiwv(i,j+1,k-1,4)+Phiwv(i,j+1,k-2,4)-Phiwv(i,j-1,k+1,4)+Phiwv(i,j-1,k-1,4))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,4)-4.d0*Phiwv(i-1,j,k+1,4)+Phiwv(i-2,j,k+1,4)-Phiwv(i+1,j,k-1,4)+Phiwv(i-1,j,k-1,4))*invdzx
-  !  Phigrdwv(i,j,k,5) = Phigrdwv(i,j,k,5)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,5)-4.d0*Phiwv(i+1,j-1,k,5)+Phiwv(i+1,j-2,k,5)-Phiwv(i-1,j+1,k,5)+Phiwv(i-1,j-1,k,5))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,5)-4.d0*Phiwv(i,j+1,k-1,5)+Phiwv(i,j+1,k-2,5)-Phiwv(i,j-1,k+1,5)+Phiwv(i,j-1,k-1,5))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,5)-4.d0*Phiwv(i-1,j,k+1,5)+Phiwv(i-2,j,k+1,5)-Phiwv(i+1,j,k-1,5)+Phiwv(i-1,j,k-1,5))*invdzx
-  !  Phigrdwv(i,j,k,6) = Phigrdwv(i,j,k,6)-cg*G4pi*rho(i,j,k)*dt &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,6)-4.d0*Phiwv(i+1,j-1,k,6)+Phiwv(i+1,j-2,k,6)-Phiwv(i-1,j+1,k,6)+Phiwv(i-1,j-1,k,6))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,6)-4.d0*Phiwv(i,j+1,k-1,6)+Phiwv(i,j+1,k-2,6)-Phiwv(i,j-1,k+1,6)+Phiwv(i,j-1,k-1,6))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,6)-4.d0*Phiwv(i-1,j,k+1,6)+Phiwv(i-2,j,k+1,6)-Phiwv(i+1,j,k-1,6)+Phiwv(i-1,j,k-1,6))*invdzx
-  !  Phigrdwv(i,j,k,7) = Phigrdwv(i,j,k,7)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,7)-4.d0*Phiwv(i+1,j-1,k,7)+Phiwv(i+1,j-2,k,7)-Phiwv(i-1,j+1,k,7)+Phiwv(i-1,j-1,k,7))*invdxy &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,7)-4.d0*Phiwv(i,j+1,k-1,7)+Phiwv(i,j+1,k-2,7)-Phiwv(i,j-1,k+1,7)+Phiwv(i,j-1,k-1,7))*invdyz &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,7)-4.d0*Phiwv(i-1,j,k+1,7)+Phiwv(i-2,j,k+1,7)-Phiwv(i+1,j,k-1,7)+Phiwv(i-1,j,k-1,7))*invdzx
-  !  Phigrdwv(i,j,k,8) = Phigrdwv(i,j,k,8)-cg*G4pi*rho(i,j,k)*dt &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i+1,j,k,8)-4.d0*Phiwv(i+1,j-1,k,8)+Phiwv(i+1,j-2,k,8)-Phiwv(i-1,j+1,k,8)+Phiwv(i-1,j-1,k,8))*invdxy &
-  !  +0.5d0*dt*cg*(3.d0*Phiwv(i,j+1,k,8)-4.d0*Phiwv(i,j+1,k-1,8)+Phiwv(i,j+1,k-2,8)-Phiwv(i,j-1,k+1,8)+Phiwv(i,j-1,k-1,8))*invdyz &
-  !  -0.5d0*dt*cg*(3.d0*Phiwv(i,j,k+1,8)-4.d0*Phiwv(i-1,j,k+1,8)+Phiwv(i-2,j,k+1,8)-Phiwv(i+1,j,k-1,8)+Phiwv(i-1,j,k-1,8))*invdzx
-  !  enddo
-  !enddo
 
    iwx=0;iwy=0;iwz=1
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+modewv(1)=2
+modewv(2)=2
+modewv(3)=2
+modewv(4)=2
+modewv(5)=1
+modewv(6)=1
+modewv(7)=1
+modewv(8)=1
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
+   !call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
+modewv(1)=2
+modewv(2)=1
+modewv(3)=1
+modewv(4)=2
+modewv(5)=2
+modewv(6)=1
+modewv(7)=1
+modewv(8)=2
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(110,1,8)
    iwx=1;iwy=0;iwz=0
    call BCgrv(110,1,8)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
-   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,2),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,3),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,4),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,5),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,6),dt*0.5d0,1)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
+!   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
+modewv(1)=2
+modewv(2)=1
+modewv(3)=2
+modewv(4)=1
+modewv(5)=2
+modewv(6)=1
+modewv(7)=2
+modewv(8)=1
+
+do loopwv=1,wvnum
+
+if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+     if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+        if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+  !----kyoukai-----
+   !if(hazi==1)then
+   !   is = 2
+   !   ie = Ncell-3
+   !end if
+   !if(hazi==2)then
+      is = 1
+      ie = Ncell-2
+   !end if
+  !----kyoukai-----
+  nu2 = cg * dt * 0.5d0 / deltalen
+  Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
+  !------------ul.solver.+cg-------------
+  if(modewv(loopwv)==1) then
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-2,ndx-ien+2
+     ul(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+     !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !call vanalbada(pre,slop)
+     !do i = is,ie
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+     ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+          * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+     Phiu(ix,jy,kz)=ul(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !uin(:)=ul(:)
+
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+     !write(*,*) Phiu(127),'127-2'
+     !do i = ist , ndx-ien
+      DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+           end do
+        end DO
+     end DO
+  end if
+  !------------ul.solver.+cg-------------
+
+
+
+  !------------ul.solver.-cg-------------
+  if(modewv(loopwv)==2) then
+
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+     !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(pre,slop)
+     do i = is-2,ie+2
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = is,ie
+     ur(ix,jy,kz) = Phipre(ix,jy,kz)
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+
+     !------------calcurate dt/2------------
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !do i=ist-1,ndx-ien+1
+              Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+     !------------calcurate dt/2------------
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+     !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+     DO Lnum = 1, Ncl-2
+     DO Mnum = 1, Ncm-2
+     !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+     do i = is-1,ie+1
+     ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+     jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+     kz  = iwx*Lnum + iwy*Mnum + iwz*i
+     ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+     jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+     kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+     ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+     jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+     kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+     !do i = ist-1,ndx-ien+1
+
+     delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+     delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+     flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+     !Phigrad(ix,jy,kz) = flmt
+     !slop(i) = flmt
+
+     ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+          * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+          (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+     Phiu(ix,jy,kz)=ur(ix,jy,kz)
+     end do
+     end DO
+     end DO
+     !write(*,*) slop(127),'127slop'
+     !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+     !write(*,*) u(2)
+     !uin(:)=ur(:)
+      
+     !do i = ist , ndx-ien
+     DO Lnum = 1, Ncl-2
+        DO Mnum = 1, Ncm-2
+           do i = is,ie
+              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+           end do
+        end DO
+     end DO
+
+     !do i=-1,ndx
+     !   write(202,*) i, Phiv(i)
+     !end do
+
+  end if
+  !------------ul.solver.-cg-------------
+enddo
    !call BCgrv(110,1,8)
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
 
-  !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
-  iwx=1;iwy=0;iwz=0
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   !call BCgrv(100,1,8)
-   iwx=0;iwy=1;iwz=0
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   !call BCgrv(100,1,8)
-   iwx=0;iwy=0;iwz=1
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   !call BCgrv(100,1,8)
-   do k=1,ndz-2
-     do j=1,ndy-2
-        do i=1,ndx-2
-     Phiwv(i,j,k,1) = Phiwv(i,j,k,1)+cg*dt*Phigrdwv(i,j,k,1)*0.5d0
-     Phiwv(i,j,k,2) = Phiwv(i,j,k,2)+cg*dt*Phigrdwv(i,j,k,2)*0.5d0
-     Phiwv(i,j,k,3) = Phiwv(i,j,k,3)+cg*dt*Phigrdwv(i,j,k,3)*0.5d0
-     Phiwv(i,j,k,4) = Phiwv(i,j,k,4)+cg*dt*Phigrdwv(i,j,k,4)*0.5d0
-     Phiwv(i,j,k,5) = Phiwv(i,j,k,5)+cg*dt*Phigrdwv(i,j,k,5)*0.5d0
-     Phiwv(i,j,k,6) = Phiwv(i,j,k,6)+cg*dt*Phigrdwv(i,j,k,6)*0.5d0
-     Phiwv(i,j,k,7) = Phiwv(i,j,k,7)+cg*dt*Phigrdwv(i,j,k,7)*0.5d0
-     Phiwv(i,j,k,8) = Phiwv(i,j,k,8)+cg*dt*Phigrdwv(i,j,k,8)*0.5d0
-        enddo
+    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+    iwx=1;iwy=0;iwz=0
+     call BCgrv(100,1,8)
+     !call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+     !call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+     !call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+     !call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+     !call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+     !call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+     !call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+     !call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+
+  !subroutine muslcslv1D(Phiv,dt,mode)
+  modewv(1)=1
+  modewv(2)=2
+  modewv(3)=1
+  modewv(4)=2
+  modewv(5)=1
+  modewv(6)=2
+  modewv(7)=1
+  modewv(8)=2
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+
+     !call BCgrv(100,1,8)
+     iwx=0;iwy=1;iwz=0
+     call BCgrv(100,1,8)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+  modewv(1)=1
+  modewv(2)=2
+  modewv(3)=2
+  modewv(4)=1
+  modewv(5)=1
+  modewv(6)=2
+  modewv(7)=2
+  modewv(8)=1
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+     !call BCgrv(100,1,8)
+     iwx=0;iwy=0;iwz=1
+     call BCgrv(100,1,8)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+  modewv(1)=1
+  modewv(2)=1
+  modewv(3)=1
+  modewv(4)=1
+  modewv(5)=2
+  modewv(6)=2
+  modewv(7)=2
+  modewv(8)=2
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+     !call BCgrv(100,1,8)
+     do k=1,ndz-2
+       do j=1,ndy-2
+          do i=1,ndx-2
+       Phiwv(i,j,k,1) = Phiwv(i,j,k,1)+cg*dt*Phigrdwv(i,j,k,1)*0.5d0
+       Phiwv(i,j,k,2) = Phiwv(i,j,k,2)+cg*dt*Phigrdwv(i,j,k,2)*0.5d0
+       Phiwv(i,j,k,3) = Phiwv(i,j,k,3)+cg*dt*Phigrdwv(i,j,k,3)*0.5d0
+       Phiwv(i,j,k,4) = Phiwv(i,j,k,4)+cg*dt*Phigrdwv(i,j,k,4)*0.5d0
+       Phiwv(i,j,k,5) = Phiwv(i,j,k,5)+cg*dt*Phigrdwv(i,j,k,5)*0.5d0
+       Phiwv(i,j,k,6) = Phiwv(i,j,k,6)+cg*dt*Phigrdwv(i,j,k,6)*0.5d0
+       Phiwv(i,j,k,7) = Phiwv(i,j,k,7)+cg*dt*Phigrdwv(i,j,k,7)*0.5d0
+       Phiwv(i,j,k,8) = Phiwv(i,j,k,8)+cg*dt*Phigrdwv(i,j,k,8)*0.5d0
+          enddo
+       enddo
      enddo
-   enddo
-   !iwx=1;iwy=1;iwz=1
-   !call BCgrv(100,1,8)
-   iwx=0;iwy=0;iwz=1
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   !call BCgrv(100,1,8)
-   iwx=0;iwy=1;iwz=0
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
-   !call BCgrv(100,1,8)
-   iwx=1;iwy=0;iwz=0
-   call BCgrv(100,1,8)
-   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
-   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
-   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
-   !call BCgrv(100,1,8)
-   !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+     !iwx=1;iwy=1;iwz=1
+     !call BCgrv(100,1,8)
+     iwx=0;iwy=0;iwz=1
+     call BCgrv(100,1,8)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+  modewv(1)=1
+  modewv(2)=1
+  modewv(3)=1
+  modewv(4)=1
+  modewv(5)=2
+  modewv(6)=2
+  modewv(7)=2
+  modewv(8)=2
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+     !call BCgrv(100,1,8)
+     iwx=0;iwy=1;iwz=0
+     call BCgrv(100,1,8)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
+  modewv(1)=1
+  modewv(2)=2
+  modewv(3)=2
+  modewv(4)=1
+  modewv(5)=1
+  modewv(6)=2
+  modewv(7)=2
+  modewv(8)=1
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+     !call BCgrv(100,1,8)
+     iwx=1;iwy=0;iwz=0
+     call BCgrv(100,1,8)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,1),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,2),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,3),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,4),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,5),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,6),dt*0.25d0,2)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
+  !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
+  modewv(1)=1
+  modewv(2)=2
+  modewv(3)=1
+  modewv(4)=2
+  modewv(5)=1
+  modewv(6)=2
+  modewv(7)=1
+  modewv(8)=2
+
+  do loopwv=1,wvnum
+
+  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
+       if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
+          if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 = 1; BT2 = 2; VN = 4; end if
+
+    !----kyoukai-----
+     !if(hazi==1)then
+     !   is = 2
+     !   ie = Ncell-3
+     !end if
+     !if(hazi==2)then
+        is = 1
+        ie = Ncell-2
+     !end if
+    !----kyoukai-----
+    nu2 = cg * dt * 0.25d0 / deltalen
+    Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
+    !------------ul.solver.+cg-------------
+    if(modewv(loopwv)==1) then
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-2,ndx-ien+2
+       ul(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,10)
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i=ist-1,ndx-ien+1 !一次なので大丈夫
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz)- 0.5d0 * nu2 * ( Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
+
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+       !subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie) to check van-chara
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !call vanalbada(pre,slop)
+       !do i = is,ie
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+
+       ul(ix,jy,kz) = Phi2dt(ix,jy,kz) + 0.25d0 * ep * flmt &
+            * ((1.0d0-flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0+flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i+1/2
+       Phiu(ix,jy,kz)=ul(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !uin(:)=ul(:)
+
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1)
+       !write(*,*) Phiu(127),'127-2'
+       !do i = ist , ndx-ien
+        DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) - nu2 * (Phiu(ix,jy,kz) - Phiu(ixm,jym,kzm))
+             end do
+          end DO
+       end DO
+    end if
+    !------------ul.solver.+cg-------------
+
+
+
+    !------------ul.solver.-cg-------------
+    if(modewv(loopwv)==2) then
+
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
+       !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(pre,slop)
+       do i = is-2,ie+2
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = is,ie
+       ur(ix,jy,kz) = Phipre(ix,jy,kz)
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+
+       !------------calcurate dt/2------------
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is-1,ie+1
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                !do i=ist-1,ndx-ien+1
+                Phi2dt(ix,jy,kz) = Phipre(ix,jy,kz) + 0.5d0 * nu2 * ( Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+       !------------calcurate dt/2------------
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
+       !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,4)
+       DO Lnum = 1, Ncl-2
+       DO Mnum = 1, Ncm-2
+       !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+
+       do i = is-1,ie+1
+       ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+       jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+       kz  = iwx*Lnum + iwy*Mnum + iwz*i
+       ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+       jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+       kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+       ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+       jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+       kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+       !do i = ist-1,ndx-ien+1
+
+       delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+       delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+       flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+       !Phigrad(ix,jy,kz) = flmt
+       !slop(i) = flmt
+
+       ur(ix,jy,kz) = Phi2dt(ix,jy,kz) - 0.25d0 * ep * flmt &
+            * ((1.0d0+flmt*kappa)*(Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)) + &
+            (1.0d0-flmt*kappa)*(Phipre(ixp,jyp,kzp) - Phipre(ix,jy,kz))) !i-1/2
+       Phiu(ix,jy,kz)=ur(ix,jy,kz)
+       end do
+       end DO
+       end DO
+       !write(*,*) slop(127),'127slop'
+       !write(*,*) slop(ndx-ien),ndx-ien,slop(ndx-ien+1)
+       !write(*,*) u(2)
+       !uin(:)=ur(:)
+        
+       !do i = ist , ndx-ien
+       DO Lnum = 1, Ncl-2
+          DO Mnum = 1, Ncm-2
+             do i = is,ie
+                ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+                jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+                kz  = iwx*Lnum + iwy*Mnum + iwz*i
+                ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+                jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+                kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+                ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+                jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+                kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+                Phiv(ix,jy,kz) = Phipre(ix,jy,kz) + nu2 * (Phiu(ixp,jyp,kzp) - Phiu(ix,jy,kz))
+             end do
+          end DO
+       end DO
+
+       !do i=-1,ndx
+       !   write(202,*) i, Phiv(i)
+       !end do
+
+    end if
+    !------------ul.solver.-cg-------------
+  enddo
+     !call BCgrv(100,1,8)
+     !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
+
   !****************slv-wv****************
 
   !iwx=1; iwy=1; iwz=1
