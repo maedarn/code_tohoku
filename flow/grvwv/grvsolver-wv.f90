@@ -103,11 +103,11 @@ U(i,j,k,1) = dble(dmy(28))
      !write(*,*) '------pb1-------' ,Nrank
 
      !****calcurate bc****
-     call collect()
-     Call PB( 0)
-     Call PB(-1)
-     Call PB(-2)
-     call pbphigrd(dt)
+     !call collect()
+     !Call PB( 0)
+     !Call PB(-1)
+     !Call PB(-2)
+     !call pbphigrd(dt)
      !****calcurate bc****
      call slvmuscle(dt)
   end if
@@ -408,21 +408,21 @@ subroutine slvmuscle(dt)
   use slfgrv
   INCLUDE 'mpif.h'
   double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0,invdxy,invdyz,invdzx!,rhomean
-  integer :: i=0,n,m,l,countn
+  integer :: i=0,n,m,l
   double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
-  double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
-                      Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
-    double precision :: nu2 , w=6.0d0 , dt2  , deltap,deltam ,deltalen !kappa -> comver  better?
-    integer :: direction , mode , invdt , loopmode , dloop,cnt=0
-    DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre,Phiv,Phi2dt,Phiu
-    DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur,pre,preuse,uin
+  !double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
+  !                    Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
+    double precision :: nu2 , w=6.0d0 , deltalen !, dt2 !, deltap,deltam ,deltalen !kappa -> comver  better?
+    integer :: loopmode ,cnt=0 !, dloop
+    DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phipre,Phiv,Phi2dt,Phiu
+    DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur
     character(5) name
     integer :: j,k
     integer Ncell,Ncm,Ncl,ix,jy,kz,Lnum,Mnum,hazi,is,ie,idm
     integer ixp,jyp,kzp,ixm,jym,kzm
     !DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
     double precision :: ep=1.d0 , kappa=1.d0/3.d0
-    DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
+    !DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
     double precision :: delp , delm ,flmt,eps=1.0d-10
     integer i_sta,i_end,kvan,dmein
     integer :: ivan , ip , im ,loopwv
@@ -472,6 +472,8 @@ modewv(5)=1
 modewv(6)=2
 modewv(7)=1
 modewv(8)=2
+
+!wvnum=1
 
 do loopwv=1,wvnum
 
@@ -5004,8 +5006,8 @@ if(mode==100) then
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
-     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+     !Phiwv(IX,JY,KZ,idm)= bphil(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
      END DO;END DO;END DO
   END IF
   enddo
@@ -5028,8 +5030,8 @@ if(mode==100) then
   IF(IST.eq.NSPLTx-1) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
-     !Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+     !Phiwv(IX,JY,KZ,idm)= bphir(JY,KZ,IX)
+     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
      END DO;END DO;END DO
   END IF
   enddo
@@ -5130,8 +5132,8 @@ if(mode==110) then
   IF(IST.eq.0) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = 1-N_ol, 0
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 1
-     Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
-     !Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
+     !Phigrdwv(IX,JY,KZ,idm)= bphigrdxl(JY,KZ,IX,idm)
+     Phigrdwv(IX,JY,KZ,idm) = Phigrd(IX,JY,KZ,idm)
      END DO;END DO;END DO
   END IF
   enddo
@@ -5154,8 +5156,8 @@ if(mode==110) then
   IF(IST.eq.NSPLTx-1) THEN
      DO KZ = -1, Ncellz+2; DO JY = -1, Ncelly+2; DO IX = Ncellx+1, Ncellx+N_ol
      !DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = Ncellx, Ncellx+N_ol
-     Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
-     !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
+     !Phigrdwv(IX,JY,KZ,idm)= bphigrdxr(JY,KZ,IX,idm)
+     Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
      END DO;END DO;END DO
   END IF
   enddo
@@ -6347,8 +6349,8 @@ do i1=1,nn1/4+1
   j1=nn1/2-i1+2 
   do i2=1,nn2 
     j2=1
-    if(i2.ne.1) j2=nn2-i2+2 
-    if(i1.eq.1) then
+    if(i2 .ne. 1) j2=nn2-i2+2
+    if(i1 .eq. 1) then
       h1=c1*(data(1,i2)+conjg(speq(j2))) 
       h2=c2*(data(1,i2)-conjg(speq(j2)))
       data(1,i2)=h1+h2 
@@ -6388,7 +6390,7 @@ do idim=1,ndim
   ip3=ip2*nrem 
   i2rev=1 
   do i2=1,ip2,ip1
-    if(i2.lt.i2rev)then 
+    if(i2 .lt. i2rev)then
       do i1=i2,i2+ip1-2,2 
         do i3=i1,ip3,ip2 
           i3rev=i2rev+i3-i2 
@@ -6402,7 +6404,7 @@ do idim=1,ndim
       enddo 
     endif 
     ibit=ip2/2 
-1   if((ibit.ge.ip1).and.(i2rev.gt.ibit)) then 
+1   if((ibit .ge. ip1).and.(i2rev .gt. ibit)) then
       i2rev=i2rev-ibit 
       ibit=ibit/2 
       goto 1 
@@ -6410,7 +6412,7 @@ do idim=1,ndim
     i2rev=i2rev+ibit 
   enddo
   ifp1=ip1
-2 if(ifp1.lt.ip2)then 
+2 if(ifp1 .lt. ip2)then
     ifp2=2*ifp1 
     theta=isign*6.28318530717959d0/(ifp2/ip1)
     wpr=-2.d0*sin(0.5d0*theta)**2 
@@ -6501,16 +6503,23 @@ USE slfgrv
 INCLUDE 'mpif.h'
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision :: tMPI(1:Ncellx,1:Ncelly,1:Ncellz,0:NPE-1)
-
+integer Nroot
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*) 'cll',NRANK
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
 rhomean=0.d0
 do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
   tMPI(i,j,k,NRANK)=U(i,j,k,1)
 end do;end do;end do
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'cll-2'
 do Nroot=0,NPE-1
   CALL MPI_BCAST(tMPI(1,1,1,Nroot),(Ncellx)*(Ncelly)*(Ncellz),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  !CALL MPI_BCAST(tMPI(0,0,0,Nroot),(nx2+1 )*(ny2+1 )*(nz2+1 ),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*) 'cll-3'
 do Nroot=0,NPE-1
  ISTt = mod(Nroot,NSPLTx); KSTt = Nroot/(NSPLTx*NSPLTy); JSTt = Nroot/NSPLTx-NSPLTy*KSTt
 do kk=1,Ncellz!; k=KSTt*Ncellz+kk
@@ -6520,7 +6529,6 @@ do ii=1,Ncellz!; i=ISTt*Ncellx+ii
     rhomean = tMPI(ii,jj,kk,Nroot)+rhomean
 end do;end do;end do;end do
 rhomean=rhomean/dble(Ncellx*NSPLTx)/dble(Ncelly*NSPLTy)/dble(Ncellz*NSPLTz)
-
 !rhomean=0.d0
 END SUBROUTINE collect
 

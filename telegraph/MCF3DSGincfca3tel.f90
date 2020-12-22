@@ -1,11 +1,11 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 !INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
-DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
-DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
-DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
+DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
+DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
+DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
@@ -18,10 +18,10 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=10.d0,adiff=0.375d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
-character(27) :: dir='/data/group1/z43764r/grvwv/' !samplecnv2
+character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
@@ -297,36 +297,20 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
   end if
 end do; end do; end do
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*) NRANK,'INIT'
-!ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
-!ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
+ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
+ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
 
-ALLOCATE(dx_i(-1-1:Ncellx*NSPLTx+2+2)); ALLOCATE(dy_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE(dz_i(-1-1:Ncellz*NSPLTz+2+1))
-ALLOCATE( x_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE( y_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE( z_i(-1-1:Ncellz*NSPLTz+2+1))
-
-!do i = -1, Np1x
-!  dx_i(i) = ql1x/dble(Np1x)
-!end do
-!do i = Np1x+1, Ncellx*NSPLTx+2
-!  dx_i(i) = ql2x/dble(Np2x)
-!end do
-!do j = -1, Ncelly*NSPLTy+2
-!  dy_i(j) = ql1y/dble(Np1y)
-!end do
-!do k = -1, Ncellz*NSPLTz+2
-!  dz_i(k) = ql1z/dble(Np1z)
-!end do
-do i = -1-1, Np1x
+do i = -1, Np1x
   dx_i(i) = ql1x/dble(Np1x)
 end do
-do i = Np1x+1, Ncellx*NSPLTx+2+1
+do i = Np1x+1, Ncellx*NSPLTx+2
   dx_i(i) = ql2x/dble(Np2x)
 end do
-do j = -1-1, Ncelly*NSPLTy+2+1
+do j = -1, Ncelly*NSPLTy+2
   dy_i(j) = ql1y/dble(Np1y)
 end do
-do k = -1-1, Ncellz*NSPLTz+2+1
+do k = -1, Ncellz*NSPLTz+2
   dz_i(k) = ql1z/dble(Np1z)
 end do
 
@@ -337,32 +321,29 @@ dz1= dz_i(0)
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
-x_i(-2) = x_i(-1)-dx_i(0)
-do i = 0, Ncellx*NSPLTx+2+1
+do i = 0, Ncellx*NSPLTx+2
    x_i(i) = x_i(i-1) + dx_i(i)
 end do
 y_i(-1) = -dy_i(0)
-y_i(-2) = y_i(-1)-dy_i(0)
-do j = 0, Ncelly*NSPLTy+2+1
+do j = 0, Ncelly*NSPLTy+2
    y_i(j) = y_i(j-1) + dy_i(j)
 end do
 z_i(-1) = -dz_i(0)
-z_i(-2) = z_i(-1)-dz_i(0)
-do k = 0, Ncellz*NSPLTz+2+1
+do k = 0, Ncellz*NSPLTz+2
    z_i(k) = z_i(k-1) + dz_i(k)
 end do
 
-do i = -1-1, Ncellx+2+1
+do i = -1, Ncellx+2
   ix    =  IST*Ncellx + i
   x(i)  =  x_i(ix)
   dx(i) =  dx_i(ix)
 end do
-do j = -1-1, Ncelly+2+1
+do j = -1, Ncelly+2
   jy    =  JST*Ncelly + j
   y(j)  =  y_i(jy)
   dy(j) =  dy_i(jy)
 end do
-do k = -1-1, Ncellz+2+1
+do k = -1, Ncellz+2
   kz    =  KST*Ncellz + k
   z(k)  =  z_i(kz)
   dz(k) =  dz_i(kz)
@@ -514,8 +495,7 @@ dinit1=0.0d0
  6011 continue
 !********************sheet***********************
 !write(*,*) 'sheet2'
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-write(*,*) NRANK,'INIT1-2'
+
   !********************sphere***********************
   !goto 6001
   DTF(:,:,:) = 0.0d0
@@ -534,8 +514,7 @@ write(*,*) NRANK,'INIT1-2'
    cenx=dble(Np1x)+0.5d0
    ceny=dble(Np1y)+0.5d0
    cenz=dble(Np1z)+0.5d0
-   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
-   rsph=dsqrt( (cenx-x(i2))**2 + (ceny-y(i2y))**2 + (cenz-z(i2z))**2 )
+   rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    if(rsph .le. rrsph ) then
       U(i,j,k,1) = dinit1
       U(i,j,k,2) = 0.0d0
@@ -582,8 +561,7 @@ write(*,*) NRANK,'INIT1-2'
 end do
 end do
 end do
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-write(*,*) NRANK,'INIT2'
+
 !do i=1,Ncellx/2,-1
 !  call PBini(i)
 !enddo
@@ -604,16 +582,15 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
 end do
 end do
 end do
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-write(*,*) NRANK,'INIT3'
-call collectrho()
-write(*,*) NRANK,'INIT3-1'
+
+call collect()
+
 !do i=0,-(Ncellx/2-1),-1
 do pls=0,Ncellx*NSPLTx-1
   call PBini(pls)
 enddo
 !write(*,*) Phiexa(1,1,1)
-write(*,*) NRANK,'INIT3-1'
+
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
                     +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
@@ -638,7 +615,6 @@ end do
 
 dinit1=0.0d0
  !6001 continue
-write(*,*) NRANK,'INIT4'
 !********************sphere***********************
 
 
@@ -821,7 +797,6 @@ end if
  !write(*,*) 'posgrv1'
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !write(*,*) 'OK6'
-write(*,*) NRANK,'INIT6'
 END SUBROUTINE INITIA
 
 
@@ -919,7 +894,7 @@ do in10 = 1, maxstp
     !stt= dt_mpi(NRANK)
 
     !---------------debug-------------------
-    !write(*,*) '---------4-----------',NRANK,in20,in10
+    write(*,*) '---------4-----------',NRANK,in20,in10
     !---------------debug-------------------
 
 
@@ -962,35 +937,35 @@ do in10 = 1, maxstp
  !---------------debug-------------------
  !write(*,*) '-------------1-----------',NRANK
  !---------------debug-------------------
-!goto 342
+goto 342
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
-!    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
-!    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
+    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
+    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
-!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
-!                    dt_gat       ,1,MPI_REAL8,   &
-!                    0            ,MPI_COMM_WORLD,IERR)
-!    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
-!                    st_gat       ,1,MPI_INTEGER, &
-!                    0            ,MPI_COMM_WORLD,IERR)
-!    IF(NRANK.EQ.0)  THEN
-!      dt  = tfinal
-!      dtt = tfinal
-!      do i_t = 0, NPE-1
-!         dt  = dmin1( dt, dt_gat(i_t) )
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
+                    dt_gat       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
+                    st_gat       ,1,MPI_INTEGER, &
+                    0            ,MPI_COMM_WORLD,IERR)
+    IF(NRANK.EQ.0)  THEN
+      dt  = tfinal
+      dtt = tfinal
+      do i_t = 0, NPE-1
+         dt  = dmin1( dt, dt_gat(i_t) )
          !write(*,*) '--------------dt--------------' , dt
-!        if(dt.lt.dtt) st = st_gat(i_t)
-!        dtt = dt
-!      end do
-!   END IF
-!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!    CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+        if(dt.lt.dtt) st = st_gat(i_t)
+        dtt = dt
+      end do
+   END IF
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
     !if(NRANK.eq.0) write(*,*) in20,time,dt
-!    if(time+dt.gt.tfinal) dt = tfinal - time
-!    if(time+dt.gt.tsave ) dt = tsave  - time
+    if(time+dt.gt.tfinal) dt = tfinal - time
+    if(time+dt.gt.tsave ) dt = tsave  - time
 
     !write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
 !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
@@ -1004,7 +979,7 @@ do in10 = 1, maxstp
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
     !***** Godunov parts *****
 
-!342 continue
+342 continue
 
 
     !---------------------------skip-----------------------------
@@ -1107,7 +1082,7 @@ do in10 = 1, maxstp
   !itime = itime + 1
 
   if(ifgrv.eq.2) then
-!     call  SELFGRAVWAVE(0.0d0,4)
+     call  SELFGRAVWAVE(0.0d0,4)
   end if
 
 
@@ -1144,7 +1119,7 @@ end do
 !if(ifgrv.eq.2) then !if文中には飛べない
 2419 continue
 if(ifgrv.eq.2) then
-!   call  SELFGRAVWAVE(0.0d0,4)
+   call  SELFGRAVWAVE(0.0d0,4)
 end if
 !**********************!収束判定
 write(*,*) 'save',NRANK
