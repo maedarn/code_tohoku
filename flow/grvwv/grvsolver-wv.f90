@@ -465,17 +465,17 @@ subroutine slvmuscle(dt)
 
 !subroutine muslcslv1D(Phiv,dt,mode)
 modewv(1)=1
-modewv(2)=2
-modewv(3)=1
-modewv(4)=2
-modewv(5)=1
-modewv(6)=2
-modewv(7)=1
-modewv(8)=2
+!modewv(2)=2
+!modewv(3)=1
+!modewv(4)=2
+!modewv(5)=1
+!modewv(6)=2
+!modewv(7)=1
+!modewv(8)=2
 
 !wvnum=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -494,7 +494,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -590,12 +590,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2451
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -698,8 +699,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2451 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
 
    !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
@@ -713,15 +715,15 @@ enddo
 !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
 !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
 modewv(1)=1
-modewv(2)=2
-modewv(3)=2
-modewv(4)=1
-modewv(5)=1
-modewv(6)=2
-modewv(7)=2
-modewv(8)=1
+!modewv(2)=2
+!modewv(3)=2
+!modewv(4)=1
+!modewv(5)=1
+!modewv(6)=2
+!modewv(7)=2
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -740,7 +742,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -836,12 +838,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2452
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -944,8 +947,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2452 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(100,1,8)
    iwx=0;iwy=0;iwz=1
    call BCgrv(100,1,8)
@@ -958,15 +962,15 @@ enddo
 !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
 !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
 modewv(1)=1
-modewv(2)=1
-modewv(3)=1
-modewv(4)=1
-modewv(5)=2
-modewv(6)=2
-modewv(7)=2
-modewv(8)=2
+!modewv(2)=1
+!modewv(3)=1
+!modewv(4)=1
+!modewv(5)=2
+!modewv(6)=2
+!modewv(7)=2
+!modewv(8)=2
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -985,7 +989,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -1081,12 +1085,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2453
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -1189,8 +1194,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2453 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(100,1,8)
    do k=1,ndz-2
      do j=1,ndy-2
@@ -1219,15 +1225,15 @@ enddo
 !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
 !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
 modewv(1)=1
-modewv(2)=1
-modewv(3)=1
-modewv(4)=1
-modewv(5)=2
-modewv(6)=2
-modewv(7)=2
-modewv(8)=2
+!modewv(2)=1
+!modewv(3)=1
+!modewv(4)=1
+!modewv(5)=2
+!modewv(6)=2
+!modewv(7)=2
+!modewv(8)=2
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -1246,7 +1252,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -1342,12 +1348,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2454
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -1450,8 +1457,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2454 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(100,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(100,1,8)
@@ -1464,15 +1472,15 @@ enddo
 !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
 !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
 modewv(1)=1
-modewv(2)=2
-modewv(3)=2
-modewv(4)=1
-modewv(5)=1
-modewv(6)=2
-modewv(7)=2
-modewv(8)=1
+!modewv(2)=2
+!modewv(3)=2
+!modewv(4)=1
+!modewv(5)=1
+!modewv(6)=2
+!modewv(7)=2
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -1491,7 +1499,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -1587,12 +1595,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2455
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -1695,8 +1704,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2455 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(100,1,8)
    iwx=1;iwy=0;iwz=0
    call BCgrv(100,1,8)
@@ -1709,15 +1719,15 @@ enddo
 !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,1)
 !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
 modewv(1)=1
-modewv(2)=2
-modewv(3)=1
-modewv(4)=2
-modewv(5)=1
-modewv(6)=2
-modewv(7)=1
-modewv(8)=2
+!modewv(2)=2
+!modewv(3)=1
+!modewv(4)=2
+!modewv(5)=1
+!modewv(6)=2
+!modewv(7)=1
+!modewv(8)=2
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -1736,7 +1746,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.25d0 / deltalen
   Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
-  if(modewv(loopwv)==1) then
+!  if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
      DO Lnum = 1, Ncl-2
@@ -1832,12 +1842,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
            end do
         end DO
      end DO
-  end if
+!  end if
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
+goto 2456
   if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -1940,8 +1951,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !end do
 
   end if
+2456 continue
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(100,1,8)
    !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
@@ -1958,15 +1970,15 @@ enddo
 !   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
 !   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
 modewv(1)=2
-modewv(2)=1
-modewv(3)=2
-modewv(4)=1
-modewv(5)=2
-modewv(6)=1
-modewv(7)=2
-modewv(8)=1
+!modewv(2)=1
+!modewv(3)=2
+!modewv(4)=1
+!modewv(5)=2
+!modewv(6)=1
+!modewv(7)=2
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -1985,6 +1997,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2457
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -2082,12 +2095,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2457 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -2188,9 +2202,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+!  end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(110,1,8)
@@ -2211,7 +2225,7 @@ modewv(6)=1
 modewv(7)=1
 modewv(8)=2
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -2230,6 +2244,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2458
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -2327,12 +2342,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2458 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -2433,9 +2449,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+!  end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=0;iwz=1
    call BCgrv(110,1,8)
@@ -2450,15 +2466,15 @@ enddo
 !   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
    !call BCgrv(110,1,8)
 modewv(1)=2
-modewv(2)=2
-modewv(3)=2
-modewv(4)=2
-modewv(5)=1
-modewv(6)=1
-modewv(7)=1
-modewv(8)=1
+!modewv(2)=2
+!modewv(3)=2
+!modewv(4)=2
+!modewv(5)=1
+!modewv(6)=1
+!modewv(7)=1
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -2477,6 +2493,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2459
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -2574,12 +2591,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2459 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -2680,9 +2698,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+!  end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
 
    invdxy=1.d0/dx1/dy1
    invdyz=1.d0/dy1/dz1
@@ -2743,15 +2761,15 @@ enddo
    !call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    !call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
 modewv(1)=2
-modewv(2)=2
-modewv(3)=2
-modewv(4)=2
-modewv(5)=1
-modewv(6)=1
-modewv(7)=1
-modewv(8)=1
+!modewv(2)=2
+!modewv(3)=2
+!modewv(4)=2
+!modewv(5)=1
+!modewv(6)=1
+!modewv(7)=1
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -2770,6 +2788,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2460
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -2867,12 +2886,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2460 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -2973,9 +2993,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+!  end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(110,1,8)
    iwx=0;iwy=1;iwz=0
    call BCgrv(110,1,8)
@@ -2988,15 +3008,15 @@ enddo
    !call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,1)
    !call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,2)
 modewv(1)=2
-modewv(2)=1
-modewv(3)=1
-modewv(4)=2
-modewv(5)=2
-modewv(6)=1
-modewv(7)=1
-modewv(8)=2
+!modewv(2)=1
+!modewv(3)=1
+!modewv(4)=2
+!modewv(5)=2
+!modewv(6)=1
+!modewv(7)=1
+!modewv(8)=2
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -3015,6 +3035,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2461
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -3112,12 +3133,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2461 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -3218,9 +3240,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+! end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(110,1,8)
    iwx=1;iwy=0;iwz=0
    call BCgrv(110,1,8)
@@ -3233,15 +3255,15 @@ enddo
 !   call muslcslv1D(Phigrdwv(-1,-1,-1,7),dt*0.5d0,2)
 !   call muslcslv1D(Phigrdwv(-1,-1,-1,8),dt*0.5d0,1)
 modewv(1)=2
-modewv(2)=1
-modewv(3)=2
-modewv(4)=1
-modewv(5)=2
-modewv(6)=1
-modewv(7)=2
-modewv(8)=1
+!modewv(2)=1
+!modewv(3)=2
+!modewv(4)=1
+!modewv(5)=2
+!modewv(6)=1
+!modewv(7)=2
+!modewv(8)=1
 
-do loopwv=1,wvnum
+!do loopwv=1,wvnum
 
 if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -3260,6 +3282,7 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
   nu2 = cg * dt * 0.5d0 / deltalen
   Phipre(:,:,:) = Phigrdwv(:,:,:,loopwv)
   !------------ul.solver.+cg-------------
+goto 2462
   if(modewv(loopwv)==1) then
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
@@ -3357,12 +3380,13 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
         end DO
      end DO
   end if
+2462 continue
   !------------ul.solver.+cg-------------
 
 
 
   !------------ul.solver.-cg-------------
-  if(modewv(loopwv)==2) then
+!  if(modewv(loopwv)==2) then
 
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
@@ -3463,9 +3487,9 @@ if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 
      !   write(202,*) i, Phiv(i)
      !end do
 
-  end if
+!  end if
   !------------ul.solver.-cg-------------
-enddo
+!enddo
    !call BCgrv(110,1,8)
    !%%%%%%%%%%%%%%%%%phigrd(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 
@@ -3484,15 +3508,15 @@ enddo
 
   !subroutine muslcslv1D(Phiv,dt,mode)
   modewv(1)=1
-  modewv(2)=2
-  modewv(3)=1
-  modewv(4)=2
-  modewv(5)=1
-  modewv(6)=2
-  modewv(7)=1
-  modewv(8)=2
+!  modewv(2)=2
+!  modewv(3)=1
+!  modewv(4)=2
+!  modewv(5)=1
+!  modewv(6)=2
+!  modewv(7)=1
+!  modewv(8)=2
 
-  do loopwv=1,wvnum
+!  do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -3511,7 +3535,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+!    if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -3607,12 +3631,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+!    end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2463
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -3715,8 +3740,9 @@ enddo
        !end do
 
     end if
+2463 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
 
      !call BCgrv(100,1,8)
      iwx=0;iwy=1;iwz=0
@@ -3730,15 +3756,15 @@ enddo
   !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
   !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
   modewv(1)=1
-  modewv(2)=2
-  modewv(3)=2
-  modewv(4)=1
-  modewv(5)=1
-  modewv(6)=2
-  modewv(7)=2
-  modewv(8)=1
+  !modewv(2)=2
+  !modewv(3)=2
+  !modewv(4)=1
+  !modewv(5)=1
+  !modewv(6)=2
+  !modewv(7)=2
+  !modewv(8)=1
 
-  do loopwv=1,wvnum
+  !do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -3757,7 +3783,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+!    if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -3853,12 +3879,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+!    end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2464
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -3961,8 +3988,9 @@ enddo
        !end do
 
     end if
+2464 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
      !call BCgrv(100,1,8)
      iwx=0;iwy=0;iwz=1
      call BCgrv(100,1,8)
@@ -3975,15 +4003,15 @@ enddo
   !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
   !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,2)
   modewv(1)=1
-  modewv(2)=1
-  modewv(3)=1
-  modewv(4)=1
-  modewv(5)=2
-  modewv(6)=2
-  modewv(7)=2
-  modewv(8)=2
+!  modewv(2)=1
+!  modewv(3)=1
+!  modewv(4)=1
+!  modewv(5)=2
+!  modewv(6)=2
+!  modewv(7)=2
+!  modewv(8)=2
 
-  do loopwv=1,wvnum
+ ! do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -4002,7 +4030,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+!    if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -4098,12 +4126,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+!    end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2465
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -4206,8 +4235,9 @@ enddo
        !end do
 
     end if
+2465 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
      !call BCgrv(100,1,8)
      do k=1,ndz-2
        do j=1,ndy-2
@@ -4244,7 +4274,7 @@ enddo
   modewv(7)=2
   modewv(8)=2
 
-  do loopwv=1,wvnum
+  !do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -4263,7 +4293,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+  !  if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -4359,12 +4389,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+!    end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2466
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -4467,8 +4498,9 @@ enddo
        !end do
 
     end if
+2466 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
      !call BCgrv(100,1,8)
      iwx=0;iwy=1;iwz=0
      call BCgrv(100,1,8)
@@ -4481,15 +4513,15 @@ enddo
   !   call muslcslv1D(Phiwv(-1,-1,-1,7),dt*0.25d0,2)
   !   call muslcslv1D(Phiwv(-1,-1,-1,8),dt*0.25d0,1)
   modewv(1)=1
-  modewv(2)=2
-  modewv(3)=2
-  modewv(4)=1
-  modewv(5)=1
-  modewv(6)=2
-  modewv(7)=2
-  modewv(8)=1
+ ! modewv(2)=2
+ ! modewv(3)=2
+ ! modewv(4)=1
+ ! modewv(5)=1
+ ! modewv(6)=2
+ ! modewv(7)=2
+ ! modewv(8)=1
 
-  do loopwv=1,wvnum
+ ! do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -4508,7 +4540,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+!    if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -4604,12 +4636,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+!    end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2468
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -4712,8 +4745,9 @@ enddo
        !end do
 
     end if
+2468 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
      !call BCgrv(100,1,8)
      iwx=1;iwy=0;iwz=0
      call BCgrv(100,1,8)
@@ -4734,7 +4768,7 @@ enddo
   modewv(7)=1
   modewv(8)=2
 
-  do loopwv=1,wvnum
+!  do loopwv=1,wvnum
 
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz; deltalen=dx1; endif!  BT1 = 2; BT2 = 3; VN = 2; end if
        if(iwy.eq.1) then; Ncell = ndy; Ncm = ndz; Ncl = ndx; deltalen=dy1; endif! BT1 = 3; BT2 = 1; VN = 3; end if
@@ -4753,7 +4787,7 @@ enddo
     nu2 = cg * dt * 0.25d0 / deltalen
     Phipre(:,:,:) = Phiwv(:,:,:,loopwv)
     !------------ul.solver.+cg-------------
-    if(modewv(loopwv)==1) then
+!    if(modewv(loopwv)==1) then
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,10,is,ie)
 
        DO Lnum = 1, Ncl-2
@@ -4849,12 +4883,13 @@ enddo
              end do
           end DO
        end DO
-    end if
+ !   end if
     !------------ul.solver.+cg-------------
 
 
 
     !------------ul.solver.-cg-------------
+goto 2469
     if(modewv(loopwv)==2) then
 
        !call fluxcal(Phipre,Phipre,Phiu,0.0d0,1.d0/3.0d0,11,is,ie)
@@ -4957,8 +4992,9 @@ enddo
        !end do
 
     end if
+2469 continue
     !------------ul.solver.-cg-------------
-  enddo
+!  enddo
      !call BCgrv(100,1,8)
      !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
 

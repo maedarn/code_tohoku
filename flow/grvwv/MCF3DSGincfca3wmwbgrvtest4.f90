@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
 DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
 DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
@@ -516,6 +516,8 @@ dinit1=0.0d0
 !write(*,*) 'sheet2'
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*) NRANK,'INIT1-2'
+
+
   !********************sphere***********************
   !goto 6001
   DTF(:,:,:) = 0.0d0
@@ -534,8 +536,8 @@ write(*,*) NRANK,'INIT1-2'
    cenx=dble(Np1x)+0.5d0
    ceny=dble(Np1y)+0.5d0
    cenz=dble(Np1z)+0.5d0
-   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
-   rsph=dsqrt( (cenx-x(i2))**2 + (ceny-y(i2y))**2 + (cenz-z(i2z))**2 )
+   rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph=dsqrt( (cenx-x(i2))**2 + (ceny-y(i2y))**2 + (cenz-z(i2z))**2 )
    if(rsph .le. rrsph ) then
       U(i,j,k,1) = dinit1
       U(i,j,k,2) = 0.0d0
@@ -609,9 +611,9 @@ write(*,*) NRANK,'INIT3'
 call collectrho()
 write(*,*) NRANK,'INIT3-1'
 !do i=0,-(Ncellx/2-1),-1
-do pls=0,Ncellx*NSPLTx-1
-  call PBini(pls)
-enddo
+!do pls=0,Ncellx*NSPLTx-1
+!  call PBini(pls)
+!enddo
 !write(*,*) Phiexa(1,1,1)
 write(*,*) NRANK,'INIT3-1'
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2

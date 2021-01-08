@@ -1,11 +1,11 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
-DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
-DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
-DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
+!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
+DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
+DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
@@ -18,7 +18,7 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=10.d0,adiff=0.375d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=20.d0,adiff=0.375d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
 character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
@@ -173,7 +173,7 @@ character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2y,i2z,rsph2,pls
-double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa
+double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa,rsph3,rrsph3
 
 open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
@@ -298,19 +298,67 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   end if
 end do; end do; end do
 write(*,*) NRANK,'INIT'
-ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
-ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
+ALLOCATE(dx_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE(dy_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE(dz_i(-1-1:Ncellz*NSPLTz+2+1))
+ALLOCATE( x_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE( y_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE( z_i(-1-1:Ncellz*NSPLTz+2+1))
 
-do i = -1, Np1x
+!do i = -1, Np1x
+!  dx_i(i) = ql1x/dble(Np1x)
+!end do
+!do i = Np1x+1, Ncellx*NSPLTx+2
+!  dx_i(i) = ql2x/dble(Np2x)
+!end do
+!do j = -1, Ncelly*NSPLTy+2
+!  dy_i(j) = ql1y/dble(Np1y)
+!end do
+!do k = -1, Ncellz*NSPLTz+2
+!  dz_i(k) = ql1z/dble(Np1z)
+!end do
+
+!dx=dy=dz
+!dx1= dx_i(0)
+!dy1= dy_i(0)
+!dz1= dz_i(0)
+!dx=dy=dz
+
+!x_i(-1) = -dx_i(0)
+!do i = 0, Ncellx*NSPLTx+2
+!   x_i(i) = x_i(i-1) + dx_i(i)
+!end do
+!y_i(-1) = -dy_i(0)
+!do j = 0, Ncelly*NSPLTy+2
+!   y_i(j) = y_i(j-1) + dy_i(j)
+!end do
+!z_i(-1) = -dz_i(0)
+!do k = 0, Ncellz*NSPLTz+2
+!   z_i(k) = z_i(k-1) + dz_i(k)
+!end do
+
+!do i = -1, Ncellx+2
+!  ix    =  IST*Ncellx + i
+!  x(i)  =  x_i(ix)
+!  dx(i) =  dx_i(ix)
+!end do
+!do j = -1, Ncelly+2
+!  jy    =  JST*Ncelly + j
+!  y(j)  =  y_i(jy)
+!  dy(j) =  dy_i(jy)
+!end do
+!do k = -1, Ncellz+2
+!  kz    =  KST*Ncellz + k
+!  z(k)  =  z_i(kz)
+!  dz(k) =  dz_i(kz)
+!end do
+
+do i = -1-1, Np1x
   dx_i(i) = ql1x/dble(Np1x)
 end do
-do i = Np1x+1, Ncellx*NSPLTx+2
+do i = Np1x+1, Ncellx*NSPLTx+2+1
   dx_i(i) = ql2x/dble(Np2x)
 end do
-do j = -1, Ncelly*NSPLTy+2
+do j = -1-1, Ncelly*NSPLTy+2+1
   dy_i(j) = ql1y/dble(Np1y)
 end do
-do k = -1, Ncellz*NSPLTz+2
+do k = -1-1, Ncellz*NSPLTz+2+1
   dz_i(k) = ql1z/dble(Np1z)
 end do
 
@@ -321,34 +369,39 @@ dz1= dz_i(0)
 !dx=dy=dz
 
 x_i(-1) = -dx_i(0)
-do i = 0, Ncellx*NSPLTx+2
+x_i(-2) = x_i(-1)-dx_i(0)
+do i = 0, Ncellx*NSPLTx+2+1
    x_i(i) = x_i(i-1) + dx_i(i)
+   write(*,*) 'x', x_i(i)
 end do
 y_i(-1) = -dy_i(0)
-do j = 0, Ncelly*NSPLTy+2
+y_i(-2) = y_i(-1)-dy_i(0)
+do j = 0, Ncelly*NSPLTy+2+1
    y_i(j) = y_i(j-1) + dy_i(j)
+   write(*,*) 'y', y_i(j)
 end do
 z_i(-1) = -dz_i(0)
-do k = 0, Ncellz*NSPLTz+2
+z_i(-2) = z_i(-1)-dz_i(0)
+do k = 0, Ncellz*NSPLTz+2+1
    z_i(k) = z_i(k-1) + dz_i(k)
+   write(*,*) 'z', z_i(k)
 end do
 
-do i = -1, Ncellx+2
+do i = -1-1, Ncellx+2+1
   ix    =  IST*Ncellx + i
   x(i)  =  x_i(ix)
   dx(i) =  dx_i(ix)
 end do
-do j = -1, Ncelly+2
+do j = -1-1, Ncelly+2+1
   jy    =  JST*Ncelly + j
   y(j)  =  y_i(jy)
   dy(j) =  dy_i(jy)
 end do
-do k = -1, Ncellz+2
+do k = -1-1, Ncellz+2+1
   kz    =  KST*Ncellz + k
   z(k)  =  z_i(kz)
   dz(k) =  dz_i(kz)
 end do
-
 
 IF(NRANK.EQ.0) THEN
   400 format(D25.17)
@@ -514,8 +567,10 @@ dinit1=0.0d0
    cenx=dble(Np1x)+0.5d0
    ceny=dble(Np1y)+0.5d0
    cenz=dble(Np1z)+0.5d0
-   rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
-   if(rsph .le. rrsph ) then
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+   rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   if(rsph3 .le. rrsph3 ) then
       U(i,j,k,1) = dinit1
       U(i,j,k,2) = 0.0d0
       U(i,j,k,3) = 0.0d0
@@ -574,21 +629,31 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    ceny=dble(Np1y)+0.5d0
    cenz=dble(Np1z)+0.5d0
    rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
-   if(rsph .le. rrsph ) then
-      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph*dx1)**2
+   rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+   rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph3 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
    else
-      Phiexa(i,j,k)=-G4pi/rsph/dx1/3.d0*dinit1*(rrsph*dx1)**3+G4pi/2.d0*dinit1*(rrsph*dx1)**2
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=-G4pi/rsph3/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
    end if
 end do
 end do
 end do
 
-call collect()
+
+!call collect()
 
 !do i=0,-(Ncellx/2-1),-1
-do pls=0,Ncellx*NSPLTx-1
-  call PBini(pls)
-enddo
+!do pls=0,Ncellx*NSPLTx-1
+!  call PBini(pls)
+!enddo
 !write(*,*) Phiexa(1,1,1)
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
@@ -868,6 +933,9 @@ Time_signal = 0
 !---------------debug-------------------
 !write(*,*) '-------------3-----------',NRANK
 !---------------debug-------------------
+if(ifgrv.eq.2) then
+   call  SELFGRAVWAVE(0.0d0,4)
+end if
 
 do in10 = 1, maxstp
 
@@ -876,6 +944,9 @@ do in10 = 1, maxstp
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
   !call SAVEU(nunit,dt,stb,st,t,0)
+  !if(ifgrv.eq.2) then
+  !   call  SELFGRAVWAVE(0.0d0,4)
+  !end if
 
   do in20 = 1, nitera
      !write(*,*) '---top---'
@@ -918,7 +989,7 @@ do in10 = 1, maxstp
     !---------------debug-------------------
     !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
     !---------------debug-------------------
-    dt=dx(1)/cg*0.5d0
+    dt=dx(1)/cg!*0.5d0
     !if(ifgrv==2) then
     !   call SELFGRAVWAVE(tLMT,7)
 
