@@ -2,14 +2,14 @@ module comvar
   implicit none
   integer, parameter :: ndx=130,laststep=1000,ist=1,ien=2,svnum=10 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
-DOUBLE PRECISION :: cg = 1.d0 , dx, Tdiff=0.10d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+DOUBLE PRECISION :: cg = 1.d0 , dx, Tdiff=100.00d0 != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d0 , h=0.2d0 , hcen=0.5d0 , dinit1=1.29988444d0,w1=2.0d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   double precision :: osromega=0.001d0*3.1415926535d0
-  !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/simu/'
-  character(86) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/cg1-T01-rho1-cen-128-1000st/'
+  character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/prdc/'
+  !character(86) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/cg1-T01-rho1-cen-128-1000st/'
 end module comvar
 
 module grvvar
@@ -40,13 +40,14 @@ program muscl1D
 
      call time(dt)
 
-     !call BC(4)
-     !call BC(3)
-     !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
+     call BC(4)
+     call BC(3)
+     call muslcslv1D(Phi1step,rho,dt*0.25d0,2)
+     call muslcslv1D(Phi2step,rho,dt*0.25d0,1)
 
      !call osr(dt*0.5d0,2,1)
      !call BC(5)
-     call bndb(dt)
+     !call bndb(dt)
      do ii=1,ndx-2
         !Phi1step(ii) = dt*0.5d0*(Phicgp(ii)-Phi1step(ii))*0.5d0/Tdiff &
         !+dt*0.5d0*cg*cg*2.d0*Tdiff*G4pi*rho(ii) +Phi1step(ii) !dt*cg^2*2T*4piG
@@ -73,24 +74,24 @@ program muscl1D
      enddo
      !call muslcslv1D(Phi2step,rho,dt*0.5d0,3)
      !call muslcslv1D(Phi1step,rho,0.5d0*dt,3)
-     !call BC(4)
-     !call BC(3)
-     call BC(155)
+     call BC(4)
+     call BC(3)
+     !call BC(155)
      !call BC(255)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+     call muslcslv1D(Phi1step,rho,dt*0.25d0,2)
+     call muslcslv1D(Phi2step,rho,dt*0.25d0,1)
      !call muslcslv1D(Phi1step,rho,dt*0.5d0,1)
 
  
      !call BC(4)
      !call BC(3)
-     !call BC(1)
+     call BC(1)
      !call BC(55)
      !Phidt(:)=Phi(:)
-!     call muslcslv1D(Phicgp,Phi2step,dt,4)
-     !call muslcslv1D(Phicgm,Phi1step,dt,4)
+     call muslcslv1D(Phicgp,Phi2step,dt*0.5d0,1)
+     call muslcslv1D(Phicgm,Phi1step,dt*0.5d0,2)
      !call osr(dt*1.d0,1,1)
      
      do ii=1,ndx-2
@@ -117,12 +118,12 @@ program muscl1D
      enddo
 
      !call osr(dt*1.d0,1,0)
-     !call BC(1)
-     call BC(156)
+     call BC(1)
+     !call BC(156)
      !call BC(256)
      !call BC(55)
-     call muslcslv1D(Phicgp,Phi1step,dt,1)
-     call muslcslv1D(Phicgm,Phi2step,dt,2)
+     call muslcslv1D(Phicgp,Phi1step,dt*0.5d0,1)
+     call muslcslv1D(Phicgm,Phi2step*0.5d0,dt,2)
      !call muslcslv1D(Phicgp,Phi1step,0.5d0*dt,1)
      !call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
      
@@ -169,13 +170,13 @@ program muscl1D
      !call muslcslv1D(Phicgm,Phi2step,0.5d0*dt,2)
      !call BC(1)
 
-     !call BC(4)
-     !call BC(3)
+     call BC(4)
+     call BC(3)
      !call osr(dt*0.5d0,2,1)
      !call BC(5)
      !call muslcslv1D(Phi1step,rho,dt,3)
-     !call muslcslv1D(Phi1step,rho,dt*0.5d0,3)
-!     call muslcslv1D(Phi2step,rho,0.5d0*dt,3)
+     call muslcslv1D(Phi1step,rho,dt*0.25d0,2)
+     call muslcslv1D(Phi2step,rho,0.25d0*dt,1)
 
      
     do ii=1,ndx-2
@@ -202,28 +203,28 @@ program muscl1D
         !Phi2step(ii) = Phi2step(ii)*dexp(-0.5d0/Tdiff * dt*0.5d0) &
         !+(Phicgm(ii) - cg*cg*2.d0*Tdiff*Tdiff*G4pi*rho(ii))*(1.d0-dexp(-0.5d0/Tdiff * dt*0.5d0))
      enddo
-     !call BC(4)
-     !call BC(3)
-     call BC(155)
+     call BC(4)
+     call BC(3)
+     !call BC(155)
      !call BC(255)
      !call osr(dt*0.5d0,2,0)
      !call BC(5)
      !call muslcslv1D(Phi1step,rho,dt,1)
-     call muslcslv1D(Phi1step,rho,dt*0.5d0,2)
-     call muslcslv1D(Phi2step,rho,dt*0.5d0,1)
+     call muslcslv1D(Phi1step,rho,dt*0.25d0,2)
+     call muslcslv1D(Phi2step,rho,dt*0.25d0,1)
      !call BC(3)
      !call BC(4)
      !call BC(1)
 
      !write(*,*)'end'
   end do
-  !call BC(3)
-  !call BC(4)
-  !call BC(1)
+  call BC(3)
+  call BC(4)
+  call BC(1)
   !call BC(5)
   !call BC(55)
-  call BC(155)
-  call BC(156)
+  !call BC(155)
+  !call BC(156)
   !call BC(255)
   !call BC(256)
   call saveu(sv)
@@ -309,7 +310,7 @@ subroutine INITIAL()
   meanrho=meanrho/dble(ndx-2)
 
   do i = -1,ndx
-     rho(i)=rho(i)!-meanrho
+     rho(i)=rho(i)-meanrho
   end do
   
 

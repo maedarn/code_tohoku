@@ -18,7 +18,7 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=20.d0,adiff=0.375d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,kpdiff=0.025d0,adiff=0.375d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
