@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
 DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
 DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
@@ -18,11 +18,11 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=20.d0,adiff=0.375d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=20.d0,adiff=0.375d0,rratio=0.2d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
-character(44) :: dir='/work/maedarn/3DMHD/tel/cg1-T20-mash64-L100/'
+character(52) :: dir='/work/maedarn/3DMHD/tel/cg1-T20-mash128-L100-dipole/'
 END MODULE comvar
 
 MODULE mpivar
@@ -174,7 +174,8 @@ character*3 :: NPENUM,MPIname
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2y,i2z,rsph2,pls
-double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa,rsph3,rrsph3
+double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa,rsph3,rrsph3,Mcnst,rsph4
+double precision cenx1,ceny1,cenz1,cenx2,ceny2,cenz2,cenx3,ceny3,cenz3,cenx4,ceny4,cenz4
 
 open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
@@ -551,7 +552,7 @@ dinit1=0.0d0
 !write(*,*) 'sheet2'
 
   !********************sphere***********************
-  !goto 6001
+  goto 6001
   DTF(:,:,:) = 0.0d0
   !dinit1=1.0d0/G4pi
   dinit1=1.d2
@@ -561,6 +562,13 @@ dinit1=0.0d0
   !rsph = ql1x-ql1x/5.0d0
   !rsph2=int(dble(Np1x)*0.8d0)
   rrsph = dble(Np1x)*0.2d0
+  rrsph3 = ql1x * rratio
+
+  !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+  dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+  
+  
+  
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    i2 = IST*Ncellx+i
    i2y = JST*Ncelly+j
@@ -570,7 +578,7 @@ dinit1=0.0d0
    cenz=dble(Np1z)+0.5d0
    !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
-   rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
    if(rsph3 .le. rrsph3 ) then
       U(i,j,k,1) = dinit1
       U(i,j,k,2) = 0.0d0
@@ -632,6 +640,10 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
    !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
 
    write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
    if(rsph3 .le. rrsph3 ) then
@@ -680,8 +692,452 @@ end do
 
 
 dinit1=0.0d0
- !6001 continue
+ 6001 continue
 !********************sphere***********************
+
+
+
+!********************di-pole***********************
+  goto 6301
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1=1.d2
+  cenx1=ql1x+0.5d0*dx1+ql1x*0.5d0
+  ceny1=ql1y+0.5d0*dy1+ql1x*0.5d0
+  cenz1=ql1z+0.5d0*dz1+ql1x*0.5d0
+
+  cenx2=ql1x+0.5d0*dx1-ql1x*0.5d0
+  ceny2=ql1y+0.5d0*dy1-ql1x*0.5d0
+  cenz2=ql1z+0.5d0*dz1-ql1x*0.5d0
+
+  
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  rrsph = dble(Np1x)*0.2d0
+  rrsph3 = ql1x*rratio
+
+  !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+  dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)/2.0d0
+  
+  
+  
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+  if((rsph3 .le. rrsph3).or. (rsph4 .le. rrsph3) ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = 0.0d0
+      ndp(i,j,k)   = 0.0d0
+      ndH2(i,j,k)  = 0.0d0
+      ndHe(i,j,k)  = 0.0d0
+      ndHep(i,j,k) = 0.0d0
+      ndC(i,j,k)   = 0.0d0
+      ndCO(i,j,k)  = 0.0d0
+      ndCp(i,j,k)  = 0.0d0
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+
+!do i=1,Ncellx/2,-1
+!  call PBini(i)
+!enddo
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   !rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph3 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=-G4pi/rsph3/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph4 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=Phiexa(i,j,k)+G4pi/6.d0*dinit1*(rsph4)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=Phiexa(i,j,k)-G4pi/rsph4/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+
+!call collect()
+
+!do i=0,-(Ncellx/2-1),-1
+!do pls=0,Ncellx*NSPLTx-1
+!  call PBini(pls)
+!enddo
+!write(*,*) Phiexa(1,1,1)
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+end do
+end do
+end do
+
+
+dinit1=0.0d0
+ 6301 continue
+!********************di-pole***********************
+
+!********************quad-pole***********************
+!  goto 6401
+  DTF(:,:,:) = 0.0d0
+  !dinit1=1.0d0/G4pi
+  dinit1=1.d2
+  cenx1=ql1x+0.5d0*dx1+ql1x*0.5d0
+  ceny1=ql1y+0.5d0*dy1+ql1x*0.5d0
+  cenz1=ql1z+0.5d0*dz1+ql1x*0.5d0
+
+  cenx2=ql1x+0.5d0*dx1-ql1x*0.5d0
+  ceny2=ql1y+0.5d0*dy1-ql1x*0.5d0
+  cenz2=ql1z+0.5d0*dz1-ql1x*0.5d0
+
+  cenx3=ql1x+0.5d0*dx1-ql1x*0.5d0
+  ceny3=ql1y+0.5d0*dy1+ql1x*0.5d0
+  cenz3=ql1z+0.5d0*dz1+ql1x*0.5d0
+
+  cenx4=ql1x+0.5d0*dx1+ql1x*0.5d0
+  ceny4=ql1y+0.5d0*dy1-ql1x*0.5d0
+  cenz4=ql1z+0.5d0*dz1-ql1x*0.5d0
+
+  
+  !rsph = ql1x-ql1x/5.0d0
+  !rsph2=int(dble(Np1x)*0.8d0)
+  rrsph = dble(Np1x)*0.2d0
+  rrsph3 = ql1x*rratio
+
+  !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+  dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)/4.0d0
+  
+  
+  
+  do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+  if((rsph3 .le. rrsph3).or. (rsph4 .le. rrsph3) ) then
+      U(i,j,k,1) = dinit1
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = pinit1
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = Hini
+      ndp(i,j,k)   = pini
+      ndH2(i,j,k)  = H2ini
+      ndHe(i,j,k)  = Heini
+      ndHep(i,j,k) = Hepini
+      ndC(i,j,k)   = Cini
+      ndCO(i,j,k)  = COini
+      ndCp(i,j,k)  = Cpini
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   else
+      U(i,j,k,1) = 0.0d0
+      U(i,j,k,2) = 0.0d0
+      U(i,j,k,3) = 0.0d0
+      U(i,j,k,4) = 0.0d0
+      U(i,j,k,5) = 0.0d0
+      U(i,j,k,6) = 0.0d0
+      U(i,j,k,7) = 0.0d0
+      U(i,j,k,8) = 0.0d0
+      ndH(i,j,k)   = 0.0d0
+      ndp(i,j,k)   = 0.0d0
+      ndH2(i,j,k)  = 0.0d0
+      ndHe(i,j,k)  = 0.0d0
+      ndHep(i,j,k) = 0.0d0
+      ndC(i,j,k)   = 0.0d0
+      ndCO(i,j,k)  = 0.0d0
+      ndCp(i,j,k)  = 0.0d0
+      nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+      ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+      Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+      Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+   end if
+end do
+end do
+end do
+
+!do i=1,Ncellx/2,-1
+!  call PBini(i)
+!enddo
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   !rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph3 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=-G4pi/rsph3/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph4 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=Phiexa(i,j,k)+G4pi/6.d0*dinit1*(rsph4)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=Phiexa(i,j,k)-G4pi/rsph4/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   rsph3 =dsqrt( (cenx3-x_i(i2))**2 + (ceny3-y_i(i2y))**2 + (cenz3-z_i(i2z))**2 )
+   !rsph4 =dsqrt( (cenx2-x_i(i2))**2 + (ceny2-y_i(i2y))**2 + (cenz2-z_i(i2z))**2 )
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph3 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=-G4pi/rsph3/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+   i2 = IST*Ncellx+i
+   i2y = JST*Ncelly+j
+   i2z = KST*Ncellz+k
+   cenx=dble(Np1x)+0.5d0
+   ceny=dble(Np1y)+0.5d0
+   cenz=dble(Np1z)+0.5d0
+   !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+   !rsph3 =dsqrt( (cenx1-x_i(i2))**2 + (ceny1-y_i(i2y))**2 + (cenz1-z_i(i2z))**2 )
+   rsph4 =dsqrt( (cenx4-x_i(i2))**2 + (ceny4-y_i(i2y))**2 + (cenz4-z_i(i2z))**2 )
+   !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+   !rrsph3 = ql1x*rratio
+
+   !Mcnst=4.d0*3.14159265358979d0/3.d0*dinit1*(ql1x*0.2d0)**3.d0
+   !dinit1=dinit1*((ql1x*0.2d0)**3.d0)/(rrsph3**3.d0)
+
+   write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+   if(rsph4 .le. rrsph3 ) then
+      !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+      Phiexa(i,j,k)=Phiexa(i,j,k)+G4pi/6.d0*dinit1*(rsph4)**2
+      !U(i,j,k,1) = dinit1
+      !write(*,*) 'in'
+   else
+   !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+   Phiexa(i,j,k)=Phiexa(i,j,k)-G4pi/rsph4/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+      !U(i,j,k,1) = 0.d0
+   end if
+end do
+end do
+end do
+
+
+!call collect()
+
+!do i=0,-(Ncellx/2-1),-1
+!do pls=0,Ncellx*NSPLTx-1
+!  call PBini(pls)
+!enddo
+!write(*,*) Phiexa(1,1,1)
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+   Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+end do
+end do
+end do
+
+
+dinit1=0.0d0
+! 6401 continue
+!********************quad-pole***********************
 
 
   !********purtube yz plane***********!
@@ -895,6 +1351,7 @@ double precision  :: tsave,dtsave,tsave2D,dtsave2D
 integer :: nunit, st, st_mpi(0:1024), st_gat(0:2047), Time_signal
 character*7 stb(3)
 character*3 fnunit,fnpe
+double precision :: dtdif
 
 
 open(2,file=dir//'tsave.DAT')
@@ -991,6 +1448,10 @@ do in10 = 1, maxstp
     !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
     !---------------debug-------------------
     dt=dx(1)/cg!*0.5d0
+    !dtdif= 2.d0 * Tdiff
+    !if(dt/dtdif>0.1d0) then
+    !dt = dtdif*0.1d0
+    !endif
     !if(ifgrv==2) then
     !   call SELFGRAVWAVE(tLMT,7)
 
