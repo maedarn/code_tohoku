@@ -18,11 +18,11 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=100.d0,adiff=0.375d0,rratio=0.2d0
+DOUBLE PRECISION, parameter :: cg=1.0d0,sourratio=0.5d0,Tdiff=20.d0,adiff=0.375d0,rratio=0.2d0
 double precision :: dx1,dy1,dz1
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
-character(49) :: dir='/work/maedarn/3DMHD/tel/cg1-T100-mash128-L100-quad/'
+character(50) :: dir='/work/maedarn/3DMHD/tel/cg1-T20-mash128-L100-quad/'
 END MODULE comvar
 
 MODULE mpivar
@@ -1064,12 +1064,12 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    write(*,*)rsph5,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
    if(rsph5 .le. rrsph3 ) then
       !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
-      Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph5)**2
+      Phiexa(i,j,k)=Phiexa(i,j,k)+G4pi/6.d0*dinit1*(rsph5)**2
       !U(i,j,k,1) = dinit1
       !write(*,*) 'in'
    else
    !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
-   Phiexa(i,j,k)=-G4pi/rsph5/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+   Phiexa(i,j,k)=Phiexa(i,j,k)-G4pi/rsph5/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
       !U(i,j,k,1) = 0.d0
    end if
 end do
