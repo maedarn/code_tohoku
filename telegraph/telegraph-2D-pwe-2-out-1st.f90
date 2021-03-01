@@ -1,10 +1,10 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,ndy=66,laststep=2001,istx=1,ienx=2,isty=1,ieny=2,svnum=20, dim=4 ,nbn=0 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=66,ndy=66,laststep=1,istx=1,ienx=2,isty=1,ieny=2,svnum=1, dim=4 ,nbn=0 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   integer, parameter :: itel=1,iwv=0
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=100.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=50.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr,grdch
   DOUBLE PRECISION , dimension(-1-1-1:ndx+1+1,-1-1-1:ndy+1+1) :: Phiexa2,rho, Qgr
@@ -13,7 +13,7 @@ module comvar
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-  character(90) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T100-rho1-cen-64-1000st-pwe/'
+  character(89) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T50-rho1-cen-64-1000st-pwe/'
 end module comvar
 
 module grvvar
@@ -63,7 +63,7 @@ program muscl1D
 
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
-     dt=dt*0.5d0
+dt=dt*0.1d0
      write(*,*) i ,dt,'step'
      write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
 
@@ -91,6 +91,20 @@ program muscl1D
     call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,2,2)
     endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
 
     !call BCtest()
     iwx=0;iwy=1
@@ -113,6 +127,19 @@ program muscl1D
     call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,1,2)
     endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
     if(itel==1) then
     do k=1,ndy-2
@@ -129,6 +156,20 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     enddo
     endif
 
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
     iwx=0;iwy=1
 
@@ -147,6 +188,20 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,1,2)
     endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
     iwx=1;iwy=0
 
     if(itel==1) then
@@ -162,6 +217,20 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     call muslcslv1D(wp2(:,:,3),rho,dt*0.25d0,1,2)
     call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,2,2)
     endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -180,6 +249,20 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,1,2)
     endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
     iwx=0;iwy=1
     if(itel==1) then
     call BC(wp1(:,:,1),0,0,4,4,1)
@@ -194,6 +277,20 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,1,2)
     call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,2,2)
     endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
     if(iwv==1) then
     call muslcslv1D(fp1(:,:,1),rho,dt*0.5d0,2,2)
@@ -233,6 +330,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
 !-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
       enddo
     enddo
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
 if(itel==1) then
 call BC(wp2(:,:,1),3,3,3,3,1)
@@ -304,6 +415,20 @@ wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt
     enddo
 Phidtn1(:,:)=Phidtn2(:,:)
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
     do k=1,ndy-2
       do j=1,ndx-2
 
@@ -328,6 +453,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
       enddo
     enddo
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
     endif
 
 
@@ -347,6 +486,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
     call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,2,2)
     endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
     iwx=1;iwy=0
 
     if(itel==1) then
@@ -362,6 +515,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
     call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,2,2)
     call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,1,2)
     endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -380,6 +547,19 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
        call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,2,2)
        endif
        
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
 
        !call BCtest()
        iwx=0;iwy=1
@@ -398,6 +578,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
        call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,1,2)
        endif
 
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
+
        if(itel==1) then
            do k=1,ndy-2
              do j=1,ndx-2
@@ -412,6 +606,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
              enddo
            enddo
        endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
    
        iwx=0;iwy=1
        if(itel==1) then
@@ -427,6 +635,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
        call muslcslv1D(wp2(:,:,3),rho,dt*0.25d0,2,2)
        call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,1,2)
        endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
        
        iwx=1;iwy=0
        
@@ -443,6 +665,20 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
        call muslcslv1D(wp2(:,:,3),rho,dt*0.25d0,1,2)
        call muslcslv1D(wp2(:,:,4),rho,dt*0.25d0,2,2)
        endif
+
+if(mod(i,svnum)==0) then
+iwx=1;iwy=1
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+call BC(wp1(:,:,1),4,4,4,4,1)
+!call BC(wp1(:,:,1),24,24,24,24,1)
+call BC(wp1(:,:,2),4,4,4,4,2)
+call BC(wp1(:,:,3),4,4,4,4,3)
+call BC(wp1(:,:,4),4,4,4,4,4)
+call saveu(sv)
+end if
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -725,11 +961,11 @@ Phigrd(i,j,1)= (-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(
      Phigrd(i,j,3)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx-(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phigrd(i,j,4)=-(-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phiexa(i,j)=Phiexa2(i,j)
-     !wp2(i,j,2)=Phiexa(i,j)
-     !wp1(i,j,2)=cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i,j)
+     wp2(i,j,2)=Phiexa(i,j)
+     wp1(i,j,2)=cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i,j)
 
-     !wp2(i,j,1)=Phiexa(i,j)
-     !wp1(i,j,1)=cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j)
+     wp2(i,j,1)=Phiexa(i,j)
+     wp1(i,j,1)=cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j)
   end do
   end do
   do j=1,ndy-2
@@ -1394,7 +1630,7 @@ subroutine saveu(in1)
         write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
       ,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
       ,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',grdch(i,j),',',&
-Phigrd(i,j,1),',',Phigrd(i,j,3),',',Phigrd(i,j,4),',',wp2(i,j,1)-Phiexa(i,j),',' &
+Phigrd(i,j,1),',',Phigrd(i,j,3),',',cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i,j),',',wp2(i,j,1)-Phiexa(i,j),',' &
 ,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,',',&
       !0.25d0*(dm1(i+1,j+1)-dm1(i+1,j-1)-dm1(i-1,j+1)+dm1(i-1,j-1))/dx/dy
         !write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &

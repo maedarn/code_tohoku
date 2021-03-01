@@ -6,14 +6,14 @@ module comvar
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
   DOUBLE PRECISION :: cg = 1.0d0, Tdiff=100.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
-  DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: Phidt,Phiexa,Phicrr,grdch
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phidt,Phiexa,Phicrr,grdch
   DOUBLE PRECISION , dimension(-1-1-1:ndx+1+1,-1-1-1:ndy+1+1) :: Phiexa2,rho, Qgr
-  DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,dim) :: Phigrd
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1,dim) :: Phigrd
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-  character(90) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T100-rho1-cen-64-1000st-pwe/'
+character(94) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T100-rho1-cen-64-1000st-pwe-4th/'
 end module comvar
 
 module grvvar
@@ -22,8 +22,8 @@ module grvvar
   DOUBLE PRECISION , dimension(-1-1-1:ndx2+1+1) :: x
   DOUBLE PRECISION , dimension(-1-1-1:ndy2+1+1) :: y
   DOUBLE PRECISION , dimension(-1:ndx2,dim2) :: flmtel1,flmtel2,flmtel3,flmtel4
-  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidtn  , fx , fy, Phidtn1, Phidtn2
-  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,dim2) :: wp1 ,wp2, wppre1 ,wppre2 !wp->telegraph
+  DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1) :: Phidtn  , fx , fy, Phidtn1, Phidtn2
+  DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1,dim2) :: wp1 ,wp2, wppre1 ,wppre2 !wp->telegraph
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,dim2) :: fp1 ,fp2 !fp->wave
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,2) :: source ,sourcedt,sourcedt2
 end module grvvar
@@ -125,6 +125,11 @@ wp2(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
 (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
 wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,4)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
 (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+
+!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
       enddo
     enddo
     endif
@@ -196,23 +201,25 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     endif
 
     if(iwv==1) then
-    call muslcslv1D(fp1(:,:,1),rho,dt*0.5d0,2,2)
-    call muslcslv1D(fp1(:,:,2),rho,dt*0.5d0,1,2)
-    call muslcslv1D(fp1(:,:,3),rho,dt*0.5d0,1,2)
-    call muslcslv1D(fp1(:,:,4),rho,dt*0.5d0,2,2)
+    !call muslcslv1D(fp1(:,:,1),rho,dt*0.5d0,2,2)
+    !call muslcslv1D(fp1(:,:,2),rho,dt*0.5d0,1,2)
+    !call muslcslv1D(fp1(:,:,3),rho,dt*0.5d0,1,2)
+    !call muslcslv1D(fp1(:,:,4),rho,dt*0.5d0,2,2)
     endif
 
     iwx=1;iwy=1
     if(itel==1) then
-    !call BC(wp2(:,:,1),3,3,3,3,1)
-    !call BC(wp2(:,:,2),3,3,3,3,2)
-    !call BC(wp2(:,:,3),3,3,3,3,3)
-    !call BC(wp2(:,:,4),3,3,3,3,4)
+    call BC(wp2(:,:,1),3,3,3,3,1)
+    call BC(wp2(:,:,2),3,3,3,3,2)
+    call BC(wp2(:,:,3),3,3,3,3,3)
+    call BC(wp2(:,:,4),3,3,3,3,4)
     endif
 
 
-    do k=1-1,ndy-2+1
-      do j=1-1,ndx-2+1
+    !do k=1-1,ndy-2+1
+    ! do j=1-1,ndx-2+1
+    do k=1,ndy-2
+      do j=1,ndx-2
 wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,1)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
 (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
 wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,2)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
@@ -294,11 +301,24 @@ grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(a
 +(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
 (-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
 
+!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
+!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy1/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
+!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy2/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
+!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy3/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
+!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy4/dx/dy &
+!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+
 
 wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt
 wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt
 wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt
-!wp1(j,k,3) = Phidtn1(j,k) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*2.d0*dt
+  !wp1(j,k,3) = Phidtn1(j,k) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*2.d0*dt
 wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt
       enddo
     enddo
@@ -409,6 +429,11 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
        (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
        wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,4)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
        (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+
+!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
              enddo
            enddo
        endif
@@ -571,13 +596,13 @@ subroutine INITIAL()
   do i = -1-1-1,ndx+1+1
   do j = -1-1-1,ndy+1+1
      if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
-rho(i,j) = dinit1!*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
+rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
         !rho(i) = 0.0d0
         meanrho=meanrho+dinit1
 mass=mass+rho(i,j)
      else
         rho(i,j) = 0.0d0
-!rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
+rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
         !rho(i) = dinit1
         !rho(i) = dinit1*1.d-2
 mass=mass+rho(i,j)
@@ -715,12 +740,12 @@ rsph=rch*rsph
   !end do
   !end do
   
-  do j=-1,ndy
-  do i=-1,ndx
-Phigrd(i,j,1)= (-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dx&
-              +(-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dy
+  do j=-1-1,ndy+1
+  do i=-1-1,ndx+1
+!Phigrd(i,j,1)= (-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dx&
+!              +(-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dy
 
-     !Phigrd(i,j,1)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
+     Phigrd(i,j,1)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phigrd(i,j,2)=-(-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx-(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phigrd(i,j,3)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx-(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phigrd(i,j,4)=-(-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
@@ -848,7 +873,7 @@ subroutine BC(U,modex0,modex1,modey0,modey1,numwp2)
   use grvvar
   integer :: i,modex0,modey0,modex1,modey1,numwp2
   !double precision , dimension(1:2) :: pl,pr
-  DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: U
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: U
   
 !**********periodic*******************
       if(modex0==1) then
@@ -918,36 +943,49 @@ endif
 if(modex0==3)then
     U( 0+nbn,:)    =Phiexa(0+nbn,:)
     U(-1+nbn,:)    =Phiexa(-1+nbn,:)
+    U(-2+nbn,:)    =Phiexa(-2+nbn,:)
 endif
 if(modex1==3)then
     U(ndx  -nbn,:)=Phiexa(ndx-nbn,:)
     U(ndx-1-nbn,:)=Phiexa(ndx-1-nbn,:)
+    U(ndx+1-nbn,:)=Phiexa(ndx+1-nbn,:)
+    !U(ndx-2-nbn,:)=Phiexa(ndx-2-nbn,:)
 endif
 if(modey0==3)then
 U(:, 0+nbn)    =Phiexa(:,0+nbn)
 U(:,-1+nbn)    =Phiexa(:,-1+nbn)
+U(:,-2+nbn)    =Phiexa(:,-2+nbn)
 endif
 if(modey1==3)then
 U(:,ndy  -nbn)=Phiexa(:,ndy  -nbn)
 U(:,ndy-1-nbn)=Phiexa(:,ndy-1-nbn)
+U(:,ndy+1-nbn)=Phiexa(:,ndy+1-nbn)
+!U(:,ndy-2-nbn)=Phiexa(:,ndy-2-nbn)
 endif
 !%%%%%phi%%%%
 !%%%%%%f(pair of phi)%%%%%
 if(modex0==4)then
   U( 0+nbn,:)    =cg*2.d0*Tdiff*Phigrd( 0+nbn,:,numwp2)+Phiexa( 0+nbn,:)
   U(-1+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-1+nbn,:,numwp2)+Phiexa(-1+nbn,:)
+  U(-2+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-2+nbn,:,numwp2)+Phiexa(-2+nbn,:)
+  !write(*,*)'bc',U( 0,ndy/2),Tdiff,Phigrd(0,ndy/2,numwp2),Phiexa( 0,ndy/2)
 endif
 if(modex1==4)then
   U(ndx  -nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx  -nbn,:,numwp2)+Phiexa(ndx  -nbn,:)
   U(ndx-1-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx-1-nbn,:,numwp2)+Phiexa(ndx-1-nbn,:)
+  U(ndx+1-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx+1-nbn,:,numwp2)+Phiexa(ndx+1-nbn,:)
+  !U(ndx-2-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx-2-nbn,:,numwp2)+Phiexa(ndx-2-nbn,:)
 endif
 if(modey0==4)then
    U(:, 0+nbn)    =cg*2.d0*Tdiff*Phigrd(:, 0+nbn,numwp2)+Phiexa(:, 0+nbn)
    U(:,-1+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-1+nbn,numwp2)+Phiexa(:,-1+nbn)
+   U(:,-2+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-2+nbn,numwp2)+Phiexa(:,-2+nbn)
 endif
 if(modey1==4)then
    U(:,ndy-nbn)  =cg*2.d0*Tdiff*Phigrd(:,ndy  -nbn,numwp2)+Phiexa(:,ndy  -nbn)
    U(:,ndy-1-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy-1-nbn,numwp2)+Phiexa(:,ndy-1-nbn)
+   U(:,ndy+1-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy+1-nbn,numwp2)+Phiexa(:,ndy+1-nbn)
+   !U(:,ndy-2-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy-2-nbn,numwp2)+Phiexa(:,ndy-2-nbn)
 endif
 !%%%%%%f(pair of phi)%%%%%
 !************exact********************
@@ -1056,7 +1094,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
   use comvar
   double precision :: nu2 , w=6.0d0 , dt2 , dt , deltap,deltam  !kappa -> comver  better?
   integer :: direction , mode , invdt , loopmode , dloop,cnt=0
-  DOUBLE PRECISION, dimension(-1:ndx,-1:ndy) :: Phigrad,Phipre,fluxphi&
+  DOUBLE PRECISION, dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phigrad,Phipre,fluxphi&
        ,Phiv,Phi2dt,Phiu,sourcepre,sourcepri
   DOUBLE PRECISION, dimension(-1-1:ndx+1,-1-1:ndy+1) :: source
   character(5) name
@@ -1086,8 +1124,8 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
      !write(*,*) Phiu(1,1)
      !------------calcurate dt/2------------
 !     DO Lnum = 1, Ncl-2
-        DO Mnum = 1-2, Ncm-2+2
-           do i = is-1,ie+1+1
+        DO Mnum = 1-3, Ncm-2+3
+           do i = is-2,ie+3
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1108,8 +1146,8 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
      !write(*,*) Phiu(127),'127-2'
      !do i = ist , ndx-ien
 !      DO Lnum = 1, Ncl-2
-        DO Mnum = 1-2, Ncm-2+2
-           do i = is,ie+1
+        DO Mnum = 1-3, Ncm-2+3
+           do i = is,ie
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1135,8 +1173,8 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
      !call fluxcal(Phipre,Phipre,Phiu,0.0d0,0.0d0,11)
      !------------calcurate dt/2------------
 !     DO Lnum = 1, Ncl-2
-        DO Mnum = 1-2, Ncm-2+2
-           do i = is-1-1,ie+1
+        DO Mnum = 1-3, Ncm-2+3
+           do i = is-3,ie+2
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1157,8 +1195,8 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
 
      !do i = ist , ndx-ien
 !     DO Lnum = 1, Ncl-2
-        DO Mnum = 1-2, Ncm-2+2
-           do i = is-1,ie
+        DO Mnum = 1-3, Ncm-2+3
+           do i = is,ie
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1168,7 +1206,8 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
               ixm = iwx*(i-1)+ iwy*Mnum !+ iwz*Mnum
               jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
 !              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
-              Phiv(ix,jy) = Phipre(ix,jy) + nu2 * (Phiu(ixp,jyp) - Phiu(ix,jy))
+              !Phiv(ix,jy) = Phipre(ix,jy) + nu2 * (Phiu(ixp,jyp) - Phiu(ix,jy))
+              Phiv(ix,jy) = Phipre(ix,jy) + nu2 * (Phiu(ix,jy) - Phiu(ixm,jym))
            end do
         end DO
 !     end DO
@@ -1219,7 +1258,7 @@ subroutine vanalbada(Mnum,Lnum,Phipre,Phigrad,i_sta,i_end,dmein)
   integer ix,jy,kz,ixp,jyp,kzp,ixm,jym,kzm
   integer :: i , ip , im
   !DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phigrad,Phipre
-  DOUBLE PRECISION, dimension(-1:ndx,-1:ndy) :: Phipre
+  DOUBLE PRECISION, dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phipre
   DOUBLE PRECISION, dimension(-1:dmein) :: Phigrad
 
 
@@ -1251,10 +1290,14 @@ end subroutine vanalbada
 subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
   use comvar
   double precision :: ep , kappa
-  DOUBLE PRECISION , dimension(-1:ndx,-1:ndy) :: ul,ur,pre,preuse,uin
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: ul,ur,pre,preuse,uin
   DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
   integer :: i,mode,Ncell,Ncl,Ncm,j,k,Lnum,Mnum
-  integer ix,jy,kz,ixp,jyp,kzp,ixm,jym,kzm,is,ie
+  integer ix,jy,kz,ixp,jyp,kzp,ixm,jym,kzm,is,ie,ixpp,jypp
+  DOUBLE PRECISION dqp12,dqm12,dqp32,ph,minmdp12,sgnp12,minmdm12,sgnm12,minmdp32,sgnp32 &
+  ,d3qp12bar,d3qm12bar,d3qp12til,d3qp32til,minmd,sgn,ql,qr
+  DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: d3qp12
+  DOUBLE PRECISION, dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phinu
   !DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
   !uin(:)=0.0d0
 !  if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy; Ncl = ndz;  end if
@@ -1263,27 +1306,79 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
   if(iwx.eq.1) then; Ncell = ndx; Ncm = ndy;  end if
      if(iwy.eq.1) then; Ncell = ndy; Ncm = ndx;  end if
 
+
            !call vanalbada(pre,slop)
-           if(mode==1) then
+if(mode==1) then
 !              DO Lnum = 1, Ncl-2
-              DO Mnum = 1-2, Ncm-2+2
-              call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
-              do i = is-1,ie+1
+DO Mnum = 1-3, Ncm-2+3
+do i = is-2,ie+1
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
               ixp = iwx*(i+1)+ iwy*Mnum! + iwz*Mnum
               jyp = iwx*Mnum + iwy*(i+1)!+ iwz*Lnum
+              ixpp = iwx*(i+2)+ iwy*Mnum! + iwz*Mnum
+              jypp = iwx*Mnum + iwy*(i+2)!+ iwz*Lnum
 !              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
               ixm = iwx*(i-1)+ iwy*Mnum !+ iwz*Mnum
               jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
 !              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
               !call vanalbada(pre,slop)
               !do i = is,ie
-              ul(ix,jy) = preuse(ix,jy) + 0.25d0 * ep * slop(i) &
-                   * ((1.0d0-slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
-                   (1.0d0+slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i+1/2
-              uin(ix,jy)=ul(ix,jy)
+
+sgnm12=dsign(1.d0,pre(ix,jy)-pre(ixm,jym))
+minmdm12=sgnm12*dmax1(0.d0,dmin1(dabs(pre(ix,jy)-pre(ixm,jym)),sgnm12*2.d0*(pre(ixp,jyp)-pre(ix,jy))&
+,sgnm12*2.d0*(pre(ixpp,jypp)-pre(ixp,jyp))))
+
+sgnp12=dsign(1.d0,pre(ixp,jyp)-pre(ix,jy))
+minmdp12=sgnp12*dmax1(0.d0,dmin1(dabs(pre(ixp,jyp)-pre(ix,jy)),sgnp12*2.d0*(pre(ixpp,jypp)-pre(ixp,jyp))&
+,sgnp12*2.d0*(pre(ix,jy)-pre(ixm,jym))))
+
+sgnp32=dsign(1.d0,pre(ixpp,jypp)-pre(ixp,jyp))
+minmdp32=sgnp32*dmax1(0.d0,dmin1(dabs(pre(ixpp,jypp)-pre(ixp,jyp)),sgnp32*2.d0*(pre(ix,jy)-pre(ixm,jym))&
+,sgnp32*2.d0*(pre(ixp,jyp)-pre(ix,jy))))
+
+d3qp12(ix,jy)=pre(ixp,jyp)-pre(ix,jy)-(minmdm12-2.d0*minmdp12+minmdp32)/6.d0
+end do
+end DO
+
+
+              DO Mnum = 1-3, Ncm-2+3
+              do i = is-1,ie+1
+              ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
+!              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Mnum! + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)!+ iwz*Lnum
+              ixpp = iwx*(i+2)+ iwy*Mnum! + iwz*Mnum
+              jypp = iwx*Mnum + iwy*(i+2)!+ iwz*Lnum
+!              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Mnum !+ iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
+!              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !call vanalbada(pre,slop)
+              !do i = is,ie
+
+sgn=dsign(1.d0,d3qp12(ixm,jym))
+d3qm12bar=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixm,jym)),sgn*4.d0*(d3qp12(ix,jy))))
+!sgn=dsign(1.d0,d3qp12(ix,jy))
+!d3qp12bar=sgn*dmax1(0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixp,jyp))))
+
+sgn=dsign(1.d0,d3qp12(ix,jy))
+d3qp12til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixm,jym))))
+!sgn=dsign(1.d0,d3qp12(ixp,jyp))
+!d3qp32til=sgn*dmax1(0,dmin1(dabs(d3qp12(ixp,jyp)),sgn*4.d0*(d3qp12(ix,jy))))
+
+!ql=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
+!qr=pre(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
+
+
+              !ul(ix,jy) = preuse(ix,jy) + 0.25d0 * ep * slop(i) &
+              !     * ((1.0d0-slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
+              !     (1.0d0+slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i+1/2
+              !uin(ix,jy)=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
+              uin(ix,jy)=preuse(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
+              !uin(ix,jy)=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
               end do
               end DO
 !              end DO
@@ -1293,10 +1388,78 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
 
 
            if(mode==4) then
+!d3qp12(:,:)=0.d0
+!Phinu(:,:)=Phiexa2(:,:)
+!DO Mnum = 1-2, Ncm-2+2
+!do i = is-2,ie+2
+!              ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
+!              jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
+!              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+!              ixp = iwx*(i+1)+ iwy*Mnum! + iwz*Mnum
+!              jyp = iwx*Mnum + iwy*(i+1)!+ iwz*Lnum
+!              ixpp = iwx*(i+2)+ iwy*Mnum! + iwz*Mnum
+!              jypp = iwx*Mnum + iwy*(i+2)!+ iwz*Lnum
+!              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+!              ixm = iwx*(i-1)+ iwy*Mnum !+ iwz*Mnum
+!              jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
+!
+!Phinu(ix,jy)=pre(ix,jy)
+!enddo
+!enddo
+!Phinu(:,ie+3)=Phiexa2(:,ie+3)
+!Phinu(ie+3,:)=Phiexa2(ie+3,:)
+
+DO Mnum = 1-3, Ncm-2+3
+do i = is-2,ie+1
+              ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
+              jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
+!              kz  = iwx*Lnum + iwy*Mnum + iwz*i
+              ixp = iwx*(i+1)+ iwy*Mnum! + iwz*Mnum
+              jyp = iwx*Mnum + iwy*(i+1)!+ iwz*Lnum
+              ixpp = iwx*(i+2)+ iwy*Mnum! + iwz*Mnum
+              jypp = iwx*Mnum + iwy*(i+2)!+ iwz*Lnum
+!              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+              ixm = iwx*(i-1)+ iwy*Mnum !+ iwz*Mnum
+              jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
+!              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+              !call vanalbada(pre,slop)
+              !do i = is,ie
+
+sgnm12=dsign(1.d0,pre(ix,jy)-pre(ixm,jym))
+minmdm12=sgnm12*dmax1(0.d0,dmin1(dabs(pre(ix,jy)-pre(ixm,jym)),sgnm12*2.d0*(pre(ixp,jyp)-pre(ix,jy)),&
+sgnm12*2.d0*(pre(ixpp,jypp)-pre(ixp,jyp))))
+
+sgnp12=dsign(1.d0,pre(ixp,jyp)-pre(ix,jy))
+minmdp12=sgnp12*dmax1(0.d0,dmin1(dabs(pre(ixp,jyp)-pre(ix,jy)),sgnp12*2.d0*(pre(ixpp,jypp)-pre(ixp,jyp)),&
+sgnp12*2.d0*(pre(ix,jy)-pre(ixm,jym))))
+
+sgnp32=dsign(1.d0,pre(ixpp,jypp)-pre(ixp,jyp))
+minmdp32=sgnp32*dmax1(0.d0,dmin1(dabs(pre(ixpp,jypp)-pre(ixp,jyp)),sgnp32*2.d0*(pre(ix,jy)-pre(ixm,jym)),&
+sgnp32*2.d0*(pre(ixp,jyp)-pre(ix,jy))))
+
+
+d3qp12(ix,jy)=pre(ixp,jyp)-pre(ix,jy)-(minmdm12-2.d0*minmdp12+minmdp32)/6.d0
+
+!sgnm12=dsign(1.d0,Phinu(ix,jy)-Phinu(ixm,jym))
+!minmdm12=sgnm12*dmax1(0.d0,dmin1(dabs(Phinu(ix,jy)-Phinu(ixm,jym)),sgnm12*4.d0*(Phinu(ixp,jyp)-Phinu(ix,jy)),&
+!sgnm12*2.d0*(Phinu(ixpp,jypp)-Phinu(ixp,jyp))))
+
+!sgnp12=dsign(1.d0,Phinu(ixp,jyp)-Phinu(ix,jy))
+!minmdp12=sgnp12*dmax1(0.d0,dmin1(dabs(Phinu(ixp,jyp)-Phinu(ix,jy)),sgnp12*4.d0*(Phinu(ixpp,jypp)-Phinu(ixp,jyp)),&
+!sgnp12*2.d0*(Phinu(ix,jy)-Phinu(ixm,jym))))
+
+!sgnp32=dsign(1.d0,Phinu(ixpp,jypp)-Phinu(ixp,jyp))
+!minmdp32=sgnp32*dmax1(0.d0,dmin1(dabs(Phinu(ixpp,jypp)-Phinu(ixp,jyp)),sgnp32*4.d0*(Phinu(ix,jy)-Phinu(ixm,jym)),&
+!sgnp32*2.d0*(Phinu(ixp,jyp)-Phinu(ix,jy))))
+
+!d3qp12(ix,jy)=Phinu(ixp,jyp)-Phinu(ix,jy)-(minmdm12-2.d0*minmdp12+minmdp32)/6.d0
+end do
+end DO
+
 !              DO Lnum = 1, Ncl-2
-              DO Mnum = 1-2, Ncm-2+2
-              call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
-              do i = is-1,ie+1
+              DO Mnum = 1-3, Ncm-2+3
+              !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+              do i = is-2,ie
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1307,10 +1470,40 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
               jym = iwx*Mnum + iwy*(i-1)!+ iwz*Lnum
 !              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
               !do i = ist-1,ndx-ien+1
-              ur(ix,jy) = preuse(ix,jy) - 0.25d0 * ep * slop(i) &
-                   * ((1.0d0+slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
-                   (1.0d0-slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i-1/2
-              uin(ix,jy)=ur(ix,jy)
+
+
+!sgn=dsign(1.d0,d3qp12(ix,jy))
+!d3qp12bar=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixp,jyp))))
+
+!sgn=dsign(1.d0,d3qp12(ixp,jyp))
+!d3qp32til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixp,jyp)),sgn*4.d0*(d3qp12(ix,jy))))
+
+!sgn=dsign(1.d0,d3qp12(ixp,jyp))
+!d3qp12bar=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixp,jyp)),sgn*4.d0*(d3qp12(ixpp,jypp))))
+
+sgn=dsign(1.d0,d3qp12(ix,jy))
+d3qp12bar=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixp,jyp))))
+
+sgn=dsign(1.d0,d3qp12(ixp,jyp))
+d3qp32til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixp,jyp)),sgn*4.d0*(d3qp12(ix,jy))))
+
+!sgn=dsign(1.d0,d3qp12(ixm,jym))
+!d3qp12bar=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixm,jym)),sgn*4.d0*(d3qp12(ix,jy))))
+
+!sgn=dsign(1.d0,d3qp12(ix,jy))
+!d3qp32til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixm,jym))))
+
+!ql=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
+!qr=pre(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
+
+              !ur(ix,jy) = preuse(ix,jy) - 0.25d0 * ep * slop(i) &
+              !     * ((1.0d0+slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
+              !     (1.0d0-slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i-1/2
+              !uin(ix,jy)=pre(ix,jy)-d3qp32til/6.d0-d3qp12bar/3.d0
+              !uin(ix,jy)=preuse(ix,jy)-d3qp32til/6.d0-d3qp12bar/3.d0
+              uin(ix,jy)=preuse(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
+               !uin(ix,jy)=pre(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
+              !uin(ix,jy)=preuse(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
               end do
               end DO
 !              end DO
@@ -1322,9 +1515,9 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
 
            if(mode==10) then
 !              DO Lnum = 1, Ncl-2
-              DO Mnum = 1-2, Ncm-2+2
+              DO Mnum = 1-3, Ncm-2+3
               !call vanalbada(pre,slop)
-              do i = is-2,ie+2
+              do i = is-3,ie+3
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1344,9 +1537,9 @@ subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
 
            if(mode==11) then
 !              DO Lnum = 1, Ncl-2
-              DO Mnum = 1-2, Ncm-2+2
+              DO Mnum = 1-3, Ncm-2+3
               !call vanalbada(pre,slop)
-              do i = is-2,ie+2
+              do i = is-3,ie+3
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1394,7 +1587,8 @@ subroutine saveu(in1)
         write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
       ,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
       ,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',grdch(i,j),',',&
-Phigrd(i,j,1),',',Phigrd(i,j,3),',',Phigrd(i,j,4),',',wp2(i,j,1)-Phiexa(i,j),',' &
+cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,3)+Phiexa(i,j),&
+',',cg*2.d0*Tdiff*Phigrd(i,j,4)+Phiexa(i,j),',',wp2(i,j,1)-Phiexa(i,j),',' &
 ,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,',',&
       !0.25d0*(dm1(i+1,j+1)-dm1(i+1,j-1)-dm1(i-1,j+1)+dm1(i-1,j-1))/dx/dy
         !write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &
