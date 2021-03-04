@@ -4,7 +4,7 @@ module comvar
   integer, parameter :: itel=1,iwv=0
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, kappa=0.01d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=5.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phidt,Phiexa,Phicrr,grdch
   DOUBLE PRECISION , dimension(-1-1-1:ndx+1+1,-1-1-1:ndy+1+1) :: Phiexa2,rho, Qgr
@@ -13,7 +13,7 @@ module comvar
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-character(94) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T100-rho1-cen-64-1000st-pwe-4th/'
+character(92) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T5-rho1-cen-64-1000st-pwe-4th/'
 end module comvar
 
 module grvvar
@@ -63,9 +63,9 @@ program muscl1D
 
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
-     dt=dt*0.5d0
+     dt=dt*0.3d0
      write(*,*) i ,dt,'step'
-     write(*,*) 'courant', dt, dx*dx/kappa*0.5d0*0.5d0
+     write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
 
     call bndb(dt)
     Phidt(:,:)=0.d0
@@ -117,27 +117,19 @@ program muscl1D
     if(itel==1) then
     do k=1,ndy-2
       do j=1,ndx-2
-wp2(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,1)&
-*(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-wp2(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,2)*&
-(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-wp2(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,3)*&
-(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,4)*&
-(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+wp2(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,1)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+wp2(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,2)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+wp2(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,3)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,4)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
 
-!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
+!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
       enddo
     enddo
     endif
@@ -177,6 +169,78 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*w
     endif
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+if(itel==1) then
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+endif
+
+    do k=1,ndy-2
+      do j=1,ndx-2
+!grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
+
+grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
+   +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
+   -8.d0*(-wp2(j-1,k+2,1)+8.d0*wp2(j-1,k+1,1)-8.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))/12.d0 &
+        +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
+        )/12.d0
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
+!+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
+!-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k-1,1)+3.d0*wp2(j,k-2,1)-12.d0*wp2(j-1,k,1) &
+!+16.d0*wp2(j-1,k-1,1)-4.d0*wp2(j-1,k-2,1)+3.d0*wp2(j-2,k,1)&
+!-4.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))*0.25d0 !backward
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+!grdch(i,j)=grdxy
+
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+
+grdxy2=adiff*wp2(j+1,k+1,2)+adiff*wp2(j-1,k-1,2)+(adiff-0.5d0)*wp2(j+1,k-1,2)+(adiff-0.5d0)*wp2(j-1,k+1,2) &
++(4.d0*adiff-1.d0)*wp2(j,k,2)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,2)+&
+(-2.d0*adiff+0.5d0)*wp2(j-1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,2)
+
+!grdxy2=(-(-wp2(j+2,k+2,2)+8.d0*wp2(j+2,k+1,2)-8.d0*wp2(j+2,k-1,2)+wp2(j+2,k-2,2))/12.d0 &
+!+8.d0*(-wp2(j+1,k+2,2)+8.d0*wp2(j+1,k+1,2)-8.d0*wp2(j+1,k-1,2)+wp2(j+1,k-2,2))/12.d0 &
+!-8.d0*(-wp2(j-1,k+2,2)+8.d0*wp2(j-1,k+1,2)-8.d0*wp2(j-1,k-1,2)+wp2(j-1,k-2,2))/12.d0 &
+!     +(-wp2(j-2,k+2,2)+8.d0*wp2(j-2,k+1,2)-8.d0*wp2(j-2,k-1,2)+wp2(j-2,k-2,2))/12.d0 &
+!  )/12.d0
+
+!grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
+
+grdxy3=(9.d0*wp2(j,k,3)-12.d0*wp2(j,k+1,3)+3.d0*wp2(j,k+2,3)-12.d0*wp2(j+1,k,3) &
++16.d0*wp2(j+1,k+1,3)-4.d0*wp2(j+1,k+2,3)+3.d0*wp2(j+2,k,3)&
+-4.d0*wp2(j+2,k+1,3)+wp2(j+2,k+2,3))*0.25d0 !forward
+
+!grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
+
+grdxy4=(9.d0*wp2(j,k,4)-12.d0*wp2(j,k-1,4)+3.d0*wp2(j,k-2,4)-12.d0*wp2(j-1,k,4) &
++16.d0*wp2(j-1,k-1,4)-4.d0*wp2(j-1,k-2,4)+3.d0*wp2(j-2,k,4)&
+-4.d0*wp2(j-2,k-1,4)+wp2(j-2,k-2,4))*0.25d0 !backward
+
+
+wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt*0.5d0
+wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt*0.5d0
+wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt*0.5d0
+wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt*0.5d0
+      enddo
+    enddo
 
     iwx=1;iwy=0
     if(itel==1) then
@@ -224,38 +288,58 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*w
     endif
 
 
-    !do k=1-1,ndy-2+1
-    ! do j=1-1,ndx-2+1
+
+
+!Phidtn1(:,:)=Phidtn2(:,:)
+
     do k=1,ndy-2
       do j=1,ndx-2
-wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,1)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,2)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,3)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,4)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
 
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
+wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,1)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,2)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,3)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,4)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
       enddo
     enddo
+
+
+
+    iwx=0;iwy=1
+    if(itel==1) then
+    call BC(wp1(:,:,1),0,0,4,4,1)
+    call BC(wp1(:,:,2),0,0,4,4,2)
+    call BC(wp1(:,:,3),0,0,4,4,3)
+    call BC(wp1(:,:,4),0,0,4,4,4)
+    endif
+
+
+    if(itel==1) then
+    call muslcslv1D(wp1(:,:,1),rho,dt*0.5d0,2,2)
+    call muslcslv1D(wp1(:,:,2),rho,dt*0.5d0,1,2)
+    call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,1,2)
+    call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,2,2)
+    endif
+
+    iwx=1;iwy=0
+
+    if(itel==1) then
+    call BC(wp1(:,:,1),4,4,0,0,1)
+    call BC(wp1(:,:,2),4,4,0,0,2)
+    call BC(wp1(:,:,3),4,4,0,0,3)
+    call BC(wp1(:,:,4),4,4,0,0,4)
+    endif
+
+    if(itel==1) then
+    call muslcslv1D(wp1(:,:,1),rho,dt*0.5d0,2,2)
+    call muslcslv1D(wp1(:,:,2),rho,dt*0.5d0,1,2)
+    call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,2,2)
+    call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,1,2)
+    endif
+
 
 if(itel==1) then
 call BC(wp2(:,:,1),3,3,3,3,1)
@@ -264,14 +348,11 @@ call BC(wp2(:,:,3),3,3,3,3,3)
 call BC(wp2(:,:,4),3,3,3,3,4)
 endif
 
-    if(itel==1) then
-Phidtn2(:,:)=wp1(:,:,3)
-
     do k=1,ndy-2
       do j=1,ndx-2
-grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
-+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
+!grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
 
 grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
    +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
@@ -309,103 +390,30 @@ grdxy2=adiff*wp2(j+1,k+1,2)+adiff*wp2(j-1,k-1,2)+(adiff-0.5d0)*wp2(j+1,k-1,2)+(a
 !     +(-wp2(j-2,k+2,2)+8.d0*wp2(j-2,k+1,2)-8.d0*wp2(j-2,k-1,2)+wp2(j-2,k-2,2))/12.d0 &
 !  )/12.d0
 
-grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
-+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
+!grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
 
-grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
-+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
+grdxy3=(9.d0*wp2(j,k,3)-12.d0*wp2(j,k+1,3)+3.d0*wp2(j,k+2,3)-12.d0*wp2(j+1,k,3) &
++16.d0*wp2(j+1,k+1,3)-4.d0*wp2(j+1,k+2,3)+3.d0*wp2(j+2,k,3)&
+-4.d0*wp2(j+2,k+1,3)+wp2(j+2,k+2,3))*0.25d0 !forward
 
-!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,1) &
-!-2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*grdxy1/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*grdxy2/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*grdxy3/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*grdxy4/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
+!grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
+
+grdxy4=(9.d0*wp2(j,k,4)-12.d0*wp2(j,k-1,4)+3.d0*wp2(j,k-2,4)-12.d0*wp2(j-1,k,4) &
++16.d0*wp2(j-1,k-1,4)-4.d0*wp2(j-1,k-2,4)+3.d0*wp2(j-2,k,4)&
+-4.d0*wp2(j-2,k-1,4)+wp2(j-2,k-2,4))*0.25d0 !backward
 
 
-wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0/kappa*0.5d0*cg*cg*grdxy1/dx/dy*dt
-wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0/kappa*0.5d0*cg*cg*grdxy2/dx/dy*dt
-wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0/kappa*0.5d0*cg*cg*grdxy3/dx/dy*dt
-  !wp1(j,k,3) = Phidtn1(j,k) + 2.d0*2.d0/kappa*0.5d0*cg*cg*grdxy3/dx/dy*2.d0*dt
-wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0/kappa*0.5d0*cg*cg*grdxy4/dx/dy*dt
-      enddo
-    enddo
-Phidtn1(:,:)=Phidtn2(:,:)
-
-    do k=1,ndy-2
-      do j=1,ndx-2
-
-wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,1)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,2)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,3)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1(j,k,4)*&
-(1.d0+dexp(-1.0d0*2.d0*kappa *0.5d0* dt))+&
-(-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0*2.d0*kappa *0.5d0* dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0*2.d0*kappa * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0/kappa*0.5d0*2.d0/kappa*0.5d0*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
-!-cg*cg*4.d0/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0*2.d0*kappa * dt))
+wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt*0.5d0
+wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt*0.5d0
+wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt*0.5d0
+wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt*0.5d0
       enddo
     enddo
 
-    endif
-
-
-    iwx=0;iwy=1
-    if(itel==1) then
-    call BC(wp1(:,:,1),0,0,4,4,1)
-    call BC(wp1(:,:,2),0,0,4,4,2)
-    call BC(wp1(:,:,3),0,0,4,4,3)
-    call BC(wp1(:,:,4),0,0,4,4,4)
-    endif
-
-
-    if(itel==1) then
-    call muslcslv1D(wp1(:,:,1),rho,dt*0.5d0,2,2)
-    call muslcslv1D(wp1(:,:,2),rho,dt*0.5d0,1,2)
-    call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,1,2)
-    call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,2,2)
-    endif
-
-    iwx=1;iwy=0
-
-    if(itel==1) then
-    call BC(wp1(:,:,1),4,4,0,0,1)
-    call BC(wp1(:,:,2),4,4,0,0,2)
-    call BC(wp1(:,:,3),4,4,0,0,3)
-    call BC(wp1(:,:,4),4,4,0,0,4)
-    endif
-
-    if(itel==1) then
-    call muslcslv1D(wp1(:,:,1),rho,dt*0.5d0,2,2)
-    call muslcslv1D(wp1(:,:,2),rho,dt*0.5d0,1,2)
-    call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,2,2)
-    call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,1,2)
-    endif
 
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -445,27 +453,19 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0*2.d0*kappa *0.5d0* dt))+0.5d0*wp1
        if(itel==1) then
            do k=1,ndy-2
              do j=1,ndx-2
-       wp2(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,1)&
-*(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-       (-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-       wp2(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,2)&
-*(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-       (-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-       wp2(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,3)&
-*(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-       (-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
-       wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0*2.d0*kappa * 0.5d0 * dt))+0.5d0*wp1(j,k,4)&
-*(1.d0-dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))+&
-       (-cg*cg/kappa*0.5d0/kappa*0.5d0*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0*2.d0*kappa * 0.5d0 * dt))&
--cg*cg*2.d0/kappa*0.5d0*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+       wp2(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,1)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+       (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+       wp2(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,2)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+       (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+       wp2(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,3)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+       (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
+       wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,4)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
+       (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
 
-!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
-!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0*2.d0*kappa * 0.5d0 * dt))
+!wp2(j,k,1) = wp2(j,k,1)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,1)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,2) = wp2(j,k,2)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,2)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,3) = wp2(j,k,3)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,3)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
+!wp2(j,k,4) = wp2(j,k,4)*dexp(-0.5d0/Tdiff * 0.5d0 * dt)+wp1(j,k,4)*(1.d0-dexp(-0.5d0/Tdiff * 0.5d0 * dt))
              enddo
            enddo
        endif
@@ -628,13 +628,13 @@ subroutine INITIAL()
   do i = -1-1-1,ndx+1+1
   do j = -1-1-1,ndy+1+1
      if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
-rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
+rho(i,j) = dinit1!*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
         !rho(i) = 0.0d0
         meanrho=meanrho+dinit1
 mass=mass+rho(i,j)
      else
         rho(i,j) = 0.0d0
-rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
+!rho(i,j) = dinit1*(1.d0-dtanh((dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)-rsph)/ktanh))*0.5d0
         !rho(i) = dinit1
         !rho(i) = dinit1*1.d-2
 mass=mass+rho(i,j)
@@ -783,10 +783,10 @@ rsph=rch*rsph
      Phigrd(i,j,4)=-(-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
      Phiexa(i,j)=Phiexa2(i,j)
      !wp2(i,j,2)=Phiexa(i,j)
-     !wp1(i,j,2)=cg*2.d0/kappa*0.5d0*Phigrd(i,j,2)+Phiexa(i,j)
+     !wp1(i,j,2)=cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i,j)
 
      !wp2(i,j,1)=Phiexa(i,j)
-     !wp1(i,j,1)=cg*2.d0/kappa*0.5d0*Phigrd(i,j,1)+Phiexa(i,j)
+     !wp1(i,j,1)=cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j)
   end do
   end do
   do j=1,ndy-2
@@ -845,8 +845,8 @@ double precision :: dt,sp1,sm1,s1,sp2,sm2,s2,eps=1.d-8,kp
 
 do j=1,ndy-2
 do i=1,ndx-2
-!Phidtn(i,j)=wp2(i,j)+((wp2(i,j,1)-Phidt(i,j))/dt -cg/dx*(wp2(i+1,j,1)-2.d0*wp2(i,j,1)+wp2(i-1,j,1)))*2.d0*kappa
-Phidtn(i,j)=Phidt(i,j)/dt*2.d0*kappa/2.d0
+!Phidtn(i,j)=wp2(i,j)+((wp2(i,j,1)-Phidt(i,j))/dt -cg/dx*(wp2(i+1,j,1)-2.d0*wp2(i,j,1)+wp2(i-1,j,1)))/Tdiff
+Phidtn(i,j)=Phidt(i,j)/dt/Tdiff/2.d0
 enddo
 enddo
 !Phidtn(:,:)=Phiexa(:,:)
@@ -871,7 +871,7 @@ enddo
 !Phidtn(i,j)=Phiexa2(i+1,j)-Phiexa2(i,j)-0.25d0*s2*((1.d0-kp*s2)*sp2+(1.d0+kp*s2)*sm2)&
 !-0.25d0*s1*((1.d0-kp*s1)*sp1+(1.d0+kp*s1)*sm1)
 
-!Phidt(i,j)=Phiexa(i,j)-Phidtn(i,j)*dt*cg/dx/(-1.d0+dexp(dt*0.5d0*2.d0*kappa))
+!Phidt(i,j)=Phiexa(i,j)-Phidtn(i,j)*dt*cg/dx/(-1.d0+dexp(dt*0.5d0/Tdiff))
 !enddo
 !enddo
 !Phidt(:,:)=wp2(:,:,1)
@@ -997,27 +997,27 @@ endif
 !%%%%%phi%%%%
 !%%%%%%f(pair of phi)%%%%%
 if(modex0==4)then
-  U( 0+nbn,:)    =cg*2.d0/kappa*0.5d0*Phigrd( 0+nbn,:,numwp2)+Phiexa( 0+nbn,:)
-  U(-1+nbn,:)    =cg*2.d0/kappa*0.5d0*Phigrd(-1+nbn,:,numwp2)+Phiexa(-1+nbn,:)
-  U(-2+nbn,:)    =cg*2.d0/kappa*0.5d0*Phigrd(-2+nbn,:,numwp2)+Phiexa(-2+nbn,:)
-  !write(*,*)'bc',U( 0,ndy/2),/kappa*0.5d0,Phigrd(0,ndy/2,numwp2),Phiexa( 0,ndy/2)
+  U( 0+nbn,:)    =cg*2.d0*Tdiff*Phigrd( 0+nbn,:,numwp2)+Phiexa( 0+nbn,:)
+  U(-1+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-1+nbn,:,numwp2)+Phiexa(-1+nbn,:)
+  U(-2+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-2+nbn,:,numwp2)+Phiexa(-2+nbn,:)
+  !write(*,*)'bc',U( 0,ndy/2),Tdiff,Phigrd(0,ndy/2,numwp2),Phiexa( 0,ndy/2)
 endif
 if(modex1==4)then
-  U(ndx  -nbn,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx  -nbn,:,numwp2)+Phiexa(ndx  -nbn,:)
-  U(ndx-1-nbn,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx-1-nbn,:,numwp2)+Phiexa(ndx-1-nbn,:)
-  U(ndx+1-nbn,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx+1-nbn,:,numwp2)+Phiexa(ndx+1-nbn,:)
-  !U(ndx-2-nbn,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx-2-nbn,:,numwp2)+Phiexa(ndx-2-nbn,:)
+  U(ndx  -nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx  -nbn,:,numwp2)+Phiexa(ndx  -nbn,:)
+  U(ndx-1-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx-1-nbn,:,numwp2)+Phiexa(ndx-1-nbn,:)
+  U(ndx+1-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx+1-nbn,:,numwp2)+Phiexa(ndx+1-nbn,:)
+  !U(ndx-2-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx-2-nbn,:,numwp2)+Phiexa(ndx-2-nbn,:)
 endif
 if(modey0==4)then
-   U(:, 0+nbn)    =cg*2.d0/kappa*0.5d0*Phigrd(:, 0+nbn,numwp2)+Phiexa(:, 0+nbn)
-   U(:,-1+nbn)    =cg*2.d0/kappa*0.5d0*Phigrd(:,-1+nbn,numwp2)+Phiexa(:,-1+nbn)
-   U(:,-2+nbn)    =cg*2.d0/kappa*0.5d0*Phigrd(:,-2+nbn,numwp2)+Phiexa(:,-2+nbn)
+   U(:, 0+nbn)    =cg*2.d0*Tdiff*Phigrd(:, 0+nbn,numwp2)+Phiexa(:, 0+nbn)
+   U(:,-1+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-1+nbn,numwp2)+Phiexa(:,-1+nbn)
+   U(:,-2+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-2+nbn,numwp2)+Phiexa(:,-2+nbn)
 endif
 if(modey1==4)then
-   U(:,ndy-nbn)  =cg*2.d0/kappa*0.5d0*Phigrd(:,ndy  -nbn,numwp2)+Phiexa(:,ndy  -nbn)
-   U(:,ndy-1-nbn)=cg*2.d0/kappa*0.5d0*Phigrd(:,ndy-1-nbn,numwp2)+Phiexa(:,ndy-1-nbn)
-   U(:,ndy+1-nbn)=cg*2.d0/kappa*0.5d0*Phigrd(:,ndy+1-nbn,numwp2)+Phiexa(:,ndy+1-nbn)
-   !U(:,ndy-2-nbn)=cg*2.d0/kappa*0.5d0*Phigrd(:,ndy-2-nbn,numwp2)+Phiexa(:,ndy-2-nbn)
+   U(:,ndy-nbn)  =cg*2.d0*Tdiff*Phigrd(:,ndy  -nbn,numwp2)+Phiexa(:,ndy  -nbn)
+   U(:,ndy-1-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy-1-nbn,numwp2)+Phiexa(:,ndy-1-nbn)
+   U(:,ndy+1-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy+1-nbn,numwp2)+Phiexa(:,ndy+1-nbn)
+   !U(:,ndy-2-nbn)=cg*2.d0*Tdiff*Phigrd(:,ndy-2-nbn,numwp2)+Phiexa(:,ndy-2-nbn)
 endif
 !%%%%%%f(pair of phi)%%%%%
 !************exact********************
@@ -1065,20 +1065,20 @@ endif
 
 !************Phidt**************
 if(modex0==24)then
-  U( 0+2,:)    =cg*2.d0/kappa*0.5d0*Phigrd( 0+2,:,numwp2)+Phiexa( 0+2,:)+Phidtn( 0+2,:)
-  U(-1+2,:)    =cg*2.d0/kappa*0.5d0*Phigrd(-1+2,:,numwp2)+Phiexa(-1+2,:)+Phidtn(-1+2,:)
+  U( 0+2,:)    =cg*2.d0*Tdiff*Phigrd( 0+2,:,numwp2)+Phiexa( 0+2,:)+Phidtn( 0+2,:)
+  U(-1+2,:)    =cg*2.d0*Tdiff*Phigrd(-1+2,:,numwp2)+Phiexa(-1+2,:)+Phidtn(-1+2,:)
 endif
 if(modex1==24)then
-  U(ndx  -2,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx  -2,:,numwp2)+Phiexa(ndx  -2,:)+Phidtn(ndx  -2,:)
-  U(ndx-1-2,:)=cg*2.d0/kappa*0.5d0*Phigrd(ndx-1-2,:,numwp2)+Phiexa(ndx-1-2,:)+Phidtn(ndx-1-2,:)
+  U(ndx  -2,:)=cg*2.d0*Tdiff*Phigrd(ndx  -2,:,numwp2)+Phiexa(ndx  -2,:)+Phidtn(ndx  -2,:)
+  U(ndx-1-2,:)=cg*2.d0*Tdiff*Phigrd(ndx-1-2,:,numwp2)+Phiexa(ndx-1-2,:)+Phidtn(ndx-1-2,:)
 endif
 if(modey0==24)then
-   U(:, 0+2)    =cg*2.d0/kappa*0.5d0*Phigrd(:, 0+2,numwp2)+Phiexa(:, 0+2)+Phidtn(:, 0+2)
-   U(:,-1+2)    =cg*2.d0/kappa*0.5d0*Phigrd(:,-1+2,numwp2)+Phiexa(:,-1+2)+Phidtn(:,-1+2)
+   U(:, 0+2)    =cg*2.d0*Tdiff*Phigrd(:, 0+2,numwp2)+Phiexa(:, 0+2)+Phidtn(:, 0+2)
+   U(:,-1+2)    =cg*2.d0*Tdiff*Phigrd(:,-1+2,numwp2)+Phiexa(:,-1+2)+Phidtn(:,-1+2)
 endif
 if(modey1==24)then
-   U(:,ndy  -2)=cg*2.d0/kappa*0.5d0*Phigrd(:,ndy  -2,numwp2)+Phiexa(:,ndy  -2)+Phidtn(:,ndy  -2)
-   U(:,ndy-1-2)=cg*2.d0/kappa*0.5d0*Phigrd(:,ndy-1-2,numwp2)+Phiexa(:,ndy-1-2)+Phidtn(:,ndy-1-2)
+   U(:,ndy  -2)=cg*2.d0*Tdiff*Phigrd(:,ndy  -2,numwp2)+Phiexa(:,ndy  -2)+Phidtn(:,ndy  -2)
+   U(:,ndy-1-2)=cg*2.d0*Tdiff*Phigrd(:,ndy-1-2,numwp2)+Phiexa(:,ndy-1-2)+Phidtn(:,ndy-1-2)
 endif
 !************Phidt**************
 end subroutine BC
@@ -1319,9 +1319,9 @@ subroutine vanalbada(Mnum,Lnum,Phipre,Phigrad,i_sta,i_end,dmein)
 end subroutine vanalbada
 
 
-subroutine fluxcal(preuse,pre,uin,ep,mukappa,mode,is,ie)
+subroutine fluxcal(preuse,pre,uin,ep,kappa,mode,is,ie)
   use comvar
-  double precision :: ep , mukappa
+  double precision :: ep , kappa
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: ul,ur,pre,preuse,uin
   DOUBLE PRECISION , dimension(-1:ndx) :: slop  !------------- need allocation --------------
   integer :: i,mode,Ncell,Ncl,Ncm,j,k,Lnum,Mnum
@@ -1406,8 +1406,8 @@ d3qp12til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ix,jy)),sgn*4.d0*(d3qp12(ixm,jym))))
 
 
               !ul(ix,jy) = preuse(ix,jy) + 0.25d0 * ep * slop(i) &
-              !     * ((1.0d0-slop(i)*mukappa)*(pre(ix,jy)-pre(ixm,jym)) + &
-              !     (1.0d0+slop(i)*mukappa)*(pre(ixp,jyp) - pre(ix,jy))) !i+1/2
+              !     * ((1.0d0-slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
+              !     (1.0d0+slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i+1/2
               !uin(ix,jy)=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
               uin(ix,jy)=preuse(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
               !uin(ix,jy)=pre(ix,jy)+d3qm12bar/6.d0+d3qp12til/3.d0
@@ -1529,8 +1529,8 @@ d3qp32til=sgn*dmax1(0.d0,dmin1(dabs(d3qp12(ixp,jyp)),sgn*4.d0*(d3qp12(ix,jy))))
 !qr=pre(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
 
               !ur(ix,jy) = preuse(ix,jy) - 0.25d0 * ep * slop(i) &
-              !     * ((1.0d0+slop(i)*mukappa)*(pre(ix,jy)-pre(ixm,jym)) + &
-              !     (1.0d0-slop(i)*mukappa)*(pre(ixp,jyp) - pre(ix,jy))) !i-1/2
+              !     * ((1.0d0+slop(i)*kappa)*(pre(ix,jy)-pre(ixm,jym)) + &
+              !     (1.0d0-slop(i)*kappa)*(pre(ixp,jyp) - pre(ix,jy))) !i-1/2
               !uin(ix,jy)=pre(ix,jy)-d3qp32til/6.d0-d3qp12bar/3.d0
               !uin(ix,jy)=preuse(ix,jy)-d3qp32til/6.d0-d3qp12bar/3.d0
               uin(ix,jy)=preuse(ixp,jyp)-d3qp32til/6.d0-d3qp12bar/3.d0
@@ -1619,9 +1619,9 @@ subroutine saveu(in1)
         write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
       ,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
       ,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',grdch(i,j),',',&
-cg*2.d0/kappa*0.5d0*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0/kappa*0.5d0*Phigrd(i,j,3)+Phiexa(i,j),&
-',',cg*2.d0/kappa*0.5d0*Phigrd(i,j,4)+Phiexa(i,j),',',wp2(i,j,1)-Phiexa(i,j),',' &
-,Phiexa2(i,j)+cg/kappa*0.5d0*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,',',&
+cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,3)+Phiexa(i,j),&
+',',cg*2.d0*Tdiff*Phigrd(i,j,4)+Phiexa(i,j),',',wp2(i,j,1)-Phiexa(i,j),',' &
+,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,',',&
       !0.25d0*(dm1(i+1,j+1)-dm1(i+1,j-1)-dm1(i-1,j+1)+dm1(i-1,j-1))/dx/dy
         !write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &
         !,wp2(i,j,1),wp2(i,j,2),wp2(i,j,3),wp2(i,j,4)&
@@ -1643,7 +1643,7 @@ cg*2.d0/kappa*0.5d0*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0/kappa*0.5d0*Phigrd(i,j
   j=ndy/2
   do i=-1,ndx
         write(22,*) x(i),wp1(i,j,1),wp2(i,j,1),rho(i,j),Phiexa(i,j),Phigrd(i,j,1)&
-,Phiexa2(i,j)+cg/kappa*0.5d0*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,wp2(j+1,k+1)-wp2(j+1,k-1)-wp2(j-1,k+1)+wp2(j-1,k-1)
+,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,wp2(j+1,k+1)-wp2(j+1,k-1)-wp2(j-1,k+1)+wp2(j-1,k-1)
   end do
   close(22)
   

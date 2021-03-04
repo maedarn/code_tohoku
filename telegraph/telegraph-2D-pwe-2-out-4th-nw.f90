@@ -322,7 +322,7 @@ wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt
 wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt
       enddo
     enddo
-Phidtn1(:,:)=Phidtn2(:,:)
+!Phidtn1(:,:)=Phidtn2(:,:)
 
     do k=1,ndy-2
       do j=1,ndx-2
