@@ -5,7 +5,7 @@ module comvar
   DOUBLE PRECISION :: cg = 1.0d1 , dx != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0,p2dxdx
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
-  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.1d0 !,  kappa=1.0d0/3.0d0
+  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 !,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   character(62) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-1D-1/4th/'
 end module comvar

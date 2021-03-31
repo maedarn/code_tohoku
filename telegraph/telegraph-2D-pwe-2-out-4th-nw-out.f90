@@ -5,7 +5,7 @@ module comvar
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
   DOUBLE PRECISION :: cg = 1.0d0, Tdiff=100.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
-  double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
+  double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=100.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phidt,Phiexa,Phicrr,grdch
   DOUBLE PRECISION , dimension(-1-1-1:ndx+1+1,-1-1-1:ndy+1+1) :: Phiexa2,rho, Qgr
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1,dim) :: Phigrd
@@ -22,7 +22,7 @@ module grvvar
   DOUBLE PRECISION , dimension(-1-1-1:ndx2+1+1) :: x
   DOUBLE PRECISION , dimension(-1-1-1:ndy2+1+1) :: y
   DOUBLE PRECISION , dimension(-1:ndx2,dim2) :: flmtel1,flmtel2,flmtel3,flmtel4
-  DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1) :: Phidtn  , fx , fy, Phidtn1, Phidtn2
+  DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1) :: Phidtn  , fx , fy, Phidtn1, Phidtn2,flmxy,flmx,flmy
   DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1,dim2) :: wp1 ,wp2, wppre1 ,wppre2 !wp->telegraph
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,dim2) :: fp1 ,fp2 !fp->wave
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,2) :: source ,sourcedt,sourcedt2
@@ -33,7 +33,7 @@ program muscl1D
   use comvar
   use grvvar
   implicit none
-  DOUBLE PRECISION :: dt=0.0d0,me1,me2,me3,me4,mf1,mf2,mf3,mf4,grdxy1,grdxy2,grdxy3,grdxy4
+  DOUBLE PRECISION :: dt=0.0d0,me1,me2,me3,me4,mf1,mf2,mf3,mf4,grdxy1,grdxy2,grdxy3,grdxy4,r,rr
   integer :: i,sv=0,iws,ws=2,j,k
   integer :: n,m
 
@@ -209,7 +209,7 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
 
     iwx=1;iwy=1
     if(itel==1) then
-    call BC(wp2(:,:,1),3,3,3,3,1)
+    !call BC(wp2(:,:,1),3,3,3,3,1)
     call BC(wp2(:,:,2),3,3,3,3,2)
     call BC(wp2(:,:,3),3,3,3,3,3)
     call BC(wp2(:,:,4),3,3,3,3,4)
@@ -242,7 +242,7 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
     enddo
 
 if(itel==1) then
-call BC(wp2(:,:,1),3,0,3,0,1)
+!call BC(wp2(:,:,1),3,3,3,3,1)
 call BC(wp2(:,:,2),3,3,3,3,2)
 call BC(wp2(:,:,3),3,3,3,3,3)
 call BC(wp2(:,:,4),3,3,3,3,4)
@@ -250,18 +250,48 @@ endif
 
     if(itel==1) then
 Phidtn2(:,:)=wp1(:,:,3)
+goto 778
+!(-2->-1)
+  do k=-1-1,ndy
+    do j=-1-1,ndx
+    flmxy(j,k)=(wp2(j,k,1)+wp2(j+1,k,1)+wp2(j,k+1,1)+wp2(j+1,k+1,1))*0.25d0
+    enddo
+  enddo
+
+ do k=-1,ndy-1
+   do j=-1,ndx-1
+   r=(flmxy(j,k)-flmxy(j-1,k)+1.d-10)/(flmxy(j+1,k)-flmxy(j,k)+1.d-10)
+   !rr=dmax1(0.d0,dmin1(1.d0,r))
+   rr=(r**2.d0+r)/(r**2.d0+1.d0)
+   !write(*,*)'rr',rr
+   flmx(j,k)=rr*(flmxy(j,k)-flmxy(j+1,k))
+   enddo
+ enddo
+
+ do k=-1,ndy-1
+   do j=-1,ndx-1
+   r=(flmx(j,k)-flmx(j,k-1)+1.d-10)/(flmx(j,k+1)-flmx(j,k)+1.d-10)
+   !rr=dmax1(0.d0,dmin1(1.d0,r))
+   rr=(r**2.d0+r)/(r**2.d0+1.d0)
+   !write(*,*)'rr',rr
+   flmy(j,k)=rr*(flmx(j,k)-flmx(j,k+1))
+   enddo
+ enddo
+778 continue
 
     do k=1,ndy-2
       do j=1,ndx-2
 grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
 +(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
 (-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
-
+!write(*,*)'1',grdxy1
+!grdxy1=flmy(j-1,k-1)
+!write(*,*)'2',grdxy1
 !grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
 !   +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
 !   -8.d0*(-wp2(j-1,k+2,1)+8.d0*wp2(j-1,k+1,1)-8.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))/12.d0 &
 !        +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
-!        )/12.d0
+!      )/12.d0
 
 !grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
 !+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
@@ -503,7 +533,7 @@ subroutine INITIAL()
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)
-  x(1) = dx/2.0d0
+  !x(1) = dx/2.0d0
   x(0) = x(1) - dx
   x(-1) = x(0) - dx
   x(-2) = x(-1) - dx
@@ -515,7 +545,7 @@ subroutine INITIAL()
 
   !----------y--------------
   dy = Lbox/dble(ndy-2)
-  y(1) = dy/2.0d0
+  !y(1) = dy/2.0d0
   y(0) = y(1) - dy
   y(-1) = y(0) - dy
   y(-2) = y(-1) - dy
@@ -946,7 +976,9 @@ if(modex0==3)then
     U(-2+nbn,:)    =Phiexa(-2+nbn,:)
 endif
 if(modex1==3)then
+    !U(ndx+1-nbn,:)=U(ndx+1-nbn-1,:)
     U(ndx  -nbn,:)=Phiexa(ndx-nbn,:)
+    !U(ndx  -nbn,:)=U(ndx-nbn-1,:)
     U(ndx-1-nbn,:)=Phiexa(ndx-1-nbn,:)
     U(ndx+1-nbn,:)=Phiexa(ndx+1-nbn,:)
     !U(ndx-2-nbn,:)=Phiexa(ndx-2-nbn,:)
@@ -957,15 +989,19 @@ U(:,-1+nbn)    =Phiexa(:,-1+nbn)
 U(:,-2+nbn)    =Phiexa(:,-2+nbn)
 endif
 if(modey1==3)then
+!U(:,ndy+1-nbn)=U(:,ndy+1-nbn-1)
+!U(:,ndy  -nbn)=U(:,ndy  -nbn-1)
 U(:,ndy  -nbn)=Phiexa(:,ndy  -nbn)
 U(:,ndy-1-nbn)=Phiexa(:,ndy-1-nbn)
 U(:,ndy+1-nbn)=Phiexa(:,ndy+1-nbn)
-!U(:,ndy-2-nbn)=Phiexa(:,ndy-2-nbn)
+ !U(:,ndy-2-nbn)=Phiexa(:,ndy-2-nbn)
 endif
 !%%%%%phi%%%%
 !%%%%%%f(pair of phi)%%%%%
 if(modex0==4)then
   U( 0+nbn,:)    =cg*2.d0*Tdiff*Phigrd( 0+nbn,:,numwp2)+Phiexa( 0+nbn,:)
+!U(-2+nbn,:)    =U(-1+nbn,:)
+!U(-1+nbn,:)    =U(-0+nbn,:)
   U(-1+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-1+nbn,:,numwp2)+Phiexa(-1+nbn,:)
   U(-2+nbn,:)    =cg*2.d0*Tdiff*Phigrd(-2+nbn,:,numwp2)+Phiexa(-2+nbn,:)
   !write(*,*)'bc',U( 0,ndy/2),Tdiff,Phigrd(0,ndy/2,numwp2),Phiexa( 0,ndy/2)
@@ -977,6 +1013,8 @@ if(modex1==4)then
   !U(ndx-2-nbn,:)=cg*2.d0*Tdiff*Phigrd(ndx-2-nbn,:,numwp2)+Phiexa(ndx-2-nbn,:)
 endif
 if(modey0==4)then
+   !U(:,-2+nbn)    =U(:,-1+nbn)
+   !U(:,-1+nbn)    =U(:,-0+nbn)
    U(:, 0+nbn)    =cg*2.d0*Tdiff*Phigrd(:, 0+nbn,numwp2)+Phiexa(:, 0+nbn)
    U(:,-1+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-1+nbn,numwp2)+Phiexa(:,-1+nbn)
    U(:,-2+nbn)    =cg*2.d0*Tdiff*Phigrd(:,-2+nbn,numwp2)+Phiexa(:,-2+nbn)

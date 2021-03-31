@@ -4,7 +4,7 @@ module comvar
   integer, parameter :: itel=1,iwv=0
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz,bndx0=4,bndy0=4,bndx1=3,bndy1=3 !odd:x, even:y, 1,2:periodic, 3,4:exact, 5,6:exact+free
-  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=100.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
+  DOUBLE PRECISION :: cg = 1.0d0, Tdiff=5.0d0 , dx,dy,ratiodini=1.d0, ktanh=3.d0,adiff=0.375d0  != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
   double precision :: Lbox=1.0d2 , h=40.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=10.d0, rch=1.d0,Cnst=0.d0
   DOUBLE PRECISION , dimension(-1-1:ndx+1,-1-1:ndy+1) :: Phidt,Phiexa,Phicrr,grdch
   DOUBLE PRECISION , dimension(-1-1-1:ndx+1+1,-1-1-1:ndy+1+1) :: Phiexa2,rho, Qgr
@@ -13,7 +13,7 @@ module comvar
   double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=1.d0 ,meanrho,meanphiexa!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   !character(63) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/simu/'
-character(94) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T100-rho1-cen-64-1000st-pwe-4th/'
+character(92) :: dir='/Users/maeda/Desktop/Dropbox/analysis/telegraph-test-2D-1/cg1-T5-rho1-cen-64-1000st-pwe-4th/'
 end module comvar
 
 module grvvar
@@ -36,6 +36,7 @@ program muscl1D
   DOUBLE PRECISION :: dt=0.0d0,me1,me2,me3,me4,mf1,mf2,mf3,mf4,grdxy1,grdxy2,grdxy3,grdxy4
   integer :: i,sv=0,iws,ws=2,j,k
   integer :: n,m
+  DOUBLE PRECISION, dimension(-1:ndx2,-1:ndy2) :: k1,k2,k3,k4
 
 
   call INITIAL()
@@ -63,7 +64,7 @@ program muscl1D
 
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
-     dt=dt*0.5d0
+     dt=dt*0.3d0
      write(*,*) i ,dt,'step'
      write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
 
@@ -115,8 +116,8 @@ program muscl1D
 
 
     if(itel==1) then
-    do k=1,ndy-2+1
-      do j=1,ndx-2+1
+    do k=1,ndy-2
+      do j=1,ndx-2
 wp2(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,1)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
 (-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(-1.d0+dexp(-1.0d0/Tdiff * 0.5d0 * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0*(0.5d0 * dt)
 wp2(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,k,2)*(1.d0-dexp(-1.0d0/Tdiff * 0.5d0 * dt))+&
@@ -169,6 +170,79 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     endif
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+if(itel==1) then
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+endif
+
+    do k=1,ndy-2
+      do j=1,ndx-2
+!grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
+
+grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
+   +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
+   -8.d0*(-wp2(j-1,k+2,1)+8.d0*wp2(j-1,k+1,1)-8.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))/12.d0 &
+        +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
+        )/12.d0
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
+!+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
+!-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k-1,1)+3.d0*wp2(j,k-2,1)-12.d0*wp2(j-1,k,1) &
+!+16.d0*wp2(j-1,k-1,1)-4.d0*wp2(j-1,k-2,1)+3.d0*wp2(j-2,k,1)&
+!-4.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))*0.25d0 !backward
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+!grdch(i,j)=grdxy
+
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+
+grdxy2=adiff*wp2(j+1,k+1,2)+adiff*wp2(j-1,k-1,2)+(adiff-0.5d0)*wp2(j+1,k-1,2)+(adiff-0.5d0)*wp2(j-1,k+1,2) &
++(4.d0*adiff-1.d0)*wp2(j,k,2)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,2)+&
+(-2.d0*adiff+0.5d0)*wp2(j-1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,2)
+
+!grdxy2=(-(-wp2(j+2,k+2,2)+8.d0*wp2(j+2,k+1,2)-8.d0*wp2(j+2,k-1,2)+wp2(j+2,k-2,2))/12.d0 &
+!+8.d0*(-wp2(j+1,k+2,2)+8.d0*wp2(j+1,k+1,2)-8.d0*wp2(j+1,k-1,2)+wp2(j+1,k-2,2))/12.d0 &
+!-8.d0*(-wp2(j-1,k+2,2)+8.d0*wp2(j-1,k+1,2)-8.d0*wp2(j-1,k-1,2)+wp2(j-1,k-2,2))/12.d0 &
+!     +(-wp2(j-2,k+2,2)+8.d0*wp2(j-2,k+1,2)-8.d0*wp2(j-2,k-1,2)+wp2(j-2,k-2,2))/12.d0 &
+!  )/12.d0
+
+!grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
+
+grdxy3=(9.d0*wp2(j,k,3)-12.d0*wp2(j,k+1,3)+3.d0*wp2(j,k+2,3)-12.d0*wp2(j+1,k,3) &
++16.d0*wp2(j+1,k+1,3)-4.d0*wp2(j+1,k+2,3)+3.d0*wp2(j+2,k,3)&
+-4.d0*wp2(j+2,k+1,3)+wp2(j+2,k+2,3))*0.25d0 !forward
+
+!grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
+
+grdxy4=(9.d0*wp2(j,k,4)-12.d0*wp2(j,k-1,4)+3.d0*wp2(j,k-2,4)-12.d0*wp2(j-1,k,4) &
++16.d0*wp2(j-1,k-1,4)-4.d0*wp2(j-1,k-2,4)+3.d0*wp2(j-2,k,4)&
+-4.d0*wp2(j-2,k-1,4)+wp2(j-2,k-2,4))*0.25d0 !backward
+
+
+
+wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt*0.5d0
+wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt*0.5d0
+wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt*0.5d0
+wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt*0.5d0
+      enddo
+    enddo
 
     iwx=1;iwy=0
     if(itel==1) then
@@ -216,139 +290,24 @@ wp2(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0+dexp(-1.d0/Tdiff * 0.5d0 * dt))+0.5d0*wp1(j,
     endif
 
 
-    !do k=1-1,ndy-2+1
-    ! do j=1-1,ndx-2+1
-    do k=1,ndy-2
-      do j=1,ndx-2
-wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,1)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,2)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,3)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,4)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-      enddo
-    enddo
-
-if(itel==1) then
-call BC(wp2(:,:,1),3,0,3,0,1)
-call BC(wp2(:,:,2),3,3,3,3,2)
-call BC(wp2(:,:,3),3,3,3,3,3)
-call BC(wp2(:,:,4),3,3,3,3,4)
-endif
-
-    if(itel==1) then
-Phidtn2(:,:)=wp1(:,:,3)
-
-    do k=1,ndy-2
-      do j=1,ndx-2
-grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
-+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
-
-!grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
-!   +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
-!   -8.d0*(-wp2(j-1,k+2,1)+8.d0*wp2(j-1,k+1,1)-8.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))/12.d0 &
-!        +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
-!        )/12.d0
-
-!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
-!+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
-!-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
-
-!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k-1,1)+3.d0*wp2(j,k-2,1)-12.d0*wp2(j-1,k,1) &
-!+16.d0*wp2(j-1,k-1,1)-4.d0*wp2(j-1,k-2,1)+3.d0*wp2(j-2,k,1)&
-!-4.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))*0.25d0 !backward
-
-!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
-!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
-!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
-!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
-!grdch(i,j)=grdxy
 
 
-!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
-!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
-!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
-!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
-
-grdxy2=adiff*wp2(j+1,k+1,2)+adiff*wp2(j-1,k-1,2)+(adiff-0.5d0)*wp2(j+1,k-1,2)+(adiff-0.5d0)*wp2(j-1,k+1,2) &
-+(4.d0*adiff-1.d0)*wp2(j,k,2)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,2)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,2)
-
-!grdxy2=(-(-wp2(j+2,k+2,2)+8.d0*wp2(j+2,k+1,2)-8.d0*wp2(j+2,k-1,2)+wp2(j+2,k-2,2))/12.d0 &
-!+8.d0*(-wp2(j+1,k+2,2)+8.d0*wp2(j+1,k+1,2)-8.d0*wp2(j+1,k-1,2)+wp2(j+1,k-2,2))/12.d0 &
-!-8.d0*(-wp2(j-1,k+2,2)+8.d0*wp2(j-1,k+1,2)-8.d0*wp2(j-1,k-1,2)+wp2(j-1,k-2,2))/12.d0 &
-!     +(-wp2(j-2,k+2,2)+8.d0*wp2(j-2,k+1,2)-8.d0*wp2(j-2,k-1,2)+wp2(j-2,k-2,2))/12.d0 &
-!  )/12.d0
-
-grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
-+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
-
-grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
-+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
-(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
-
-!wp1(j,k,1) = wp1(j,k,1)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,1) &
-!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy1/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy2/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy3/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*grdxy4/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-
-
-wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt
-wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt
-wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt
-  !wp1(j,k,3) = Phidtn1(j,k) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*2.d0*dt
-wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt
-      enddo
-    enddo
 !Phidtn1(:,:)=Phidtn2(:,:)
 
     do k=1,ndy-2
       do j=1,ndx-2
 
-wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,1)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,2)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,3)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,4)*(1.d0+dexp(-1.0d0/Tdiff *0.5d0* dt))+&
-(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff *0.5d0* dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (0.5d0*dt)
-
-!wp1(j,k,2) = wp1(j,k,2)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,2) &
-!-2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,2)-wp2(j+1,k-1,2)-wp2(j-1,k+1,2)+wp2(j-1,k-1,2))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,3) = wp1(j,k,3)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,3) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,3)-wp2(j+1,k-1,3)-wp2(j-1,k+1,3)+wp2(j-1,k-1,3))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
-!wp1(j,k,4) = wp1(j,k,4)*dexp(-0.5d0/Tdiff * dt)+(wp2(j,k,4) &
-!+2.d0*2.d0*Tdiff*2.d0*Tdiff*cg*cg*0.25d0*(wp2(j+1,k+1,4)-wp2(j+1,k-1,4)-wp2(j-1,k+1,4)+wp2(j-1,k-1,4))/dx/dy &
-!-cg*cg*4.d0*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-0.5d0/Tdiff * dt))
+wp1(j,k,1) = 0.5d0*wp2(j,k,1)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,1)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,2) = 0.5d0*wp2(j,k,2)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,2)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,3) = 0.5d0*wp2(j,k,3)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,3)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
+wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff * dt))+0.5d0*wp1(j,k,4)*(1.d0+dexp(-1.0d0/Tdiff * dt))+&
+(-cg*cg*Tdiff*Tdiff*G4pi*rho(j,k))*(1.d0-dexp(-1.0d0/Tdiff * dt))-cg*cg*2.d0*Tdiff*G4pi*rho(j,k)*0.5d0* (dt)
       enddo
     enddo
 
-    endif
 
 
     iwx=0;iwy=1
@@ -382,6 +341,81 @@ wp1(j,k,4) = 0.5d0*wp2(j,k,4)*(1.d0-dexp(-1.d0/Tdiff *0.5d0* dt))+0.5d0*wp1(j,k,
     call muslcslv1D(wp1(:,:,3),rho,dt*0.5d0,2,2)
     call muslcslv1D(wp1(:,:,4),rho,dt*0.5d0,1,2)
     endif
+
+
+if(itel==1) then
+call BC(wp2(:,:,1),3,3,3,3,1)
+call BC(wp2(:,:,2),3,3,3,3,2)
+call BC(wp2(:,:,3),3,3,3,3,3)
+call BC(wp2(:,:,4),3,3,3,3,4)
+endif
+
+    do k=1,ndy-2
+      do j=1,ndx-2
+!grdxy1=adiff*wp2(j+1,k+1,1)+adiff*wp2(j-1,k-1,1)+(adiff-0.5d0)*wp2(j+1,k-1,1)+(adiff-0.5d0)*wp2(j-1,k+1,1) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,1)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,1)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,1)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,1)
+
+grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1))/12.d0 &
+   +8.d0*(-wp2(j+1,k+2,1)+8.d0*wp2(j+1,k+1,1)-8.d0*wp2(j+1,k-1,1)+wp2(j+1,k-2,1))/12.d0 &
+   -8.d0*(-wp2(j-1,k+2,1)+8.d0*wp2(j-1,k+1,1)-8.d0*wp2(j-1,k-1,1)+wp2(j-1,k-2,1))/12.d0 &
+        +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
+        )/12.d0
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
+!+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
+!-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
+
+!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k-1,1)+3.d0*wp2(j,k-2,1)-12.d0*wp2(j-1,k,1) &
+!+16.d0*wp2(j-1,k-1,1)-4.d0*wp2(j-1,k-2,1)+3.d0*wp2(j-2,k,1)&
+!-4.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))*0.25d0 !backward
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+!grdch(i,j)=grdxy
+
+
+!grdxy1= -(-wp2(j+2,k+2,1)/6.d0+wp2(j+2,k+1,1)-0.5d0*wp2(j+2,k,1)-wp2(j+2,k-1,1)/3.d0)/6.d0 &
+!        +(-wp2(j+1,k+2,1)/6.d0+wp2(j+1,k+1,1)-0.5d0*wp2(j+1,k,1)-wp2(j+1,k-1,1)/3.d0)*0.5d0 &
+!        -(-wp2(j  ,k+2,1)/6.d0+wp2(j  ,k+1,1)-0.5d0*wp2(j  ,k,1)-wp2(j  ,k-1,1)/3.d0)/12.d0 &
+!        -(-wp2(j-1,k+2,1)/6.d0+wp2(j-1,k+1,1)-0.5d0*wp2(j-1,k,1)-wp2(j-1,k-1,1)/3.d0)/3.d0
+
+grdxy2=adiff*wp2(j+1,k+1,2)+adiff*wp2(j-1,k-1,2)+(adiff-0.5d0)*wp2(j+1,k-1,2)+(adiff-0.5d0)*wp2(j-1,k+1,2) &
++(4.d0*adiff-1.d0)*wp2(j,k,2)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,2)+&
+(-2.d0*adiff+0.5d0)*wp2(j-1,k,2)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,2)
+
+!grdxy2=(-(-wp2(j+2,k+2,2)+8.d0*wp2(j+2,k+1,2)-8.d0*wp2(j+2,k-1,2)+wp2(j+2,k-2,2))/12.d0 &
+!+8.d0*(-wp2(j+1,k+2,2)+8.d0*wp2(j+1,k+1,2)-8.d0*wp2(j+1,k-1,2)+wp2(j+1,k-2,2))/12.d0 &
+!-8.d0*(-wp2(j-1,k+2,2)+8.d0*wp2(j-1,k+1,2)-8.d0*wp2(j-1,k-1,2)+wp2(j-1,k-2,2))/12.d0 &
+!     +(-wp2(j-2,k+2,2)+8.d0*wp2(j-2,k+1,2)-8.d0*wp2(j-2,k-1,2)+wp2(j-2,k-2,2))/12.d0 &
+!  )/12.d0
+
+!grdxy3=adiff*wp2(j+1,k+1,3)+adiff*wp2(j-1,k-1,3)+(adiff-0.5d0)*wp2(j+1,k-1,3)+(adiff-0.5d0)*wp2(j-1,k+1,3) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,3)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,3)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,3)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,3)
+
+grdxy3=(9.d0*wp2(j,k,3)-12.d0*wp2(j,k+1,3)+3.d0*wp2(j,k+2,3)-12.d0*wp2(j+1,k,3) &
++16.d0*wp2(j+1,k+1,3)-4.d0*wp2(j+1,k+2,3)+3.d0*wp2(j+2,k,3)&
+-4.d0*wp2(j+2,k+1,3)+wp2(j+2,k+2,3))*0.25d0 !forward
+
+!grdxy4=adiff*wp2(j+1,k+1,4)+adiff*wp2(j-1,k-1,4)+(adiff-0.5d0)*wp2(j+1,k-1,4)+(adiff-0.5d0)*wp2(j-1,k+1,4) &
+!+(4.d0*adiff-1.d0)*wp2(j,k,4)+(-2.d0*adiff+0.5d0)*wp2(j+1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k+1,4)+&
+!(-2.d0*adiff+0.5d0)*wp2(j-1,k,4)+(-2.d0*adiff+0.5d0)*wp2(j,k-1,4)
+
+grdxy4=(9.d0*wp2(j,k,4)-12.d0*wp2(j,k-1,4)+3.d0*wp2(j,k-2,4)-12.d0*wp2(j-1,k,4) &
++16.d0*wp2(j-1,k-1,4)-4.d0*wp2(j-1,k-2,4)+3.d0*wp2(j-2,k,4)&
+-4.d0*wp2(j-2,k-1,4)+wp2(j-2,k-2,4))*0.25d0 !backward
+
+
+wp1(j,k,1) = wp1(j,k,1) - 2.d0*2.d0*Tdiff*cg*cg*grdxy1/dx/dy*dt*0.5d0
+wp1(j,k,2) = wp1(j,k,2) - 2.d0*2.d0*Tdiff*cg*cg*grdxy2/dx/dy*dt*0.5d0
+wp1(j,k,3) = wp1(j,k,3) + 2.d0*2.d0*Tdiff*cg*cg*grdxy3/dx/dy*dt*0.5d0
+wp1(j,k,4) = wp1(j,k,4) + 2.d0*2.d0*Tdiff*cg*cg*grdxy4/dx/dy*dt*0.5d0
+      enddo
+    enddo
+
 
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1147,7 +1181,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
      !do i = ist , ndx-ien
 !      DO Lnum = 1, Ncl-2
         DO Mnum = 1-3, Ncm-2+3
-           do i = is,ie+1
+           do i = is,ie
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1196,7 +1230,7 @@ subroutine muslcslv1D(Phiv,source,dt,mode,hazi)
      !do i = ist , ndx-ien
 !     DO Lnum = 1, Ncl-2
         DO Mnum = 1-3, Ncm-2+3
-           do i = is-1,ie
+           do i = is,ie
               ix  = iwx*i    + iwy*Mnum! + iwz*Mnum
               jy  = iwx*Mnum + iwy*i   ! + iwz*Lnum
 !              kz  = iwx*Lnum + iwy*Mnum + iwz*i
@@ -1587,8 +1621,8 @@ subroutine saveu(in1)
         write(21,*) x(i),',',y(j),',',wp1(i,j,1),',',wp1(i,j,2),',',wp1(i,j,3),',',wp1(i,j,4) &
       ,',',wp2(i,j,1),',',wp2(i,j,2),',',wp2(i,j,3),',',wp2(i,j,4)&
       ,',',0.25d0*(wp2(i,j,1)+wp2(i,j,2)+wp2(i,j,3)+wp2(i,j,4)),',',rho(i,j),',',Phiexa(i,j),',',grdch(i,j),',',&
-cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i,j),&
-',',cg*2.d0*Tdiff*Phigrd(i,j,3)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,4)+Phiexa(i,j),',' &
+cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,3)+Phiexa(i,j),&
+',',cg*2.d0*Tdiff*Phigrd(i,j,4)+Phiexa(i,j),',',wp2(i,j,1)-Phiexa(i,j),',' &
 ,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,',',&
       !0.25d0*(dm1(i+1,j+1)-dm1(i+1,j-1)-dm1(i-1,j+1)+dm1(i-1,j-1))/dx/dy
         !write(21,*) x(i),y(j),wp1(i,j,1),wp1(i,j,2),wp1(i,j,3),wp1(i,j,4) &
@@ -1608,10 +1642,10 @@ cg*2.d0*Tdiff*Phigrd(i,j,1)+Phiexa(i,j),',',cg*2.d0*Tdiff*Phigrd(i,j,2)+Phiexa(i
   close(21)
   !write(*,*) 'here3'
   open(22,file=dir//'xphi2D'//name//'.dat')
-  j=ndy/2+10
+  j=ndy/2
   do i=-1,ndx
-        write(22,*) x(i),',',wp1(i,j,1),',',wp2(i,j,1),',',rho(i,j),',',Phiexa(i,j),',',Phigrd(i,j,1)&
-,',',Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,wp2(j+1,k+1)-wp2(j+1,k-1)-wp2(j-1,k+1)+wp2(j-1,k-1)
+        write(22,*) x(i),wp1(i,j,1),wp2(i,j,1),rho(i,j),Phiexa(i,j),Phigrd(i,j,1)&
+,Phiexa2(i,j)+cg*Tdiff*((Phiexa2(i+1,j)-Phiexa2(i-1,j))/dx+(Phiexa2(i,j+1)-Phiexa2(i,j-1))/dy)!,wp2(j+1,k+1)-wp2(j+1,k-1)-wp2(j-1,k+1)+wp2(j-1,k-1)
   end do
   close(22)
   
