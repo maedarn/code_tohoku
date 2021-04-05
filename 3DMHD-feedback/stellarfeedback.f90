@@ -4,6 +4,7 @@ USE mpivar
 USE slfgrv
 INCLUDE 'mpif.h'
 DOUBLE PRECISION  :: dt,dxi,intt=0.d0
+DOUBLE PRECISION  :: LSFE=0.02d0,mstarmn=1.d0,pstar
 INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt,jtime=0
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
@@ -28,9 +29,11 @@ end do; end do; end do
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 if((div(i,j,k,1)<0.d0).and.(div(i,j,k,2)<0.d0).and.(div(i,j,k,3)<0.d0).and.(div(i,j,k,4)<0.d0).and.(U(i,j,k,1)>rhoth)) then
-SFE=0.02d0*dsqrt(U(i,j,k,1)/(4.04d0*1.d3))
+SFE=LSFE*dsqrt(U(i,j,k,1)/(4.04d0*1.d3))*dt
+SFE=LSFE*U(i,j,k,1)/dsqrt(G*U(i,j,k,1))*dx1*dy1*dz1*dt
+pstar=(1-dexp(-SFE/mstarmn))
 call ran0(ran,1)
-if(ran<SFE) then
+if(ran<pstar) then
 nid=nid+1.d0
 Ustar(1)=i
 Ustar(2)=j
