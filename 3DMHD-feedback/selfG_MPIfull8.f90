@@ -69,6 +69,20 @@ if(mode.eq.2) then
     Phi(Ncellx+1,j,k) = Phi(Ncellx,j,k); Phi(Ncellx+2,j,k) = Phi(Ncellx,j,k)
  end do; end do; end if
 
+  if(JST.eq.0       ) then; do k=1,Ncellz; do i=1,Ncellx
+    Phi(i,0       ,k) = Phi(i,1     ,k); Phi(i,-1       ,k) = Phi(i,1     ,k) !grad=0
+  end do; end do; end if
+  if(JST.eq.NSPLTy-1) then; do k=1,Ncellz; do i=1,Ncellx
+    Phi(i,Ncelly+1,k) = Phi(i,Ncelly,k); Phi(i,Ncelly+2,k) = Phi(i,Ncelly,k)
+ end do; end do; end if
+
+  if(KST.eq.0       ) then; do i=1,Ncellx; do j=1,Ncelly
+    Phi(i,j,0       ) = Phi(i,j,1     ); Phi(i,j,-1       ) = Phi(i,j,1     ) !grad=0
+  end do; end do; end if
+  if(KST.eq.NSPLTz-1) then; do i=1,Ncellx; do j=1,Ncelly
+    Phi(i,j,Ncellz+1) = Phi(i,j,Ncellz); Phi(i,j,Ncellz+2) = Phi(i,j,Ncellz)
+ end do; end do; end if
+
 ! write(Nfinal,'(I3.3)') NRANK
 ! write(itime,'(I3.3)') jtime
 ! open(521+NRANK,file='final'//itime//Nfinal//'.dat')
@@ -314,8 +328,8 @@ if(lx2.eq.1) CALL MPI_SENDRECV(u(   1,0,0),1,VECU,LEFTt,1, &
                                u(nx  ,0,0),1,VECU,RIGTt,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
 !*** for Y ***!
-!IF(JST.eq.0)        BOTM = MPI_PROC_NULL
-!IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+IF(JST.eq.0)        BOTM = MPI_PROC_NULL
+IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
 CALL MPI_TYPE_VECTOR(nz+1,nx+1,(nx+1)*(ny+1),MPI_REAL8,VECU,IERR); CALL MPI_TYPE_COMMIT(VECU,IERR)
 if(ly1.eq.1) CALL MPI_SENDRECV(u(0,ny-1,0),1,VECU,TOP ,1, &
                                u(0,   0,0),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
@@ -323,8 +337,8 @@ if(ly2.eq.1) CALL MPI_SENDRECV(u(0,   1,0),1,VECU,BOTM,1, &
                                u(0,ny  ,0),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
 !*** for z ***!
-!IF(KST.eq.0)        DOWN = MPI_PROC_NULL
-!IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+IF(KST.eq.0)        DOWN = MPI_PROC_NULL
+IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
 CALL MPI_TYPE_VECTOR(1,(nx+1)*(ny+1),(nx+1)*(ny+1),MPI_REAL8,VECU,IERR); CALL MPI_TYPE_COMMIT(VECU,IERR)
 if(lz1.eq.1) CALL MPI_SENDRECV(u(0,0,nz-1),1,VECU,UP  ,1, &
                                u(0,0,   0),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
@@ -413,25 +427,25 @@ IF(IST.eq.NSPLTx-1) THEN
   end do; end do
 END IF
 IF(JST.eq.0) THEN
-  do kc=1,nz; kf=2*kc-1; do ic=1,nx; if=2*ic-1
-    uc(ic,1 ,kc)=uf(if,1 ,kf)
+  do kc=1,nz; kf=2*kc-1; do ic=1,nx; iif=2*ic-1
+    uc(ic,1 ,kc)=uf(iif,1 ,kf)
   end do; end do
 END IF
 IF(JST.eq.NSPLTy-1) THEN
   nf=2*ny-1
-  do kc=1,nz; kf=2*kc-1; do ic=1,nx; if=2*ic-1
-    uc(ic,ny,kc)=uf(if,nf,kf)
+  do kc=1,nz; kf=2*kc-1; do ic=1,nx; iif=2*ic-1
+    uc(ic,ny,kc)=uf(iif,nf,kf)
   end do; end do
 END IF
 IF(KST.eq.0) THEN
-  do jc=1,ny; jf=2*jc-1; do ic=1,nx; if=2*ic-1
-    uc(ic,jc,1 )=uf(if,jf,1 )
+  do jc=1,ny; jf=2*jc-1; do ic=1,nx; iif=2*ic-1
+    uc(ic,jc,1 )=uf(iif,jf,1 )
   end do; end do
 END IF
 IF(KST.eq.NSPLTz-1) THEN
   nf=2*nz-1
-  do jc=1,ny; jf=2*jc-1; do ic=1,nx; if=2*ic-1
-    uc(ic,jc,nz)=uf(if,jf,nf)
+  do jc=1,ny; jf=2*jc-1; do ic=1,nx; iif=2*ic-1
+    uc(ic,jc,nz)=uf(iif,jf,nf)
   end do; end do
 END IF
 
@@ -449,6 +463,31 @@ IF(IST.eq.NSPLTx-1) THEN
   end do; end do
 END IF
 
+IF(JST.eq.0) THEN
+  do kc=1,nz; kf=2*kc-1; do jc=1,nx; jf=2*jc-1
+    uc(jc,1,kc)=0.d0
+  end do; end do
+END IF
+IF(JST.eq.NSPLTy-1) THEN
+  nf=2*ny-1
+  do kc=1,nz; kf=2*kc-1; do jc=1,nx; jf=2*jc-1
+    uc(jc,ny,kc)=0.d0
+  end do; end do
+END IF
+
+IF(KST.eq.0) THEN
+  do kc=1,ny; kf=2*kc-1; do jc=1,nx; jf=2*jc-1
+    uc(jc,kc,1)=0.d0
+  end do; end do
+END IF
+IF(KST.eq.NSPLTz-1) THEN
+  nf=2*nz-1
+  do kc=1,ny; kf=2*kc-1; do jc=1,nx; jf=2*jc-1
+    uc(jc,kc,nz)=0.d0
+  end do; end do
+END IF
+
+
 END IF
 !write(*,*) 'rMPI--' , uc(0,0,0)
 CALL BCsgr_MPI(uc,nx,ny,nz,1,1,1,1,1,1)
@@ -460,11 +499,12 @@ SUBROUTINE rstrct(uc,uf,nx,ny,nz,mode)
 double precision uc(nx,ny,nz),uf(2*nx-1,2*ny-1,2*nz-1)
 double precision, parameter :: w = 1.d0/12.d0
 
+
 do kc=2,nz-1; kf=2*kc-1
   do jc=2,ny-1; jf=2*jc-1
-    do ic=2,nx-1; if=2*ic-1
-      uc(ic,jc,kc)=0.5d0*uf(if,jf,kf)+ &
-      w*(uf(if+1,jf,kf)+uf(if-1,jf,kf)+uf(if,jf+1,kf)+uf(if,jf-1,kf)+uf(if,jf,kf+1)+uf(if,jf,kf-1))
+    do ic=2,nx-1; iif=2*ic-1
+      uc(ic,jc,kc)=0.5d0*uf(iif,jf,kf)+ &
+      w*(uf(iif+1,jf,kf)+uf(iif-1,jf,kf)+uf(iif,jf+1,kf)+uf(iif,jf-1,kf)+uf(iif,jf,kf+1)+uf(iif,jf,kf-1))
     end do
   end do
 end do
@@ -475,14 +515,14 @@ do kc=1,nz; kf=2*kc-1; do jc=1,ny; jf=2*jc-1
   uc(nx,jc,kc)=uf(nf,jf,kf)
 end do; end do
 nf=2*nz-1
-do jc=1,ny; jf=2*jc-1; do ic=1,nx; if=2*ic-1
-  uc(ic,jc,1 )=uf(if,jf,1 )
-  uc(ic,jc,nz)=uf(if,jf,nf)
+do jc=1,ny; jf=2*jc-1; do ic=1,nx; iif=2*ic-1
+  uc(ic,jc,1 )=uf(iif,jf,1 )
+  uc(ic,jc,nz)=uf(iif,jf,nf)
 end do; end do
 nf=2*ny-1
-do kc=1,nz; kf=2*kc-1; do ic=1,nx; if=2*ic-1
-  uc(ic,1 ,kc)=uf(if,1 ,kf)
-  uc(ic,ny,kc)=uf(if,nf,kf)
+do kc=1,nz; kf=2*kc-1; do ic=1,nx; iif=2*ic-1
+  uc(ic,1 ,kc)=uf(iif,1 ,kf)
+  uc(ic,ny,kc)=uf(iif,nf,kf)
 end do; end do
 
 IF(mode.eq.1) THEN
@@ -490,6 +530,16 @@ IF(mode.eq.1) THEN
 do kc=1,nz; do jc=1,ny
   uc(1 ,jc,kc) = 0.d0
   uc(nx,jc,kc) = 0.d0
+end do; end do
+
+do kc=1,nz; do jc=1,nx
+  uc(jc,1 ,kc) = 0.d0
+  uc(jc,ny,kc) = 0.d0
+end do; end do
+
+do kc=1,ny; do jc=1,nx
+  uc(jc,kc,1 ) = 0.d0
+  uc(jc,kc,nz) = 0.d0
 end do; end do
 
 END IF
@@ -546,6 +596,34 @@ do j=0,ny; nn=j+kk
   uf(nx,j,k)=bphi2(np+nn,2)
 end do; end do
 END IF
+
+!-------naoshi---------
+IF(JST.eq.0) THEN
+do k=0,nz; kk=(ny+1)*k
+do j=0,nx; nn=j+kk
+  uf(j,1 ,k)=bphi2(np+nn,1)
+end do; end do
+END IF
+IF(JST.eq.NSPLTy-1) THEN
+do k=0,nz; kk=(ny+1)*k
+do j=0,nx; nn=j+kk
+  uf(j,ny,k)=bphi2(np+nn,2)
+end do; end do
+END IF
+
+IF(KST.eq.0) THEN
+do k=0,ny; kk=(ny+1)*k
+do j=0,nx; nn=j+kk
+  uf(j,k,1 )=bphi2(np+nn,1)
+end do; end do
+END IF
+IF(KST.eq.NSPLTz-1) THEN
+do k=0,ny; kk=(ny+1)*k
+do j=0,nx; nn=j+kk
+  uf(j,k,nz)=bphi2(np+nn,2)
+end do; end do
+END IF
+!-------naoshi---------
 
 END IF
 

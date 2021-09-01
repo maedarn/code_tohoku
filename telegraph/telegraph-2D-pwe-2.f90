@@ -62,10 +62,10 @@ program muscl1D
      end if
 
      call time(dt)
-dt=dt*0.2d0
+     dt=dt*0.2d0
      !call timesource(Phidtn,rho,dt,3)
      write(*,*) i ,dt,'step'
-write(*,*) 'courant', dt,1.d0/Tdiff, dx*dx*Tdiff*0.5d0
+     write(*,*) 'courant', dt,1.d0/Tdiff, dx*dx*Tdiff*0.5d0
 
 !dt=dt*0.2d0
 

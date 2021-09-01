@@ -63,7 +63,7 @@ program muscl1D
 
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
-     dt=dt*0.5d0
+     dt=dt*0.1d0
      write(*,*) i ,dt,'step'
      write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
 
@@ -256,9 +256,9 @@ grdxy1=(-(-wp2(j+2,k+2,1)+8.d0*wp2(j+2,k+1,1)-8.d0*wp2(j+2,k-1,1)+wp2(j+2,k-2,1)
         +(-wp2(j-2,k+2,1)+8.d0*wp2(j-2,k+1,1)-8.d0*wp2(j-2,k-1,1)+wp2(j-2,k-2,1))/12.d0 &
         )/12.d0
 
-!grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
-!+16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
-!-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
+grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k+1,1)+3.d0*wp2(j,k+2,1)-12.d0*wp2(j+1,k,1) &
++16.d0*wp2(j+1,k+1,1)-4.d0*wp2(j+1,k+2,1)+3.d0*wp2(j+2,k,1)&
+-4.d0*wp2(j+2,k+1,1)+wp2(j+2,k+2,1))*0.25d0 !forward
 
 !grdxy1=(9.d0*wp2(j,k,1)-12.d0*wp2(j,k-1,1)+3.d0*wp2(j,k-2,1)-12.d0*wp2(j-1,k,1) &
 !+16.d0*wp2(j-1,k-1,1)-4.d0*wp2(j-1,k-2,1)+3.d0*wp2(j-2,k,1)&

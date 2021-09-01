@@ -66,6 +66,7 @@ program muscl1D
      !call timesource(Phidtn,rho,dt,3)
      write(*,*) i ,dt,'step'
      write(*,*) 'courant', dt, dx*dx*Tdiff*0.5d0
+     dt=0.1d0*dt
 
     call bndb(dt)
     Phidt(:,:)=0.d0

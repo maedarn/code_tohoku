@@ -1,12 +1,12 @@
 module comvar
   implicit none
-  integer, parameter :: ndx=66,ndy=66,laststep=500,istx=1,ienx=2,isty=1,ieny=2,svnum=1 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
+  integer, parameter :: ndx=66,ndy=66,laststep=500,istx=1,ienx=2,isty=1,ieny=2,svnum=5 !preiodic:ist=1,ien=2 , kotei:ist=2,ien=3 : ndx=130
   !double precision, parameter :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0
   integer :: iwx,iwy,iwz
   DOUBLE PRECISION :: cg = 1.0d0 , dx,dy != Lbox/dble(ndx-2) !, bcphi1 , bcphi2
 double precision :: Lbox=1.0d2 , h=10.0d0 , hcen=50.0d0 , dinit1=1.29988444d0,w1=2.0d0 ,rsph=5.d0
   !double precision :: G=1.11142d-4, G4pi=12.56637d0*G , coeff=0.90d0 ,  kappa=1.0d0/3.0d0
-  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.5d0 ,meanrho!,  kappa=1.0d0/3.0d0
+  double precision ::  G4pi=12.56637d0*1.11142d-4 , coeff=0.9d0 ,meanrho!,  kappa=1.0d0/3.0d0
   DOUBLE PRECISION , dimension(1:3) :: bcphi1 , bcphi2 ,bcphigrd1 , bcphigrd2
   character(51) :: dir='/Users/maeda/Desktop/Dropbox/analysis/muscle2Dtest/'
 end module comvar
@@ -14,10 +14,11 @@ end module comvar
 module grvvar
   implicit none
   integer, parameter :: ndx2=66 , ndy2=66 !パラメータ属性必要
-  DOUBLE PRECISION , dimension(-1:ndx2) :: x
-  DOUBLE PRECISION , dimension(-1:ndy2) :: y
-  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidtn , rho , fx , fy ,wp1 ,wp2
-  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidt,Phigrd,Phiexa
+  DOUBLE PRECISION , dimension(-1-1:ndx2+1) :: x
+  DOUBLE PRECISION , dimension(-1-1:ndy2+1) :: y
+  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidtn,Phiexa , fx , fy ,wp1 ,wp2, wppre1 ,wppre2
+  DOUBLE PRECISION , dimension(-1-1:ndx2+1,-1-1:ndy2+1) :: rho,Phiexa2
+  DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2) :: Phidt,Phigrd
   DOUBLE PRECISION , dimension(-1:ndx2,-1:ndy2,2) :: source ,sourcedt,sourcedt2
 end module grvvar
 
@@ -32,7 +33,7 @@ program muscl1D
 
 
   call INITIAL()
-  call BC(1)
+  call BC(3)
   !call muslcslv1D(Phi,Phi1step,dt,13)
   write(*,*) 'here'
   !call saveu(sv)
@@ -40,40 +41,68 @@ program muscl1D
      call time(dt)
      !call timesource(Phidtn,rho,dt,3)
      write(*,*) i ,dt,'step'
-     
+     if(mod(i,svnum)==0) then
+        call saveu(sv)
+     end if
     
     iwx=1;iwy=0
-    call muslcslv1D(wp1,rho,dt,2,2)
-    call BC(1)
-    if(mod(i,svnum)==0) then
-       call saveu(sv)
-    end if
+    call BC(3)
+    call muslcslv1D(wp1,rho,dt*0.5d0,2,2)
     iwx=0;iwy=1
-    call muslcslv1D(wp1,rho,dt,2,2)
-    call BC(2)
+    call BC(3)
+    call muslcslv1D(wp1,rho,dt*0.5d0,2,2)
+    
+
+
+    iwx=1;iwy=0
+    call BC(3)
+    call muslcslv1D(wp2,rho,dt*0.5d0,1,2)
+    iwx=0;iwy=1
+    call BC(3)
+    call muslcslv1D(wp2,rho,dt*0.5d0,1,2)
+
+
+    call BC(3)
+    call BC(3)
+
+    wppre1(:,:)=wp1(:,:)
+    !wppre2(:,:)=wp2(:,:)
+    do k=1,ndy-2
+      do j=1,ndx-2
+        wp2(j,k) = wp2(j,k)+cg*dt*wppre1(j,k)*0.5d0
+      enddo
+    enddo
+    
+    wppre2(:,:)=wp2(:,:)
     do k=1,ndy-2
       do j=1,ndx-2
         wp1(j,k) = wp1(j,k)-cg*G4pi*rho(j,k)*dt &
-                   -0.5d0*dt*cg*(wp2(j+1,k+1)-wp2(j+1,k-1)-wp2(j-1,k+1)+wp2(j-1,k-1))/dx/dy
+                   -0.5d0*dt*cg*(wppre2(j+1,k+1)-wppre2(j+1,k-1)-wppre2(j-1,k+1)+wppre2(j-1,k-1))/dx/dy
       enddo
     enddo
-    call BC(1)
-    call BC(2)
 
-    iwx=1;iwy=0
-    call muslcslv1D(wp2,rho,dt,1,2)
-    call BC(1)
-    iwx=0;iwy=1
-    call muslcslv1D(wp2,rho,dt,1,2)
-    call BC(2)
+    wppre1(:,:)=wp1(:,:)
+    !wppre2(:,:)=wp2(:,:)
     do k=1,ndy-2
       do j=1,ndx-2
-        wp2(j,k) = wp2(j,k)+cg*dt*wp1(j,k)
+    wp2(j,k) = wp2(j,k)+cg*dt*wppre1(j,k)*0.5d0
       enddo
     enddo
-    call BC(1)
-    call BC(2)
 
+
+    iwx=0;iwy=1
+    call BC(3)
+    call muslcslv1D(wp1,rho,dt*0.5d0,2,2)
+    iwx=1;iwy=0
+    call BC(3)
+    call muslcslv1D(wp1,rho,dt*0.5d0,2,2)
+
+    iwx=0;iwy=1
+    call BC(3)
+    call muslcslv1D(wp2,rho,dt*0.5d0,1,2)
+    iwx=1;iwy=0
+    call BC(3)
+    call muslcslv1D(wp2,rho,dt*0.5d0,1,2)
      
 
    !  if(mod(i,svnum)==1) then
@@ -89,14 +118,15 @@ subroutine INITIAL()
   integer :: i,j
   double precision :: amp,pi=3.1415926535d0,haba,meanphi
 
-  dinit1 = 2.0d0/G4pi/90.d0*1.d-10
+  dinit1 = 2.0d0/G4pi/90.d0!*1.d-10
 
   !----------x--------------
   dx = Lbox/dble(ndx-2)
   x(1) = dx/2.0d0
   x(0) = x(1) - dx
   x(-1) = x(0) - dx
-  do i=2,ndx
+  x(-2) = x(-1) - dx
+  do i=2,ndx+1
      x(i) = x(i-1) + dx
   end do
   !----------x--------------
@@ -106,7 +136,8 @@ subroutine INITIAL()
   y(1) = dy/2.0d0
   y(0) = y(1) - dy
   y(-1) = y(0) - dy
-  do i=2,ndy
+  y(-2) = y(-1) - dy
+  do i=2,ndy+1
      y(i) = y(i-1) + dy
   end do
   !----------y--------------
@@ -135,7 +166,7 @@ subroutine INITIAL()
 
 
   !---------rho-------------
-  !goto 2060
+  goto 2060
   do i = -1,ndx
      if( dabs(x(i) - hcen) .le. h) then
         rho(i,:) = dinit1
@@ -160,10 +191,10 @@ subroutine INITIAL()
         rho(i,j)=rho(i,j)!-meanrho
      end do
   end do
-  !2060 continue
-  goto 2061
-  do i = -1,ndx
-  do j = -1,ndy
+  2060 continue
+  !goto 2061
+  do i = -1-1,ndx+1
+  do j = -1-1,ndy+1
      if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
         rho(i,j) = dinit1
         !rho(i) = 0.0d0
@@ -174,13 +205,13 @@ subroutine INITIAL()
      end if
   end do
   end do
-  2061 continue
+  !2061 continue
   !---------rho-------------
 
 
 
   !--------Phiexa-----------
-  !goto 200
+  goto 200
   !dinit1=dinit1-meanrho
   meanphi=0.d0
   open(142,file=dir//'phiexact.DAT')
@@ -215,7 +246,38 @@ subroutine INITIAL()
   close(142)
   close(143)
   close(144)
-  !200 continue
+  200 continue
+
+  do i = -1-1,ndx+1
+  do j = -1-1,ndy+1
+     if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
+        Phiexa2(i,j) = G4pi/4.0d0 * rho(i,j) * ((x(i) - hcen)**2+(y(j) - hcen)**2)+Cnst !pi*G*rho*r^2
+        !write(142,*) sngl(x(i)),sngl(y(j)) ,  sngl(Phiexa(i,j))
+        !meanphi=meanphi+G4pi/2.0d0 * rho(i,j) * (x(i) - hcen )**2
+     else
+        Phiexa2(i,j) = G4pi/2.0d0 * dinit1 * rsph **2 *dlog(dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)) &
+             + ( G4pi/4.0d0 * dinit1 * rsph**2 - G4pi/2.0d0 * dinit1 * rsph**2 * dlog(rsph))+Cnst
+        !write(142,*) sngl(x(i)),sngl(y(j)) , sngl(Phiexa(i,j))
+        !meanphi=meanphi+G4pi * rho(i,j) * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
+     end if
+     !write(143,*) sngl(x(i)),sngl(y(j)),sngl(rho(i,j))
+  end do
+  end do
+
+  do j=-1,ndy
+  do i=-1,ndx
+     Phigrd(i,j)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
+     !Phigrd(i,j,1)= (-Phiexa(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dx &
+     !              +(-Phiexa(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dy
+     Phiexa(i,j)=Phiexa2(i,j)
+  end do
+  end do
+  
+!Phigrd(-1,:)=Phigrd(0,:)!=(-Phiexa(0,j)+Phiexa(1,j))/dx
+!Phigrd(ndx,:)=Phigrd(ndx-1,:)
+ ! Phigrd(:,-1)=Phigrd(:,0)!=(-Phiexa(0,j)+Phiexa(1,j))/dx
+ ! Phigrd(:,ndy)=Phigrd(:,ndx-1)
+  !Phigrd(ndx,j)=(Phiexa(ndx-1,j)-Phiexa(ndx-2,j))/dx
   !--------Phiexa-----------
 
 
@@ -289,6 +351,16 @@ wp2( 0,:)    =Phiexa(0,:)
 wp2(-1,:)    =Phiexa(-1,:)
 wp2(ndx2  ,:)=Phiexa(ndx2,:)
 wp2(ndx2-1,:)=Phiexa(ndx2-1,:)
+
+wp1(:, 0)    =Phigrd(:, 0)
+wp1(:,-1)    =Phigrd(:,-1)
+wp1(:,ndy2  )=Phigrd(:,ndy2)
+wp1(:,ndy2-1)=Phigrd(:,ndy2-1)
+
+wp2(:, 0)    =Phiexa(:,0)
+wp2(:,-1)    =Phiexa(:,-1)
+wp2(:,ndy2  )=Phiexa(:,ndy2)
+wp2(:,ndy2-1)=Phiexa(:,ndy2-1)
 endif
 end subroutine BC
 
@@ -655,7 +727,7 @@ subroutine saveu(in1)
   open(21,file=dir//'phi'//name//'.dat')
   do j=1,ndy-2
      do i=1,ndx-2
-        write(21,*) x(i),y(j),wp1(i,j),wp2(i,j),rho(i,j)
+        write(21,*) x(i),',',y(j),',',wp1(i,j),',',wp2(i,j),',',rho(i,j)
      end do
      write(21,*)
   end do

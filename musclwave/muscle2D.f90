@@ -210,6 +210,61 @@ subroutine INITIAL()
   !--------Phiexa-----------
 
 
+  !--------Phiexa-----------
+  !goto 200
+  !dinit1=dinit1-meanrho
+  meanphi=0.d0
+  meanphiexa=0.d0
+  open(142,file=dir//'phiexact.DAT')
+  open(143,file=dir//'INIden.DAT')
+  open(144,file=dir//'phigrd.DAT')
+
+
+dinit1=dinit1*rsph**3/(rch*rsph)**3
+rsph=rch*rsph
+
+  do j= -1-2,ndy+2
+  do i= -1-2,ndx+2
+     if( dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2) .le. rsph) then
+        Phiexa2(i,j) = G4pi/4.0d0 * rho(i,j) * ((x(i) - hcen)**2+(y(j) - hcen)**2)+Cnst !pi*G*rho*r^2
+        !write(142,*) sngl(x(i)),sngl(y(j)) ,  sngl(Phiexa(i,j))
+        meanphi=meanphi+G4pi/2.0d0 * rho(i,j) * (x(i) - hcen )**2
+     else
+        Phiexa2(i,j) = G4pi/2.0d0 * dinit1 * rsph **2 *dlog(dsqrt((x(i) - hcen)**2+(y(j) - hcen)**2)) &
+             + ( G4pi/4.0d0 * dinit1 * rsph**2 - G4pi/2.0d0 * dinit1 * rsph**2 * dlog(rsph))+Cnst
+        !write(142,*) sngl(x(i)),sngl(y(j)) , sngl(Phiexa(i,j))
+        meanphi=meanphi+G4pi * rho(i,j) * h * dabs(x(i) - hcen)  - G4pi/2.0d0 * dinit1 * h**2
+     end if
+     !write(143,*) sngl(x(i)),sngl(y(j)),sngl(rho(i,j))
+  end do
+  !write(142,*)
+  !write(143,*)
+  end do
+  
+
+  
+  do j=-1,ndy
+  do i=-1,ndx
+     !Phigrd(i,j,1)= (-Phiexa2(i-1,j)+Phiexa2(i+1,j))*0.5d0/dx+(-Phiexa2(i,j-1)+Phiexa2(i,j+1))*0.5d0/dy
+     Phigrd(i,j,1)= (-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dx &
+                   +(-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dy
+     Phigrd(i,j,2)=-(-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dx &
+                   -(-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dy
+     Phigrd(i,j,3)= (-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dx &
+                   -(-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dx
+     Phigrd(i,j,4)=-(-Phiexa2(i+2,j)+8.d0*Phiexa2(i+1,j)-8.d0*Phiexa2(i-1,j)+Phiexa2(i-2,j))/12.d0/dx &
+                   +(-Phiexa2(i,j+2)+8.d0*Phiexa2(i,j+1)-8.d0*Phiexa2(i,j-1)+Phiexa2(i,j-2))/12.d0/dx
+     Phiexa(i,j)=Phiexa2(i,j)
+  end do
+  end do
+  do j=1,ndy-2
+  do i=1,ndx-2
+     meanphiexa=Phiexa(i,j)+meanphiexa
+  end do
+  end do
+  meanphiexa=meanphiexa/dble(ndx-2)/dble(ndy-2)
+
+
   !---------wave--------
   goto 201
   !do i = -1, ndx
