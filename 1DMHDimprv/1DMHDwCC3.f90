@@ -24,7 +24,7 @@ double precision, dimension(-1:nd) :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,
 double precision, dimension(-1:nd,2) :: Ntot,NH2,NnC,NCO,tCII
 double precision  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-CHARACTER(22) :: dir='/Users/ryunosukemaeda/'
+CHARACTER(58) :: dir='/Users/maeda/Desktop/Dropbox/code/code/1DMHDimprv/freebnd/'
 
 END MODULE comvar
 
@@ -305,8 +305,6 @@ if(((U(is(ix+1),2)-U(is(ix),2))<0.d0) .and. ((U(is(ix-1),2)-U(is(ix),2))<0.d0)) 
 is(ix)=0
 endif
 enddo
-
-
 END SUBROUTINE sink
 
 
@@ -397,8 +395,6 @@ if(BC2.eq.3) then
   Q(Ncell+1) = Q(1)
   Q(Ncell+2) = Q(2)
 end if
-
-
 END SUBROUTINE BC
 
 

@@ -5,15 +5,18 @@ program main
   double precision,allocatable,dimension(:) :: lgM
   double precision,allocatable,dimension(:,:) :: U
   integer,allocatable,dimension(:) :: numM
+  integer,allocatable,dimension(:) :: LL
+  
 
-  nb=20
-  val=13
+  nb=30
+  val=2
   sloop=8
   smesh=2
   a=0.d0
 
   allocate(lgM(0:sloop),numM(sloop))
   allocate(U(nb,val))
+  allocate(LL(nb))
 
   nsisu=2.d0
   lgM(:)=0.d0
@@ -27,9 +30,11 @@ program main
      write(*,*) lgM(j)
   end do
 
-  open(110,file='Clmpvalcrrnew008001.dat',FORM='FORMATTED')
+  open(110,file='/Users/maeda/Desktop/Dropbox/analysis/samplecnvK/N-Masfuncrrnew082001.DAT',FORM='FORMATTED')
   do j=1,nb
-     read(110,*) (U(j,i),i=1,val)
+     read(110,*) U(j,1),LL(j)
+     !write(*,*) U(j,i)
+     U(j,2)=dble(LL(j))
   end do
   close(110)
 

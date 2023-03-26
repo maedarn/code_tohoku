@@ -20,9 +20,12 @@ double precision :: SFE,SFratio=0.5d0,Mmassivetot=0.d0,rdumy
 DOUBLE PRECISION ran
 !double precision :: Ustar(1:10,1:nstar)
 
+!write(*,*) NRANK,U(1,1,1,1),U(1,1,1,5),'pint-feed1'
 
 if(mode==1) then
 
+Ustar(9,0)=0.d0
+nidnw=0
 intt=intt+dt
 N_MPI(20)=4; N_MPI(1)=1; N_MPI(2)=2; N_MPI(3)=3; N_MPI(4)=4; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(2,1)
 
@@ -34,8 +37,8 @@ div(i,j,k,4)=(U(i,j,k+1,4)-U(i,j,k-1,4))*0.5d0/dz1
 end do; end do; end do
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-!if((div(i,j,k,1)<0.d0).and.(div(i,j,k,2)<0.d0).and.(div(i,j,k,3)<0.d0).and.(div(i,j,k,4)<0.d0).and.(U(i,j,k,1)>rhoth)) then
-if(U(i,j,k,1)>rhoth) then
+if((div(i,j,k,1)<0.d0).and.(div(i,j,k,2)<0.d0).and.(div(i,j,k,3)<0.d0).and.(div(i,j,k,4)<0.d0).and.(U(i,j,k,1)>rhoth)) then
+!if(U(i,j,k,1)>rhoth) then
 SFE=LSFE*dsqrt(U(i,j,k,1)/(4.04d0*1.d3))*dt
 !SFE=LSFE*U(i,j,k,1)/dsqrt(G*U(i,j,k,1))*dx1*dy1*dz1*dt
 !pstar=(1-dexp(-SFE/mstarmn))
@@ -48,7 +51,7 @@ do nstdm=1,nlpmass
 if(Mstarlp>Mstar1) then
 goto 2021
 endif
-
+idum=1+NRANK
 call ran0(raninp,idum)
 call IMF(raninp,ranout)
 Mstarlp=Mstarlp+ranout
@@ -56,27 +59,34 @@ Mstarlp=Mstarlp+ranout
 !if(ran<pstar) then
 if(Mmassive<ranout) then
 Mmassivetot=Mmassivetot+ranout
-nid=nid+1
+!nid=nid+1
 nidnw=nidnw+1
-Ustar(1,nid)=dble(IST*Ncellx + i)*dx1+dx1*0.5d0
-Ustar(2,nid)=dble(JST*Ncelly + j)*dy1+dy1*0.5d0
-Ustar(3,nid)=dble(KST*Ncellz + k)*dz1+dz1*0.5d0
-Ustar(4,nid)=U(i,j,k,2)
-Ustar(5,nid)=U(i,j,k,3)
-Ustar(6,nid)=U(i,j,k,4)
-Ustar(7,nid)=ranout !U(i,j,k,1)*dx1*dy1*dz1*SFratio
-Ustar(8,nid)=intt
-Ustar(9,nid)=dble(nid)
+Ustar(1,nid+nidnw)=dble(IST*Ncellx + i)*dx1+dx1*0.5d0
+Ustar(2,nid+nidnw)=dble(JST*Ncelly + j)*dy1+dy1*0.5d0
+Ustar(3,nid+nidnw)=dble(KST*Ncellz + k)*dz1+dz1*0.5d0
+Ustar(4,nid+nidnw)=U(i,j,k,2)
+Ustar(5,nid+nidnw)=U(i,j,k,3)
+Ustar(6,nid+nidnw)=U(i,j,k,4)
+Ustar(7,nid+nidnw)=ranout !U(i,j,k,1)*dx1*dy1*dz1*SFratio
+Ustar(8,nid+nidnw)=intt
+Ustar(9,nid+nidnw)=dble(nid)
 lQ=aq+bq*dlog10(ranout)+cq*dlog10(ranout)**2+dq*dlog10(ranout)**3+eq*dlog10(ranout)**4+fq*dlog10(ranout)**5
 !Q=10.d0**lQ
-Ustar(10,nid)=10.d0**lQ
+!Ustar(10,nid+nidnw)=10.d0**lQ
+Ustar(10,nid+nidnw)=lQ
 
-Ustar(11,nid)=dble(IST*Ncellx + i)
-Ustar(12,nid)=dble(JST*Ncelly + j)
-Ustar(13,nid)=dble(KST*Ncellz + k)
+Ustar(11,nid+nidnw)=dble(IST*Ncellx + i)
+Ustar(12,nid+nidnw)=dble(JST*Ncelly + j)
+Ustar(13,nid+nidnw)=dble(KST*Ncellz + k)
+
+Rst=10.d0*(10**(Ustar(10,nid+nidnw)-49.d0))**(1.d0/3.d0)*(U(i,j,k,1)/1.27d0/10.d0)**(-2.d0/3.d0) !loop
+Ustar(14,nid+nidnw)=Rst
 
 Ustar(14,0)=1.d0
+
 Ustar(9,0)=dble(nidnw)
+
+write(*,*) NRANK,ranout,Ustar(10,nid+nidnw),Ustar(7,nid+nidnw),Ustar(1,nid+nidnw),Ustar(2,nid+nidnw),Ustar(3,nid+nidnw),nid,nidnw,'pint-feed2'
 
 endif
 enddo
@@ -93,49 +103,201 @@ do nstloop=1,nid
 !i=mod(int(Ustar(1,nid)),dx1)
 !j=mod(int(Ustar(2,nid)),dy1)
 !k=mod(int(Ustar(3,nid)),dz1)
-i=int(dmod(dmod(Ustar(1,nstloop),dble(Ncellx)*dx1),dx1))
-j=int(dmod(dmod(Ustar(2,nstloop),dble(Ncelly)*dy1),dy1))
-k=int(dmod(dmod(Ustar(3,nstloop),dble(Ncellz)*dz1),dz1))
-!k=mod(int(Ustar(3,nid)),Ncellz)
-Rst=10.d0*(Ustar(10,nstloop)/10.d49)**(1.d0/3.d0)*(U(i,j,k,1)/1.27d0/10.d0)**(-2.d0/3.d0) !loop
+
+!i=int(dmod(dmod(Ustar(1,nstloop),dble(Ncellx)*dx1),dx1))
+!j=int(dmod(dmod(Ustar(2,nstloop),dble(Ncelly)*dy1),dy1))
+!k=int(dmod(dmod(Ustar(3,nstloop),dble(Ncellz)*dz1),dz1))
+ !k=mod(int(Ustar(3,nid)),Ncellz)
+!Rst=10.d0*(10**(Ustar(10,nstloop)-49.d0))**(1.d0/3.d0)*(U(i,j,k,1)/1.27d0/10.d0)**(-2.d0/3.d0) !loop
+
 !rixmn=Ustar(1,nid)-Rst
 !rjymn=Ustar(2,nid)-Rst
 !rkzmn=Ustar(3,nid)-Rst
 !rixmx=Ustar(1,nid)+Rst
 !rjymx=Ustar(2,nid)+Rst
 !rkzmx=Ustar(3,nid)+Rst
+!write(*,*) NRANK,Ustar(10,nstloop),Rst,dx1,nid,'pint-feed3'
 
-nrixmn=int(dmod(Ustar(1,nstloop)-Rst,dble(Ncellx)*dx1))
-nrjymn=int(dmod(Ustar(2,nstloop)-Rst,dble(Ncelly)*dy1))
-nrkzmn=int(dmod(Ustar(3,nstloop)-Rst,dble(Ncellz)*dz1))
-nrixmx=int(dmod(Ustar(1,nstloop)+Rst,dble(Ncellx)*dx1))
-nrjymx=int(dmod(Ustar(2,nstloop)+Rst,dble(Ncelly)*dy1))
-nrkzmx=int(dmod(Ustar(3,nstloop)+Rst,dble(Ncellz)*dz1))
+!nrixmn=int(dmod(Ustar(1,nstloop)-Rst,dble(Ncellx)*dx1))
+!nrjymn=int(dmod(Ustar(2,nstloop)-Rst,dble(Ncelly)*dy1))
+!nrkzmn=int(dmod(Ustar(3,nstloop)-Rst,dble(Ncellz)*dz1))
+!nrixmx=int(dmod(Ustar(1,nstloop)+Rst,dble(Ncellx)*dx1))
+!nrjymx=int(dmod(Ustar(2,nstloop)+Rst,dble(Ncelly)*dy1))
+!nrkzmx=int(dmod(Ustar(3,nstloop)+Rst,dble(Ncellz)*dz1))
 
-rixmn=int((Ustar(1,nstloop)-Rst)/(dble(Ncellx)*dx1))
-rjymn=int((Ustar(2,nstloop)-Rst)/(dble(Ncelly)*dy1))
-rkzmn=int((Ustar(3,nstloop)-Rst)/(dble(Ncellz)*dz1))
-rixmx=int((Ustar(1,nstloop)+Rst)/(dble(Ncellx)*dx1))
-rjymx=int((Ustar(2,nstloop)+Rst)/(dble(Ncelly)*dy1))
-rkzmx=int((Ustar(3,nstloop)+Rst)/(dble(Ncellz)*dz1))
+!rixmn=int((Ustar(1,nstloop)-Rst)/(dble(Ncellx)*dx1))
+!rjymn=int((Ustar(2,nstloop)-Rst)/(dble(Ncelly)*dy1))
+!rkzmn=int((Ustar(3,nstloop)-Rst)/(dble(Ncellz)*dz1))
+!rixmx=int((Ustar(1,nstloop)+Rst)/(dble(Ncellx)*dx1))
+!rjymx=int((Ustar(2,nstloop)+Rst)/(dble(Ncelly)*dy1))
+!rkzmx=int((Ustar(3,nstloop)+Rst)/(dble(Ncellz)*dz1))
+
+!nrixmn=int((Ustar(1,nstloop)-Rst)/(dble(Ncellx)*dx1)))
+!nrjymn=int((Ustar(2,nstloop)-Rst)/(dble(Ncelly)*dy1)))
+!nrkzmn=int((Ustar(3,nstloop)-Rst)/(dble(Ncellz)*dz1)))
+!nrixmx=int((Ustar(1,nstloop)+Rst)/(dble(Ncellx)*dx1)))
+!nrjymx=int((Ustar(2,nstloop)+Rst)/(dble(Ncelly)*dy1)))
+!nrkzmx=int((Ustar(3,nstloop)+Rst)/(dble(Ncellz)*dz1)))
+
+!rixmn=int((Ustar(1,nstloop)-Rst)/(dble(Ncellx)*dx1))
+!rjymn=int((Ustar(2,nstloop)-Rst)/(dble(Ncelly)*dy1))
+!rkzmn=int((Ustar(3,nstloop)-Rst)/(dble(Ncellz)*dz1))
+!rixmx=int((Ustar(1,nstloop)+Rst)/(dble(Ncellx)*dx1))
+!rjymx=int((Ustar(2,nstloop)+Rst)/(dble(Ncelly)*dy1))
+!rkzmx=int((Ustar(3,nstloop)+Rst)/(dble(Ncellz)*dz1))
+
+rixcn=int((Ustar(1,nstloop))/(dble(Ncellx)*dx1))
+rjycn=int((Ustar(2,nstloop))/(dble(Ncelly)*dy1))
+rkzcn=int((Ustar(3,nstloop))/(dble(Ncellz)*dz1))
+
+write(*,*) rixcn,rjycn,rkxcn,'CN1'
+
+if(rixcn.eq.-1 ) rixcn = NSPLTx-1
+if(rjycn.eq.-1 ) rjycn = NSPLTy-1
+if(rkzcn.eq.-1 ) rkzcn = NSPLTz-1
+if(rixcn.eq.NSPLTx) rixcn = 0
+if(rjycn.eq.NSPLTy) rjycn = 0
+if(rkzcn.eq.NSPLTz) rkzcn = 0
+
+!rixcnm1=rixcn-1
+!rjycnm1=rixcn-1
+!rkzcnm1=rixcn-1
+
+!rixcnp1=rixcn+1
+!rjycnp1=rixcn+1
+!rkzcnp1=rixcn+1
+
+!rixmn=int((Ustar(1,nstloop)-Rst)/(dble(Ncellx)*dx1))
+!rjymn=int((Ustar(2,nstloop)-Rst)/(dble(Ncelly)*dy1))
+!rkzmn=int((Ustar(3,nstloop)-Rst)/(dble(Ncellz)*dz1))
+!rixmx=int((Ustar(1,nstloop)+Rst)/(dble(Ncellx)*dx1))
+!rjymx=int((Ustar(2,nstloop)+Rst)/(dble(Ncelly)*dy1))
+!rkzmx=int((Ustar(3,nstloop)+Rst)/(dble(Ncellz)*dz1))
+
+!if(rixmn.eq.-1 ) rixmn = NSPLTx-1
+!if(rjymn.eq.-1 ) rjymn = NSPLTy-1
+!if(rkzmn.eq.-1 ) rkzmn = NSPLTz-1
+!if(rixmn.eq.NSPLTx) rixmn = 0
+!if(rjymn.eq.NSPLTy) rjymn = 0
+!if(rkzmn.eq.NSPLTz) rkzmn = 0
+
+!if(rixmx.eq.-1 ) rixmx = NSPLTx-1
+!if(rjymx.eq.-1 ) rjymx = NSPLTy-1
+!if(rkzmx.eq.-1 ) rkzmx = NSPLTz-1
+!if(rixmx.eq.NSPLTx) rixmx = 0
+!if(rjymx.eq.NSPLTy) rjymx = 0
+!if(rkzmx.eq.NSPLTz) rkzmx = 0
+
+
+!if(rixmn.eq.-1 ) rixmn = NSPLTx-1
+!if(rjymn.eq.-1 ) rjymn = NSPLTy-1
+!if(rkzmn.eq.-1 ) rkzmn = NSPLTz-1
+!if(rixmx.eq.NSPLTx) rixmx = 0
+!if(rjymx.eq.NSPLTy) rjymx = 0
+!if(rkzmx.eq.NSPLTz) rkzmx = 0
+
+
+!if((IST==rixmn).or.(IST==rixmx).or.(JST==rjymn).or.(JST==rjymx).or.(KST==rkzmn).or.(KST==rkzmx)) then
+
+!if((IST==rixcn).or.(IST==rixcnm1).or.(IST==rixcnp1).or.(JST==rjycn).or.(JST==rjycnm1)..or.(JST==rjycnp1)&
+!.or.(KST==rkzcn).or.(KST==rkzcnm1).or.(KST==rkzcnp1)) then
+
+if((IST==rixcn).and.(JST==rjycn).and.(KST==rkzcn)) then
+
+i=int(dmod(dmod(Ustar(1,nstloop),dble(Ncellx)*dx1),dx1))
+j=int(dmod(dmod(Ustar(2,nstloop),dble(Ncelly)*dy1),dy1))
+k=int(dmod(dmod(Ustar(3,nstloop),dble(Ncellz)*dz1),dz1))
+
+write(*,*) NRANK,IST,JST,KST,i,j,k,'CN2'
+
+Rst=10.d0*(10**(Ustar(10,nstloop)-49.d0))**(1.d0/3.d0)*(U(i,j,k,1)/1.27d0/10.d0)**(-2.d0/3.d0) !loop
+Ustar(14,nstloop)=Rst
+write(*,*) NRANK,Ustar(10,nstloop),Rst,dx1,nid,'pint-feed3'
+!call BC_ST_RS()
+end if
+
+rixmn=int((Ustar(1,nstloop)-Ustar(14,nstloop))/(dble(Ncellx)*dx1))
+rjymn=int((Ustar(2,nstloop)-Ustar(14,nstloop))/(dble(Ncelly)*dy1))
+rkzmn=int((Ustar(3,nstloop)-Ustar(14,nstloop))/(dble(Ncellz)*dz1))
+rixmx=int((Ustar(1,nstloop)+Ustar(14,nstloop))/(dble(Ncellx)*dx1))
+rjymx=int((Ustar(2,nstloop)+Ustar(14,nstloop))/(dble(Ncelly)*dy1))
+rkzmx=int((Ustar(3,nstloop)+Ustar(14,nstloop))/(dble(Ncellz)*dz1))
 
 if(rixmn.eq.-1 ) rixmn = NSPLTx-1
 if(rjymn.eq.-1 ) rjymn = NSPLTy-1
 if(rkzmn.eq.-1 ) rkzmn = NSPLTz-1
+if(rixmn.eq.NSPLTx) rixmn = 0
+if(rjymn.eq.NSPLTy) rjymn = 0
+if(rkzmn.eq.NSPLTz) rkzmn = 0
+
+if(rixmx.eq.-1 ) rixmx = NSPLTx-1
+if(rjymx.eq.-1 ) rjymx = NSPLTy-1
+if(rkzmx.eq.-1 ) rkzmx = NSPLTz-1
 if(rixmx.eq.NSPLTx) rixmx = 0
 if(rjymx.eq.NSPLTy) rjymx = 0
 if(rkzmx.eq.NSPLTz) rkzmx = 0
 
-if((IST==rixmn).or.(IST==rixmx).or.(JST==rjymn).or.(JST==rjymx).or.(KST==rkzmn).or.(KST==rkzmx)) then
+!rixcnm1=rixcn-1
+!rjycnm1=rixcn-1
+!rkzcnm1=rixcn-1
+
+!rixcnp1=rixcn+1
+!rjycnp1=rixcn+1
+!rkzcnp1=rixcn+1
+
+!if(rixcnm1.eq.-1 ) rixcnm1 = NSPLTx-1
+!if(rjycnm1.eq.-1 ) rjycnm1 = NSPLTy-1
+!if(rkzcnm1.eq.-1 ) rkzcnm1 = NSPLTz-1
+!if(rixcnm1.eq.NSPLTx) rixcnm1 = 0
+!if(rjycnm1.eq.NSPLTy) rjycnm1 = 0
+!if(rkzcnm1.eq.NSPLTz) rkzcnm1 = 0
+
+!if(rixcnp1.eq.-1 ) rixcnp1 = NSPLTx-1
+!if(rjycnp1.eq.-1 ) rjycnp1 = NSPLTy-1
+!if(rkzcnp1.eq.-1 ) rkzcnp1 = NSPLTz-1
+!if(rixcnp1.eq.NSPLTx) rixcnp1 = 0
+!if(rjycnp1.eq.NSPLTy) rjycnp1 = 0
+!if(rkzcnp1.eq.NSPLTz) rkzcnp1 = 0
+
+!if(i<1) rixcnm1 = NSPLTx-1
+!if(j.eq.-1 ) rjycnm1 = NSPLTy-1
+!if(k.eq.-1 ) rkzcnm1 = NSPLTz-1
+!if(i.eq.NSPLTx) rixcnm1 = 0
+!if(j.eq.NSPLTy) rjycnm1 = 0
+!if(k.eq.NSPLTz) rkzcnm1 = 0
+
+!k=mod(int(Ustar(3,nid)),Ncellz)
+!if((IST==rixcn).or.(IST==rixmn).or.(IST==rixmx).or.(JST==rjycn).or.(JST==rjymn).or.(JST==rjymx)&
+!.or.(KST==rkzcn).or.(KST==rkzmn).or.(KST==rkzmx)) then
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-rdumy=dsqrt((x(i)-Ustar(1,nstloop))**2+(y(j)-Ustar(2,nstloop))**2+(z(k)-Ustar(3,nstloop))**2)
-if(Rst>rdumy) then
+rdumy2=y(j)-Ustar(2,nstloop)
+rdumy3=z(k)-Ustar(3,nstloop)
+!if(rdumy2>Lbox*0.5d0) rdumy2=rdumy2-Lbox
+!if(rdumy3>Lbox*0.5d0) rdumy3=rdumy3-Lbox
+rdumy2=rdumy2-Lbox*dble(int(rdumy2/(Lbox*0.5d0)))
+rdumy3=rdumy3-Lbox*dble(int(rdumy3/(Lbox*0.5d0)))
+
+rdumy=dsqrt((x(i)-Ustar(1,nstloop))**2+(rdumy2)**2+(rdumy3)**2)
+
+if(Ustar(14,nstloop)>rdumy) then
+write(*,*)x(i),y(j),z(k),NRANK,'ion'
+!ni=int(dmod(dabs(x(i)-Ustar(1,nstloop)),dble(Ncellx)*dx1))!*dsign(x(i)-Ustar(1,nstloop))
+!nj=int(dmod(dabs(y(j)-Ustar(2,nstloop)),dble(Ncelly)*dy1))!*dsign(y(j)-Ustar(2,nstloop))
+!nk=int(dmod(dabs(z(k)-Ustar(3,nstloop)),dble(Ncellz)*dz1))!*dsign(z(k)-Ustar(3,nstloop))
+!if(ni.eq.-1 ) ni = NSPLTx-1
+!if(nj.eq.-1 ) nj = NSPLTy-1
+!if(nk.eq.-1 ) nk = NSPLTz-1
+!if(ni.eq.NSPLTx) ni = 0
+!if(nj.eq.NSPLTy) nj = 0
+!if(nk.eq.NSPLTz) nk = 0
+!if((IST==ni).and.(JST==nj).and.(KST==nk)) then
 !T(j,j,k,)=1.d4/T0
 U(j,j,k,5)=(1.d4/T0)*kb*U(j,j,k,1)/1.27d0
 endif
+!endif
 end do; end do; end do
-endif
+!endif
 
 enddo
 
@@ -421,36 +583,58 @@ integer :: rsix,rsjy,rskz
 
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
-u1(:,:)=0.d0
+u1(:,:)=Ustar(:,:)!0.d0
 
 
-do j=1,valstar; do i=0,numstar
-  stMPI(i,j,NRANK)=Ustar(i,j)
+do i=0,numstar!nid+nidnw
+do j=1,valstar
+  stMPI(j,i,NRANK)=Ustar(j,i)
+  !write(*,*) NRANK,Ustar(j,i),'totst-1'
 end do;end do
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
 do Nroot=0,NPE-1
-  CALL MPI_BCAST(stMPI(1,0,Nroot),(numstar+1)*(valstar),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(stMPI(1,0,Nroot),(valstar)*(numstar+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
 
 totst=0
 do Nroot=0,NPE-1
-totst=totst+stMPI(9,0,Nroot)
+totst=totst+int(stMPI(9,0,Nroot))
 enddo
-nidnw=0
+!write(*,*) NRANK,totst,'totst'
+!nidnw=0
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
 stcnt=nid
 do Nroot=0,NPE-1
-if (stMPI(9,0,Nroot).ne.0) then
+if (int(stMPI(9,0,Nroot)).ne.0) then
 do i=1,int(stMPI(9,0,Nroot))
 stcnt=stcnt+1
-u1(:,stcnt)=stMPI(:,i,Nroot)
+do iii=1,valstar
+u1(iii,stcnt)=stMPI(iii,nid+i,Nroot)
+!write(*,*) NRANK,u1(iii,stcnt),int(stMPI(9,0,Nroot)),iii,stcnt,nid+i,'totst12'
+enddo
 enddo
 endif
 enddo
 
-Ustar(:,:)=u1(:,:)
-
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
 nid=nid+totst
+if(totst.ne.0) then
+do i=nid-totst+1,nid; do j=1,valstar!numstar
+  Ustar(j,i)=u1(j,i)
+  Ustar(9,i)=dble(i)
+!write(*,*) NRANK,Ustar(j,i),u1(j,i),nid,j,i,'totst2'
+end do;end do
+endif
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!nid=nid+totst
+!stMPI(9,0,:)=0.d0
+
 END SUBROUTINE collectST
 
 
@@ -467,15 +651,14 @@ integer :: rsix,rsjy,rskz
 
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
-
-
-
 do j=1,valstar; do i=0,numstar
-  stMPI(i,j,NRANK)=Ustar(i,j)
-  u1(i,j)=Ustar(i,j)
+  stMPI(j,i,NRANK)=Ustar(j,i)
+  u1(j,i)=Ustar(j,i)
 end do;end do
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 do Nroot=0,NPE-1
-  CALL MPI_BCAST(stMPI(1,0,Nroot),(numstar+1)*(valstar),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(stMPI(1,0,Nroot),(valstar)*(numstar+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 end do
 
 do i=1,numstar
@@ -489,3 +672,51 @@ end do
 end do
 
 END SUBROUTINE BC_ST
+
+
+!SUBROUTINE BC_ST_RS()
+!USE comvar
+!USE mpivar
+!USE slfgrv
+!USE fedvar
+!INCLUDE 'mpif.h'
+!INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+!double precision :: stMPI(1:valstar,0:numstar,0:NPE-1),u1(1:valstar,0:numstar)
+!integer :: num1,totst,stcnt,nwid,NRANKdm
+!integer :: rsix,rsjy,rskz
+
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
+!j=14
+!do i=0,numstar
+!  stMPI(j,i,NRANK)=Ustar(j,i)
+!  u1(j,i)=Ustar(j,i)
+!end do
+
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!do Nroot=0,NPE-1
+!  CALL MPI_BCAST(stMPI(14,0,Nroot),(numstar+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!end do
+
+!do i=1,numstar
+!do Nroot=1,NPE-1
+!  stMPI(14,i,Nroot)=stMPI(14,i,Nroot)+tMPI(14,i,Nroot-1)
+!end do
+!end do
+
+
+!do i=1,numstar
+!  Ustar(14,i)=stMPI(14,i,NPE-1)
+!end do
+
+!do i=1,numstar
+!rsix=int((Ustar(1,i))/(dble(Ncellx)*dx1))
+!rsjy=int((Ustar(2,i))/(dble(Ncelly)*dy1))
+!rskz=int((Ustar(3,i))/(dble(Ncellz)*dz1))
+!NRANKdm = rsix + rsjy*NSPLTx + rskz*NSPLTx*NSPLTy
+!do j=1,valstar
+!u1(j,i)=stMPI(j,i,NRANKdm)
+!end do
+!end do
+
+!END SUBROUTINE BC_ST_RS

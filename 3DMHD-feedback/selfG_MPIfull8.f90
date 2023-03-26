@@ -2,24 +2,40 @@ SUBROUTINE GRAVTY(dt,mode)
 USE comvar
 USE mpivar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
+integer :: mode
 DOUBLE PRECISION  :: dt,dxi
 INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt,jtime=0
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 character(3) Nfinal,itime
 
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)  'GRVTY'
+
 if(mode.eq.1) then
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !write(*,*)  'mode1-pre'
   call pinter(Nmem1,Nmem2,Ncellx,Ncelly,Ncellz)
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !write(*,*)  'mode1'
 end if
 
 if(mode.eq.2) then
-   write(*,*)  'mode2'
+   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   !write(*,*)  'mode2'
    N_MPI(20)=1; N_MPI(1)=1
    iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
+   !call PBsph()
    call PB()
+   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   !write(*,*)  'mode2-1'
    call mglin(Nmem1,Nmem2,2,5,5)
+   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+   !write(*,*)  'mode2-2'
    DEALLOCATE(bphi1,bphi2)
+   DEALLOCATE(bphi3,bphi4,bphi5,bphi6)
 
   N_ol = 2
                       !count, blocklength, stride
@@ -100,6 +116,7 @@ if(mode.eq.2) then
 !       end do; end do; end do
 
 !       close(521+NRANK)
+write(*,*)  'mode2-3'
 end if
 
 if(mode.eq.3) then !acceraration because of gravity
@@ -599,28 +616,28 @@ END IF
 
 !-------naoshi---------
 IF(JST.eq.0) THEN
-do k=0,nz; kk=(ny+1)*k
-do j=0,nx; nn=j+kk
-  uf(j,1 ,k)=bphi2(np+nn,1)
+do k=0,nx; kk=(nz+1)*k
+do j=0,nz; nn=j+kk
+  uf(j,1 ,k)=bphi4(np+nn,1)
 end do; end do
 END IF
 IF(JST.eq.NSPLTy-1) THEN
-do k=0,nz; kk=(ny+1)*k
-do j=0,nx; nn=j+kk
-  uf(j,ny,k)=bphi2(np+nn,2)
+do k=0,nx; kk=(nz+1)*k
+do j=0,nz; nn=j+kk
+  uf(j,ny,k)=bphi4(np+nn,2)
 end do; end do
 END IF
 
 IF(KST.eq.0) THEN
 do k=0,ny; kk=(ny+1)*k
 do j=0,nx; nn=j+kk
-  uf(j,k,1 )=bphi2(np+nn,1)
+  uf(j,k,1 )=bphi6(np+nn,1)
 end do; end do
 END IF
 IF(KST.eq.NSPLTz-1) THEN
 do k=0,ny; kk=(ny+1)*k
 do j=0,nx; nn=j+kk
-  uf(j,k,nz)=bphi2(np+nn,2)
+  uf(j,k,nz)=bphi6(np+nn,2)
 end do; end do
 END IF
 !-------naoshi---------
@@ -672,6 +689,21 @@ IF(mode.eq.1) THEN
     uf(1 ,jf,kf) = bphi1(np+nn,1)
     uf(nx,jf,kf) = bphi1(np+nn,2)
   end do; end do
+
+!-------naoshi---------
+  do kf=1,nx; kk=nz*(kf-1)
+  do jf=1,nz; nn=jf-1+kk
+    uf(kf, 1,jf) = bphi3(np+nn,1)
+    uf(kf,ny,jf) = bphi3(np+nn,2)
+  end do; end do
+
+  do kf=1,ny; kk=nx*(kf-1)
+  do jf=1,nx; nn=jf-1+kk
+    uf(jf,kf,1 ) = bphi5(np+nn,1)
+    uf(jf,kf,nz) = bphi5(np+nn,2)
+  end do; end do
+!-------naoshi---------
+
 END IF
 
 END SUBROUTINE interp
@@ -744,15 +776,15 @@ u(1,1,3)=0.d0;u(3,1,3)=0.d0
 u(1,2,3)=0.d0;u(3,2,3)=0.d0
 u(1,3,3)=0.d0;u(3,3,3)=0.d0
 
-u(2,1,1) = 0.025d0*h*h*(-8.d0*rhs(2,1,1)-2.d0*rhs(2,1,2)-2.d0*rhs(2,1,3)-2.d0*rhs(2,2,1)-rhs(2,2,2)-rhs(2,2,3)-2.d0*rhs(2,3,1)-rhs(2,3,2)-rhs(2,3,3))
-u(2,2,1) = 0.025d0*h*h*(-2.d0*rhs(2,1,1)-rhs(2,1,2)-rhs(2,1,3)-8.d0*rhs(2,2,1)-2.d0*rhs(2,2,2)-2.d0*rhs(2,2,3)-2.d0*rhs(2,3,1)-rhs(2,3,2)-rhs(2,3,3))
-u(2,3,1) = 0.025d0*h*h*(-2.d0*rhs(2,1,1)-rhs(2,1,2)-rhs(2,1,3)-2.d0*rhs(2,2,1)-rhs(2,2,2)-rhs(2,2,3)-8.d0*rhs(2,3,1)-2.d0*rhs(2,3,2)-2.d0*rhs(2,3,3))
-u(2,1,2) = 0.025d0*h*h*(-2.d0*rhs(2,1,1)-8.d0*rhs(2,1,2)-2.d0*rhs(2,1,3)-rhs(2,2,1)-2.d0*rhs(2,2,2)-rhs(2,2,3)-rhs(2,3,1)-2.d0*rhs(2,3,2)-rhs(2,3,3))
+u(2,1,1) = 0.d0! 0.025d0*h*h*(-8.d0*rhs(2,1,1)-2.d0*rhs(2,1,2)-2.d0*rhs(2,1,3)-2.d0*rhs(2,2,1)-rhs(2,2,2)-rhs(2,2,3)-2.d0*rhs(2,3,1)-rhs(2,3,2)-rhs(2,3,3))
+u(2,2,1) = 0.d0! 0.025d0*h*h*(-2.d0*rhs(2,1,1)-rhs(2,1,2)-rhs(2,1,3)-8.d0*rhs(2,2,1)-2.d0*rhs(2,2,2)-2.d0*rhs(2,2,3)-2.d0*rhs(2,3,1)-rhs(2,3,2)-rhs(2,3,3))
+u(2,3,1) = 0.d0! 0.025d0*h*h*(-2.d0*rhs(2,1,1)-rhs(2,1,2)-rhs(2,1,3)-2.d0*rhs(2,2,1)-rhs(2,2,2)-rhs(2,2,3)-8.d0*rhs(2,3,1)-2.d0*rhs(2,3,2)-2.d0*rhs(2,3,3))
+u(2,1,2) = 0.d0! 0.025d0*h*h*(-2.d0*rhs(2,1,1)-8.d0*rhs(2,1,2)-2.d0*rhs(2,1,3)-rhs(2,2,1)-2.d0*rhs(2,2,2)-rhs(2,2,3)-rhs(2,3,1)-2.d0*rhs(2,3,2)-rhs(2,3,3))
 u(2,2,2) = 0.025d0*h*h*(-rhs(2,1,1)-2.d0*rhs(2,1,2)-rhs(2,1,3)-2.d0*rhs(2,2,1)-8.d0*rhs(2,2,2)-2.d0*rhs(2,2,3)-rhs(2,3,1)-2.d0*rhs(2,3,2)-rhs(2,3,3))
-u(2,3,2) = 0.025d0*h*h*(-rhs(2,1,1)-2.d0*rhs(2,1,2)-rhs(2,1,3)-rhs(2,2,1)-2.d0*rhs(2,2,2)-rhs(2,2,3)-2.d0*rhs(2,3,1)-8.d0*rhs(2,3,2)-2.d0*rhs(2,3,3))
-u(2,1,3) = 0.025d0*h*h*(-2.d0*rhs(2,1,1)-2.d0*rhs(2,1,2)-8.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
-u(2,2,3) = 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-2.d0*rhs(2,2,1)-2.d0*rhs(2,2,2)-8.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
-u(2,3,3) = 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-2.d0*rhs(2,3,1)-2.d0*rhs(2,3,2)-8.d0*rhs(2,3,3))
+u(2,3,2) = 0.d0! 0.025d0*h*h*(-rhs(2,1,1)-2.d0*rhs(2,1,2)-rhs(2,1,3)-rhs(2,2,1)-2.d0*rhs(2,2,2)-rhs(2,2,3)-2.d0*rhs(2,3,1)-8.d0*rhs(2,3,2)-2.d0*rhs(2,3,3))
+u(2,1,3) = 0.d0! 0.025d0*h*h*(-2.d0*rhs(2,1,1)-2.d0*rhs(2,1,2)-8.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
+u(2,2,3) = 0.d0! 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-2.d0*rhs(2,2,1)-2.d0*rhs(2,2,2)-8.d0*rhs(2,2,3)-rhs(2,3,1)-rhs(2,3,2)-2.d0*rhs(2,3,3))
+u(2,3,3) = 0.d0! 0.025d0*h*h*(-rhs(2,1,1)-rhs(2,1,2)-2.d0*rhs(2,1,3)-rhs(2,2,1)-rhs(2,2,2)-2.d0*rhs(2,2,3)-2.d0*rhs(2,3,1)-2.d0*rhs(2,3,2)-8.d0*rhs(2,3,3))
 
 END SUBROUTINE slvsml
 
@@ -775,42 +807,50 @@ u(1,1,3)=bphi1(7,1);  u(3,1,3)=bphi1(7,2)
 u(1,2,3)=bphi1(8,1);  u(3,2,3)=bphi1(8,2)
 u(1,3,3)=bphi1(9,1);  u(3,3,3)=bphi1(9,2)
 
-u(2,1,1) = 0.025d0* (8.d0*u(1,1,1) + 2.d0*u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + &
-u(1,3,2) + u(1,3,3) + 8.d0*u(3,1,1) + 2.d0*u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
- - 8.d0*h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
-2.d0*h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
-u(2,2,1) = 0.025d0* (2.d0*u(1,1,1) + u(1,1,2) + u(1,1,3) + 8.d0*u(1,2,1) + 2.d0*u(1,2,2) + 2.d0*u(1,2,3) + 2.d0*u(1,3,1) + &
-u(1,3,2) + u(1,3,3) + 2.d0*u(3,1,1) + u(3,1,2) + u(3,1,3) + 8.d0*u(3,2,1) + 2.d0*u(3,2,2) + 2.d0*u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
-- 2.d0*h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 8.d0*h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
-2.d0*h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
-u(2,3,1) = 0.025d0* (2.d0*u(1,1,1) + u(1,1,2) + u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 8.d0*u(1,3,1) + 2.d0*u(1,3,2) + &
-2.d0*u(1,3,3) + 2.d0*u(3,1,1) + u(3,1,2) + u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 8.d0*u(3,3,1) + 2.d0*u(3,3,2) + 2.d0*u(3,3,3) &
-- 2.d0*h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
-8.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
-u(2,1,2) = 0.025d0* (2.d0*u(1,1,1) + 8.d0*u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + 2.d0*u(1,2,2) + u(1,2,3) + u(1,3,1) + 2.d0*u(1,3,2) + &
-u(1,3,3) + 2.d0*u(3,1,1) + 8.d0*u(3,1,2) + 2.d0*u(3,1,3) + u(3,2,1) + 2.d0*u(3,2,2) + u(3,2,3) + u(3,3,1) + 2.d0*u(3,3,2) + u(3,3,3) &
-- 2.d0*h*h*rhs(2,1,1) - 8.d0*h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
-h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+!-----naoshi-----
+
+u(2,1,1) = bphi3(4,1)!0.025d0* (8.d0*u(1,1,1) + 2.d0*u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + &
+!u(1,3,2) + u(1,3,3) + 8.d0*u(3,1,1) + 2.d0*u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
+! - 8.d0*h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+u(2,2,1) = bphi5(5,1)!0.025d0* (2.d0*u(1,1,1) + u(1,1,2) + u(1,1,3) + 8.d0*u(1,2,1) + 2.d0*u(1,2,2) + 2.d0*u(1,2,3) + 2.d0*u(1,3,1) + &
+!u(1,3,2) + u(1,3,3) + 2.d0*u(3,1,1) + u(3,1,2) + u(3,1,3) + 8.d0*u(3,2,1) + 2.d0*u(3,2,2) + 2.d0*u(3,2,3) + 2.d0*u(3,3,1) + u(3,3,2) + u(3,3,3) &
+!- 2.d0*h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 8.d0*h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+u(2,3,1) = bphi3(4,2)!0.025d0* (2.d0*u(1,1,1) + u(1,1,2) + u(1,1,3) + 2.d0*u(1,2,1) + u(1,2,2) + u(1,2,3) + 8.d0*u(1,3,1) + 2.d0*u(1,3,2) + &
+!2.d0*u(1,3,3) + 2.d0*u(3,1,1) + u(3,1,2) + u(3,1,3) + 2.d0*u(3,2,1) + u(3,2,2) + u(3,2,3) + 8.d0*u(3,3,1) + 2.d0*u(3,3,2) + 2.d0*u(3,3,3) &
+!- 2.d0*h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
+!8.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
+u(2,1,2) = bphi3(5,1)!0.025d0* (2.d0*u(1,1,1) + 8.d0*u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + 2.d0*u(1,2,2) + u(1,2,3) + u(1,3,1) + 2.d0*u(1,3,2) + &
+!u(1,3,3) + 2.d0*u(3,1,1) + 8.d0*u(3,1,2) + 2.d0*u(3,1,3) + u(3,2,1) + 2.d0*u(3,2,2) + u(3,2,3) + u(3,3,1) + 2.d0*u(3,3,2) + u(3,3,3) &
+!- 2.d0*h*h*rhs(2,1,1) - 8.d0*h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
+!h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+!u(2,2,2) = !0.025d0* ( u(1,1,1) + 2.d0*u(1,1,2) + u(1,1,3) + 2.d0*u(1,2,1) + 8.d0*u(1,2,2) + 2.d0*u(1,2,3) + u(1,3,1) + 2.d0*u(1,3,2) + &
+!u(1,3,3) + u(3,1,1) + 2.d0*u(3,1,2) + u(3,1,3) + 2.d0*u(3,2,1) + 8.d0*u(3,2,2) + 2.d0*u(3,2,3) + u(3,3,1) + 2.d0*u(3,3,2) + u(3,3,3) &
+!- h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - 8.d0*h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
+!h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
+u(2,3,2) = bphi3(5,2)!0.025d0* ( u(1,1,1) + 2.d0*u(1,1,2) + u(1,1,3) + u(1,2,1) + 2.d0*u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + 8.d0*u(1,3,2) + &
+!2.d0*u(1,3,3) + u(3,1,1) + 2.d0*u(3,1,2) + u(3,1,3) + u(3,2,1) + 2.d0*u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + 8.d0*u(3,3,2) + 2.d0*u(3,3,3) &
+!- h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - 8.d0*h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
+u(2,1,3) = bphi3(7,1)!0.025d0* (2.d0*u(1,1,1) + 2.d0*u(1,1,2) + 8.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) + 2.d0*u(1,2,3) + u(1,3,1) + u(1,3,2) + &
+!2.d0*u(1,3,3) + 2.d0*u(3,1,1) + 2.d0*u(3,1,2) + 8.d0*u(3,1,3) + u(3,2,1) + u(3,2,2) + 2.d0*u(3,2,3) + u(3,3,1) + u(3,3,2) + 2.d0*u(3,3,3) &
+!- 2.d0*h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - 8.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
+!h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
+u(2,2,3) = bphi5(5,2)!0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + 2.d0*u(1,2,2) + 8.d0*u(1,2,3) + u(1,3,1) + u(1,3,2) + &
+!2.d0*u(1,3,3) + u(3,1,1) + u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + 2.d0*u(3,2,2) + 8.d0*u(3,2,3) + u(3,3,1) + u(3,3,2) + 2.d0*u(3,3,3) &
+!- h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - 8.d0*h*h*rhs(2,2,3) - &
+!h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
+u(2,3,3) = bphi3(7,2)!0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) + 2.d0*u(1,2,3) + 2.d0*u(1,3,1) + 2.d0*u(1,3,2) + &
+!8.d0*u(1,3,3) + u(3,1,1) + u(3,1,2) + 2.d0*u(3,1,3) + u(3,2,1) + u(3,2,2) + 2.d0*u(3,2,3) + 2.d0*u(3,3,1) + 2.d0*u(3,3,2) + 8.d0*u(3,3,3) &
+!- h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
+!2.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 8.d0*h*h*rhs(2,3,3))
+!-----naoshi-----
+
 u(2,2,2) = 0.025d0* ( u(1,1,1) + 2.d0*u(1,1,2) + u(1,1,3) + 2.d0*u(1,2,1) + 8.d0*u(1,2,2) + 2.d0*u(1,2,3) + u(1,3,1) + 2.d0*u(1,3,2) + &
 u(1,3,3) + u(3,1,1) + 2.d0*u(3,1,2) + u(3,1,3) + 2.d0*u(3,2,1) + 8.d0*u(3,2,2) + 2.d0*u(3,2,3) + u(3,3,1) + 2.d0*u(3,3,2) + u(3,3,3) &
 - h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - 8.d0*h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
 h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - h*h*rhs(2,3,3))
-u(2,3,2) = 0.025d0* ( u(1,1,1) + 2.d0*u(1,1,2) + u(1,1,3) + u(1,2,1) + 2.d0*u(1,2,2) + u(1,2,3) + 2.d0*u(1,3,1) + 8.d0*u(1,3,2) + &
-2.d0*u(1,3,3) + u(3,1,1) + 2.d0*u(3,1,2) + u(3,1,3) + u(3,2,1) + 2.d0*u(3,2,2) + u(3,2,3) + 2.d0*u(3,3,1) + 8.d0*u(3,3,2) + 2.d0*u(3,3,3) &
-- h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - h*h*rhs(2,2,3) - &
-2.d0*h*h*rhs(2,3,1) - 8.d0*h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
-u(2,1,3) = 0.025d0* (2.d0*u(1,1,1) + 2.d0*u(1,1,2) + 8.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) + 2.d0*u(1,2,3) + u(1,3,1) + u(1,3,2) + &
-2.d0*u(1,3,3) + 2.d0*u(3,1,1) + 2.d0*u(3,1,2) + 8.d0*u(3,1,3) + u(3,2,1) + u(3,2,2) + 2.d0*u(3,2,3) + u(3,3,1) + u(3,3,2) + 2.d0*u(3,3,3) &
-- 2.d0*h*h*rhs(2,1,1) - 2.d0*h*h*rhs(2,1,2) - 8.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
-h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
-u(2,2,3) = 0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + 2.d0*u(1,2,1) + 2.d0*u(1,2,2) + 8.d0*u(1,2,3) + u(1,3,1) + u(1,3,2) + &
-2.d0*u(1,3,3) + u(3,1,1) + u(3,1,2) + 2.d0*u(3,1,3) + 2.d0*u(3,2,1) + 2.d0*u(3,2,2) + 8.d0*u(3,2,3) + u(3,3,1) + u(3,3,2) + 2.d0*u(3,3,3) &
-- h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - 2.d0*h*h*rhs(2,2,1) - 2.d0*h*h*rhs(2,2,2) - 8.d0*h*h*rhs(2,2,3) - &
-h*h*rhs(2,3,1) - h*h*rhs(2,3,2) - 2.d0*h*h*rhs(2,3,3))
-u(2,3,3) = 0.025d0* ( u(1,1,1) + u(1,1,2) + 2.d0*u(1,1,3) + u(1,2,1) + u(1,2,2) + 2.d0*u(1,2,3) + 2.d0*u(1,3,1) + 2.d0*u(1,3,2) + &
-8.d0*u(1,3,3) + u(3,1,1) + u(3,1,2) + 2.d0*u(3,1,3) + u(3,2,1) + u(3,2,2) + 2.d0*u(3,2,3) + 2.d0*u(3,3,1) + 2.d0*u(3,3,2) + 8.d0*u(3,3,3) &
-- h*h*rhs(2,1,1) - h*h*rhs(2,1,2) - 2.d0*h*h*rhs(2,1,3) - h*h*rhs(2,2,1) - h*h*rhs(2,2,2) - 2.d0*h*h*rhs(2,2,3) - &
-2.d0*h*h*rhs(2,3,1) - 2.d0*h*h*rhs(2,3,2) - 8.d0*h*h*rhs(2,3,3))
 
 END SUBROUTINE slvsmlb
 
@@ -1025,6 +1065,32 @@ do k=1,nz; do j=1,ny
 end do; end do
 END IF
 
+IF(JST.eq.0) THEN
+!do k=1,nz,2; do j=1,ny,2 !for speed up
+do j=1,nx; do k=1,nz
+  res(j,1,k)=0.d0
+end do; end do
+END IF
+IF(JST.eq.NSPLTy-1) THEN
+!do k=1,nz,2; do j=1,ny,2 !for speed up
+do j=1,nx; do k=1,nz
+  res(j,ny,k)=0.d0
+end do; end do
+END IF
+
+IF(KST.eq.0) THEN
+!do k=1,nz,2; do j=1,ny,2 !for speed up
+do k=1,ny; do j=1,nx
+  res(j,k,1)=0.d0
+end do; end do
+END IF
+IF(KST.eq.NSPLTz-1) THEN
+!do k=1,nz,2; do j=1,ny,2 !for speed up
+do k=1,ny; do j=1,nx
+  res(j,k,nz)=0.d0
+end do; end do
+END IF
+
 CALL BCsgr_MPI(res,nx,ny,nz,1,1,1,1,1,1)
 
 END SUBROUTINE residMPI
@@ -1044,6 +1110,16 @@ end do; end do; end do
 do k=1,nz; do j=1,ny
   res(1 ,j,k)=0.d0
   res(nx,j,k)=0.d0
+end do; end do
+
+do j=1,nx; do k=1,nz
+  res(j,1,k)=0.d0
+  res(j,ny,k)=0.d0
+end do; end do
+
+do k=1,ny; do j=1,nx
+  res(j,k,1)=0.d0
+  res(j,k,nz)=0.d0
 end do; end do
 
 END SUBROUTINE resid
@@ -1105,6 +1181,7 @@ SUBROUTINE PB()
 USE comvar
 USE mpivar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
@@ -1125,6 +1202,8 @@ DOUBLE PRECISION, dimension(:,:,:),  allocatable :: bcl1,bcr2
 complex*16, dimension(:,:), allocatable :: bcspel1,bcspel2
 
 character*4 fnum
+
+DOUBLE PRECISION :: rsph31,rsph32
 
 iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
 
@@ -1356,6 +1435,26 @@ do j=0,ncy; n = j+kk
 end do; end do
 
 
+!do k=0,ncz; kk= (ncy+1)*k
+!do j=0,ncy; n = j+kk
+!  jb  = JST*Ncelly + j
+!  kbb = KST*Ncellz + k
+  !if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
+  !if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
+  !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+  !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+  !rrsph3x=ql1x
+  !rrsph3y=ql1y
+  !rrsph3z=ql1z
+  !rsph3 =dsqrt( (rrsph3x-x_i(0))**2 + (rrsph3y-y_i(jb))**2 + (rrsph3z-z_i(kbb))**2 )
+!  rsph31 =dsqrt( (rrsph3x-x(0))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+!  rsph32 =dsqrt( (rrsph3x-x(Ncellx+1))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+
+!  bphi2(pointb2(NGL)+n,1) = -G*mass1/rsph31 !dble(data(jb,kbb,1))
+!  bphi2(pointb2(NGL)+n,2) = -G*mass1/rsph32 !dble(data(jb,kbb,2))
+!end do; end do
+
+
 !write(fnum,'(I3.3)') NRANK
 !open(3,file='/work/inouety/SGte/bphi'//fnum//'.dat')
 !ncx=Ncellx+1; ncy=Ncelly+1; ncz=Ncellz+1
@@ -1541,6 +1640,621 @@ end do
 END SUBROUTINE PB
 
 
+SUBROUTINE PBsph()
+USE comvar
+USE mpivar
+USE slfgrv
+USE fedvar
+INCLUDE 'mpif.h'
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+DOUBLE PRECISION  :: VECU
+
+double precision,  parameter :: pi = 3.14159265359d0
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: temp1,temp2
+!DOUBLE PRECISION, dimension(:,:,:), allocatable :: temp1,temp2
+
+DOUBLE PRECISION, dimension(:,:,:),  allocatable :: data
+complex*16, dimension(:,:), allocatable :: speq
+DOUBLE PRECISION :: rho
+
+DOUBLE PRECISION, dimension(:,:),  allocatable :: dat1,dat2
+complex*16, dimension(:), allocatable :: spe1,spe2
+double precision :: kap,temp1r,temp1i,temp2r,temp2i,facG,fac,dxx,dyy,dzz,zp1,zp2
+double precision, dimension(:,:,:), allocatable :: fint0,fint1
+
+DOUBLE PRECISION, dimension(:,:,:),  allocatable :: bcl1,bcr2
+complex*16, dimension(:,:), allocatable :: bcspel1,bcspel2
+
+character*4 fnum
+
+DOUBLE PRECISION :: rsph31,rsph32
+
+iwx=1;iwy=1;iwz=1;N_MPI(20)=1;N_MPI(1)=1;CALL BC_MPI(2,1)
+
+!*** Pointer for boundary ***!
+pointb1(1) = 1
+nl = 1
+nc=3
+2 continue
+pointb1(nl+1)=pointb1(nl)+nc**2
+nc=nc*2-1
+nl = nl+1
+if(nl.ne.NGcr+1) goto 2
+Needb = pointb1(NGcr+1)
+ALLOCATE(bphi1(Needb,2))
+ALLOCATE(bphi3(Needb,2))
+ALLOCATE(bphi5(Needb,2))
+
+nl = NGcr-1
+!nl = NGcr  !===================????==================
+pointb2(nl) = 1
+nx=(2**NGcr)/NSPLTx+2; ny=(2**NGcr)/NSPLTy+2; nz=(2**NGcr)/NSPLTz+2
+3 continue
+pointb2(nl+1)=pointb2(nl)+max(nx*ny,ny*nz,nz*nx)
+nx=nx*2-2; ny=ny*2-2; nz=nz*2-2
+nl = nl+1
+if(nl.ne.NGL+1) goto 3
+Needb = pointb2(NGL+1)
+ALLOCATE(bphi2(Needb,2))
+ALLOCATE(bphi4(Needb,2))
+ALLOCATE(bphi6(Needb,2))
+
+
+!MIYAMA method ---------------------------------------------------
+
+ALLOCATE(data(Ncelly*NSPLTy,Ncellz*NSPLTz,Ncellx+1),speq(Ncellz*NSPLTz,Ncellx))
+ALLOCATE(dat1(Ncelly*NSPLTy,Ncellz*NSPLTz),spe1(Ncellz*NSPLTz), &
+     dat2(Ncelly*NSPLTy,Ncellz*NSPLTz),spe2(Ncellz*NSPLTz))
+allocate(bcl1(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc),bcr2(Ncelly*NSPLTy,Ncellz*NSPLTz,-1:loopbc))
+allocate(bcspel1(Ncellz*NSPLTz,-1:loopbc),bcspel2(Ncellz*NSPLTz,-1:loopbc))
+
+bcl1(:,:,:)=0.d0; bcr2(:,:,:)=0.d0; bcspel1(:,:)=(0.d0,0.d0); bcspel2(:,:)=(0.d0,0.d0)
+!nccy = Ncelly/NSPLTy; nccz = Ncellz/NSPLTz
+nccy = Ncelly; nccz = Ncellz
+do k=1,Ncellz; kz=KST*Ncellz+k
+do j=1,Ncelly; jy=JST*Ncelly+j
+do i=1,Ncellx
+  data(jy,kz,i) = U(i,j,k,1)
+end do;end do;end do
+
+
+call collectrho()
+
+!If(NRANK.eq.0) then; open(3,file='Pot.dat')
+!do j=1,nn2
+!  do i=1,nn1
+!    write(3,*) i,j,data(i,j,1),data(i,j,2)
+!  end do; write(3,*) ' '
+!end do
+!close(3); END IF
+
+!write(*,*) 'inPB4',NRANK
+!ncx=Ncellx+1; ncy=Ncelly+1; ncz=Ncellz+1
+!do k=0,ncz; kk= (ncy+1)*k
+!do j=0,ncy; n = j+kk
+!  jb  = JST*Ncelly + j
+!  kbb = KST*Ncellz + k
+!  if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
+!  if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
+!  if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+!  if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+
+!  bphi2(pointb2(NGL)+n,1) = dble(data(jb,kbb,1))
+!  bphi2(pointb2(NGL)+n,2) = dble(data(jb,kbb,2))
+!end do; end do
+
+ncx=Ncellx+1; ncy=Ncelly+1; ncz=Ncellz+1
+do k=0,ncz; kk= (ncy+1)*k
+do j=0,ncy; n = j+kk
+  jb  = JST*Ncelly + j
+  kbb = KST*Ncellz + k
+  !if((j.eq.ncy).and.(JST.eq.NSPLTy-1)) jb  = 1
+  !if((k.eq.ncz).and.(KST.eq.NSPLTz-1)) kbb = 1
+  !if((j.eq.0  ).and.(JST.eq.0       )) jb  = Ncelly*NSPLTy
+  !if((k.eq.0  ).and.(KST.eq.0       )) kbb = Ncellz*NSPLTz
+  !rrsph3x=ql1x
+  !rrsph3y=ql1y
+  !rrsph3z=ql1z
+  !rsph3 =dsqrt( (rrsph3x-x_i(0))**2 + (rrsph3y-y_i(jb))**2 + (rrsph3z-z_i(kbb))**2 )
+  rsph31 =dsqrt( (rrsph3x-x(0))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+  rsph32 =dsqrt( (rrsph3x-x(Ncellx+1))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+
+  bphi2(pointb2(NGL)+n,1) = -G*mass1/rsph31 !dble(data(jb,kbb,1))
+  bphi2(pointb2(NGL)+n,2) = -G*mass1/rsph32 !dble(data(jb,kbb,2))
+end do; end do
+
+
+do k=0,ncz; kk= (ncy+1)*k
+do j=0,ncy; n = j+kk
+  jb  = JST*Ncelly + j
+  kbb = KST*Ncellz + k
+
+  rsph31 =dsqrt( (rrsph3x-x(       0))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+  rsph32 =dsqrt( (rrsph3x-x(Ncellx+1))**2 + (rrsph3y-y(j))**2 + (rrsph3z-z(k))**2 )
+
+  bphi2(pointb2(NGL)+n,1) = -G*mass1/rsph31 !dble(data(jb,kbb,1))
+  bphi2(pointb2(NGL)+n,2) = -G*mass1/rsph32 !dble(data(jb,kbb,2))
+end do; end do
+
+
+do k=0,ncx; kk= (ncz+1)*k
+do j=0,ncz; n = j+kk
+  jb  = KST*Ncellz + j
+  kbb = IST*Ncellx + k
+
+  rsph31 =dsqrt( (rrsph3x-x(k))**2 + (rrsph3y-y(       0))**2 + (rrsph3z-z(j))**2 )
+  rsph32 =dsqrt( (rrsph3x-x(k))**2 + (rrsph3y-y(Ncelly+1))**2 + (rrsph3z-z(j))**2 )
+
+  bphi4(pointb2(NGL)+n,1) = -G*mass1/rsph31 !dble(data(jb,kbb,1))
+  bphi4(pointb2(NGL)+n,2) = -G*mass1/rsph32 !dble(data(jb,kbb,2))
+end do; end do
+
+do k=0,ncy; kk= (ncx+1)*k
+do j=0,ncx; n = j+kk
+  jb  = IST*Ncellx + j
+  kbb = JST*Ncelly + k
+
+  rsph31 =dsqrt( (rrsph3x-x(j))**2 + (rrsph3y-y(k))**2 + (rrsph3z-z(       0))**2 )
+  rsph32 =dsqrt( (rrsph3x-x(j))**2 + (rrsph3y-y(k))**2 + (rrsph3z-z(Ncellz+1))**2 )
+
+  bphi6(pointb2(NGL)+n,1) = -G*mass1/rsph31 !dble(data(jb,kbb,1))
+  bphi6(pointb2(NGL)+n,2) = -G*mass1/rsph32 !dble(data(jb,kbb,2))
+end do; end do
+
+
+
+DEALLOCATE(data,speq)
+DEALLOCATE(dat1,spe1,dat2,spe2)
+DEALLOCATE(bcspel1,bcspel2,bcl1,bcr2)
+!-----------------------------------------------------------------
+
+ncx = Ncellx+1; ncy = Ncelly+1; ncz = Ncellz+1
+w  = 0.125d0
+do lc=NGL-1,NGcr-1,-1
+  nfx = ncx; nfy = ncy; nfz = ncz
+  ncx = ncx/2+1; ncy = ncy/2+1; ncz = ncz/2+1
+  do l = 1, 2
+  if(l.eq.1) then; mfx=nfy; mfy=nfz; mcx=ncy; mcy=ncz; end if
+  if(l.eq.2) then; mfx=nfy; mfy=nfz; mcx=ncy; mcy=ncz; end if
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+  do ic = 2,mcx-1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 4.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1    ,l)+bphi2(pointb2(lc+1)+kf+1    ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+  end do
+  end do
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*(                                bphi2(pointb2(lc+1)+kf+1   ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)+bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+  end do
+  do ic = 2,mcx-1; if = 2*ic-1
+    jc = 1; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+bphi2(pointb2(lc+1)+kf+1   ,l)+ &
+                                                                                                    bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 5.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+bphi2(pointb2(lc+1)+kf+1   ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)                                )
+  end do
+
+    jc = 1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 6.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*(                                bphi2(pointb2(lc+1)+kf+1   ,l)+ &
+                                                                                                    bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+    
+    jc = 1 ; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 6.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1   ,l)+ &
+                                                                                                    bphi2(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    ic = 1 ; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 6.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*(                                bphi2(pointb2(lc+1)+kf+1   ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+    jc = mcy; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi2(pointb2(lc)+kc,l) = 6.d0*w*bphi2(pointb2(lc+1)+kf,l) + w*( bphi2(pointb2(lc+1)+kf-1 ,l)+ &
+                                                                     bphi2(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+  end do
+enddo
+
+ncx = Ncellx+1; ncy = Ncelly+1; ncz = Ncellz+1
+w  = 0.125d0
+do lc=NGL-1,NGcr-1,-1
+  nfx = ncx; nfy = ncy; nfz = ncz
+  ncx = ncx/2+1; ncy = ncy/2+1; ncz = ncz/2+1
+  do l = 1, 2
+  if(l.eq.1) then; mfx=nfz; mfy=nfx; mcx=ncz; mcy=ncx; end if
+  if(l.eq.2) then; mfx=nfz; mfy=nfx; mcx=ncz; mcy=ncx; end if
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+  do ic = 2,mcx-1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 4.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1    ,l)+bphi4(pointb2(lc+1)+kf+1    ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)+bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+  end do
+  end do
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 5.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*(                                bphi4(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)+bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 5.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)+bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+
+  end do
+  do ic = 2,mcx-1; if = 2*ic-1
+    jc = 1; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 5.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1   ,l)+bphi4(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi4(pointb2(lc)+kc,l) = 5.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1   ,l)+bphi4(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+  end do
+
+    jc = 1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi4(pointb2(lc)+kc,l) = 6.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*(                                bphi4(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = 1 ; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 6.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    ic = 1 ; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi4(pointb2(lc)+kc,l) = 6.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*(                                bphi4(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+    jc = mcy; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi4(pointb2(lc)+kc,l) = 6.d0*w*bphi4(pointb2(lc+1)+kf,l) + w*( bphi4(pointb2(lc+1)+kf-1 ,l)+ &
+    bphi4(pointb2(lc+1)+kf-mfx-1,l)                                )
+  end do
+enddo
+
+ncx = Ncellx+1; ncy = Ncelly+1; ncz = Ncellz+1
+w  = 0.125d0
+do lc=NGL-1,NGcr-1,-1
+  nfx = ncx; nfy = ncy; nfz = ncz
+  ncx = ncx/2+1; ncy = ncy/2+1; ncz = ncz/2+1
+  do l = 1, 2
+  if(l.eq.1) then; mfx=nfx; mfy=nfy; mcx=ncx; mcy=ncy; end if
+  if(l.eq.2) then; mfx=nfx; mfy=nfy; mcx=ncx; mcy=ncy; end if
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+  do ic = 2,mcx-1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 4.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1    ,l)+bphi6(pointb2(lc+1)+kf+1    ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)+bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+  end do
+  end do
+
+  do jc = 2,mcy-1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi6(pointb2(lc)+kc,l) = 5.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*(                                bphi6(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)+bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+
+
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 5.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)+bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+
+  end do
+  do ic = 2,mcx-1; if = 2*ic-1
+    jc = 1; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+    bphi6(pointb2(lc)+kc,l) = 5.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1   ,l)+bphi6(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 5.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1   ,l)+bphi6(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+  end do
+
+    jc = 1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 6.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*(                                bphi6(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = 1 ; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 6.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf+mfx+1,l) )
+
+    jc = mcy; jf = 2*jc-1
+    ic = 1 ; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 6.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*(                                bphi6(pointb2(lc+1)+kf+1   ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+    jc = mcy; jf = 2*jc-1
+    ic = mcx; if = 2*ic-1
+    kf = if+(mcx*2)*jf
+    kc = ic+(mcx+1)*jc
+
+    bphi6(pointb2(lc)+kc,l) = 6.d0*w*bphi6(pointb2(lc+1)+kf,l) + w*( bphi6(pointb2(lc+1)+kf-1 ,l)+ &
+    bphi6(pointb2(lc+1)+kf-mfx-1,l)                                )
+
+  end do
+end do
+
+
+
+nz=(2**NGcr)/NSPLTz+1; ny=(2**NGcr)/NSPLTy+1; nx=(2**NGcr)/NSPLTx+1; n1=2**NGcr+1
+ALLOCATE( temp1(n1,n1,n1), temp2(0:nx,0:ny,0:nz) )
+
+
+do k=0,nz; kk = (ny+1)*k + pointb2(NGcr)
+do j=0,ny; n = j + kk
+  temp2(1 ,j,k) = bphi2(n,1)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi1(n,1) = temp1(1 ,j,k)
+end do;end do
+
+do k=0,nx; kk = (nz+1)*k + pointb2(NGcr)
+do j=0,nz; n = j + kk
+  temp2(k,1,j) = bphi4(n,1)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi3(n,1) = temp1(k,1,j)
+end do;end do
+
+do k=0,ny; kk = (nx+1)*k + pointb2(NGcr)
+do j=0,nx; n = j + kk
+  temp2(j,k,1) = bphi6(n,1)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi5(n,1) = temp1(j,k,1)
+end do;end do
+
+
+do k=0,nz; kk = (ny+1)*k + pointb2(NGcr)
+do j=0,ny; n = j + kk
+  temp2(nx,j,k) = bphi2(n,2)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi1(n,2) = temp1(n1,j,k)
+end do;end do
+
+do k=0,nx; kk = (nz+1)*k + pointb2(NGcr)
+do j=0,nz; n = j + kk
+  temp2(k,ny,j) = bphi4(n,2)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi3(n,2) = temp1(k,n1,j)
+end do;end do
+
+do k=0,ny; kk = (nx+1)*k + pointb2(NGcr)
+do j=0,nx; n = j + kk
+  temp2(j,k,nz) = bphi6(n,2)
+end do;end do
+call collect( temp1,temp2,n1,n1,n1,nx,ny,nz )
+do k=1,n1; kk = n1*(k-1) + pointb1(NGcr)
+do j=1,n1; n = j-1 + kk
+  bphi5(n,2) = temp1(j,k,n1)
+end do;end do
+
+DEALLOCATE(temp1,temp2)
+
+
+nc = (2**NGcr)+1
+w  = 0.125d0
+do lc=NGcr-1,1,-1
+  nf = nc
+  nc = nc/2+1
+  do l = 1, 2
+
+  do jc = 2,nc-1; jf = 2*jc-1
+  do ic = 2,nc-1; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 4.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)+bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 4.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)+bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 4.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)+bphi5(pointb1(lc+1)+kf+nf,l) )
+  end do
+  end do
+
+  do jc = 2,nc-1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*(                              bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)+bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 5.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*(                              bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)+bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 5.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*(                              bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)+bphi5(pointb1(lc+1)+kf+nf,l) )
+
+    ic = nc; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)+bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 5.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)+bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 5.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)+bphi5(pointb1(lc+1)+kf+nf,l) )
+
+  end do
+  do ic = 2,nc-1; if = 2*ic-1
+    jc = 1; jf = 2*jc-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                                                  bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 5.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 5.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf+nf,l) )
+
+    jc = nc; jf = 2*jc-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 5.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi3(pointb1(lc)+kc,l) = 5.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi5(pointb1(lc)+kc,l) = 5.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)                            )
+
+  end do
+
+    jc = 1; jf = 2*jc-1
+    ic = 1; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 6.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*(                              bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                                                  bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 6.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*(                              bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 6.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*(                              bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf+nf,l) )
+
+    jc = 1 ; jf = 2*jc-1
+    ic = nc; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 6.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+ &
+                                                                                                  bphi1(pointb1(lc+1)+kf+nf,l) )
+
+    bphi3(pointb1(lc)+kc,l) = 6.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf+nf,l) )
+
+    bphi5(pointb1(lc)+kc,l) = 6.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf+nf,l) )
+
+    jc = nc; jf = 2*jc-1
+    ic = 1 ; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 6.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*(                              bphi1(pointb1(lc+1)+kf+1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi3(pointb1(lc)+kc,l) = 6.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*(                              bphi3(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi5(pointb1(lc)+kc,l) = 6.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*(                              bphi5(pointb1(lc+1)+kf+1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)                            )
+
+    jc = nc; jf = 2*jc-1
+    ic = nc; if = 2*ic-1
+    kf = if-1+(nc*2-1)*(jf-1)
+    kc = ic-1+(nc)    *(jc-1)
+    bphi1(pointb1(lc)+kc,l) = 6.d0*w*bphi1(pointb1(lc+1)+kf,l) + w*( bphi1(pointb1(lc+1)+kf-1 ,l)+ &
+                                                                     bphi1(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi3(pointb1(lc)+kc,l) = 6.d0*w*bphi3(pointb1(lc+1)+kf,l) + w*( bphi3(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi3(pointb1(lc+1)+kf-nf,l)                            )
+
+    bphi5(pointb1(lc)+kc,l) = 6.d0*w*bphi5(pointb1(lc+1)+kf,l) + w*( bphi5(pointb1(lc+1)+kf-1 ,l)+ &
+    bphi5(pointb1(lc+1)+kf-nf,l)                            )
+
+  end do
+end do
+
+END SUBROUTINE PBsph
+
+
 SUBROUTINE rlft3(data,speq,nn1,nn2,isign) 
 INTEGER isign,nn1,nn2
 COMPLEX*16 data(nn1/2,nn2),speq(nn2)
@@ -1660,3 +2374,39 @@ do idim=1,ndim
   nprev=n*nprev 
 enddo 
 END SUBROUTINE
+
+SUBROUTINE collectrho()
+USE comvar
+USE mpivar
+USE slfgrv
+USE fedvar
+INCLUDE 'mpif.h'
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+double precision :: meanrho(0:NPE-1)
+double precision :: masstot(0:NPE-1)
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
+meanrho(:)=0.d0
+rhomean=0.d0
+masstot(:)=0.d0
+mass1=0.d0
+do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+  meanrho(NRANK)=U(i,j,k,1)+meanrho(NRANK)
+end do;end do;end do
+masstot(NRANK)=meanrho(NRANK)
+meanrho(NRANK)=meanrho(NRANK)/(dble(Ncellx*Ncelly*Ncellz))
+do Nroot=0,NPE-1
+  CALL MPI_BCAST(meanrho(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(masstot(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+do Nroot=0,NPE-1
+    rhomean = meanrho(Nroot)+rhomean
+    mass1 = masstot(Nroot)+mass1
+end do
+rhomean=rhomean/dble(NPE)
+mass1=mass1*dx1*dy1*dz1
+!rhomean=0.d0
+END SUBROUTINE collectrho
+
+

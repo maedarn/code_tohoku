@@ -10,7 +10,7 @@ character(21) :: dir='/Users/maeda/Desktop/'
 
 !-------paramerter------
 nmesh = 1000
-nran=10000000
+nran=100000
 mmin = 0.01d0
 mmax = 150.d0
 Ntot = 100.d0

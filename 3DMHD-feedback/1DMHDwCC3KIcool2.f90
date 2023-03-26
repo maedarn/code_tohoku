@@ -4,13 +4,13 @@
 !*******************************************************!
 
 MODULE comvar
-INTEGER, parameter :: nd=1024+2
+INTEGER, parameter :: nd=2+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
 
 double precision  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 double precision  :: CFL,facdep,tfinal,time
-double precision  :: pmin,pmax,rmin,rmax
+double precision  :: pmin,pmax,rmin,rmax, ratio
 INTEGER :: Ncell,maxstp,nitera
 INTEGER :: iflag,ifchem,ifthrm,ifrad
 INTEGER :: BCx1,BCx2
@@ -22,7 +22,8 @@ double precision, dimension(-1:nd) :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,
 double precision, dimension(-1:nd,2) :: Ntot,NH2,NnC,NCO,tCII
 double precision  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-CHARACTER(33) :: dir='/Users/maeda/Desktop/code/KIcool/'
+!CHARACTER(33) :: dir='/Users/maeda/Desktop/code/KIcool/'
+CHARACTER(61) ::  dir='/Users/maeda/Desktop/Dropbox/code/code/3DMHD-feedback/KIcool/'
 character(4) :: title
 END MODULE comvar
 
@@ -54,7 +55,7 @@ character(3) :: NPENUM
 double precision :: pi,kwave,xp,kz,Bz,vzinp
 integer :: bzstrt , bzfin
 
-open(8,file='INPUT.DAT')
+open(8,file=dir//'INPUT.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  ql1x,ql2x
   read(8,*)  dinit1,dinit2
@@ -92,6 +93,19 @@ open(8,file='INPUT.DAT')
   !B0=1.57734d0
   pinit1=8.810807d3*kb*1.d-3
   pinit2=8.810807d3*kb*1.d-3
+  pinit1=4.17696334d3*kb*1.d-3
+  pinit2=4.17696334d3*kb*1.d-3
+  pinit1=356999.d0*kb*1.d-3
+  pinit2=356999.d0*kb*1.d-3
+
+  pinit1=86.d0*kb*1.d-3*20.d0
+  pinit2=86.d0*kb*1.d-3*20.d0
+  !dinit1 = 1.d2
+  !dinit2 = 1.d2
+  !dinit1 = 35709.999626243880d0
+  !dinit2 = 35709.999626243880d0
+  dinit1 = 86.d0*1.27d0
+  dinit2 = 86.d0*1.27d0
   !gamma=5.0d0/3.d0
   !nu=1.27d0
   !PtoPkb= 1.52d0/1.38d0 * 1.d2
@@ -103,13 +117,15 @@ open(8,file='INPUT.DAT')
 
 
 !UEQ ntot = 5.059326
-goto 10002
- pinit1=5.233297d3*kb*1.d-3; pinit2=pinit1 !セミコロンは文の区切り。
- Hini1=0.4632418d1; pini1=0.9158390d-2; H2ini1=0.6125440d-5; Heini1=0.4171380d0; Hepini1=0.6050313d-3
- Cini1=0.2951134d-7; COini1=0.1783309d-15; Cpini1=0.7082769d-3
+!goto 10002
+!ratio=100.d0/5.059326
+ratio=dinit1/1.27d0/5.059326
+ !pinit1=5.233297d3*kb*1.d-3; pinit2=pinit1 !セミコロンは文の区切り。
+ Hini1=0.4632418d1*ratio; pini1=0.9158390d-2*ratio; H2ini1=0.6125440d-5*ratio; Heini1=0.4171380d0*ratio; Hepini1=0.6050313d-3*ratio
+ Cini1=0.2951134d-7*ratio; COini1=0.1783309d-15*ratio; Cpini1=0.7082769d-3*ratio
  Hini2=Hini1; pini2=pini1; H2ini2=H2ini1; Heini2=Heini1; Hepini2=Hepini1; Cini2=Cini1; COini2=COini1; Cpini2=Cpini1
- dinit1=mH*Hini1+mH*pini1+mH2*H2ini1+mHe*Heini1+mHe*Hepini1; dinit2=dinit1
-10002 continue
+ !dinit1=mH*Hini1+mH*pini1+mH2*H2ini1+mHe*Heini1+mHe*Hepini1; dinit2=dinit1
+!10002 continue
 
 gamma  = ( 5.d0*(Hini1+pini1+Heini1+Hepini1)+7.d0*H2ini1 )/( 3.d0*(Hini1+pini1+Heini1+Hepini1)+5.d0*H2ini1 )
 gammi1 = gamma - 1.0d0; gammi2 = gamma - 2.0d0; gammi3 = gamma - 3.0d0
@@ -265,9 +281,9 @@ open(3,file=dir//'time.DAT')
   read(3,'(d25.17)') t(i)
   end do
 close(3)
-write(*,*) U(200,1) 
-open(100,file='cooling.dat')
-write(100,*) time,U(510,1)/1.27d0,U(510,5)*1.52d0/1.38d0 * 1.d2,U(510,6)
+write(*,*) U(2,1)
+!open(100,file='cooling.dat')
+!write(100,*) time,U(1,1)/1.27d0,U(1,5)*1.52d0/1.38d0 * 1.d2,U(1,6)
 do in10 = 1, maxstp
   if(time.ge.tfinal) goto 9000
   !call SAVEU(nunit,dt,t,0)
@@ -290,19 +306,20 @@ do in10 = 1, maxstp
 !***** Source parts *****
     call SOURCE(dt*0.5d0)
 !***** Godunov parts *****
-    call MHD(dt)
+    !call MHD(dt)
 !***** Source parts *****
     call SOURCE(dt*0.5d0)
 !************************
     time = time + dt
-    write(100,*) time,U(512,1)/1.27d0,U(512,5)*1.52d0/1.38d0 * 1.d2,U(510,7)
+    write(100,*) time,U(1,1)/1.27d0,U(1,5)*1.52d0/1.38d0 * 1.d2,U(1,7)
  end do
+ call SAVEU(nunit,dt,t,0)
  !write(100,*) time,U(512,1)/1.27d0,U(512,5)*1.52d0/1.38d0 * 1.d2,U(512,6)
 end do
 
 9000 continue
-!call SAVEU(nunit,dt,t,1)
-close(100)
+call SAVEU(nunit,dt,t,1)
+!close(100)
 END SUBROUTINE EVOLVE
 
 
@@ -315,16 +332,16 @@ integer :: nunit,msig
 double precision  :: dt,t(10000)
 character(7) filenm
 
-write(filenm,'("title",I3.3)') nunit
+write(filenm,'("titl",I3.3)') nunit
 100 format(E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3, &
          E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3) !再利用のため100をつけておく
 !100 format(E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12, &
  !E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12)
 
-!open(10,file=dir//filenm//'.dat')
-!   write(10,100) ( 0.5d0*(x(i)+x(i-1)),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
-!                   ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=1,Ncell )
-!close(10)
+open(10,file=dir//filenm//'.dat')
+   write(10,100) ( 0.5d0*(x(i)+x(i-1)),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
+                   ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=1,Ncell )
+close(10)
 
 !open(10,file=dir//filenm//'.dat')
 
@@ -344,7 +361,7 @@ write(filenm,'("title",I3.3)') nunit
 !enddo
 ! write(*,*) '*************************************'
 !endif
-write(*,*) U(512,5), nunit
+write(*,*) U(1,5), nunit
 
 t(nunit) = time
 open(3,file=dir//'time.DAT')

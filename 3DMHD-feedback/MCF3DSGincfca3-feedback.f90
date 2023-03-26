@@ -40,7 +40,7 @@ DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
 DOUBLE PRECISION :: Lbox
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
+DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2,bphi3,bphi4,bphi5,bphi6
 END MODULE slfgrv
 
 MODULE fedvar
@@ -52,6 +52,8 @@ double precision :: Msun=2.4d-2 !3*3*3*1.7*10^(18+18+18-24)/2*10^33=3*3*3*1.7/2 
 double precision, dimension(:,:)  , allocatable :: Ustar!(1:10,1:nstar)
 double precision, dimension(:)  , allocatable :: rsphBE,rhosphBE
 double precision :: aq=-39.3178d0,bq=221.997d0,cq=-227.456d0,dq=117.410d0,eq=-30.1511d0,fq=3.06810d0
+DOUBLE PRECISION  :: mass1,rhomean,rrsph3x,rrsph3y,rrsph3z
+!double precision, dimension(:,:,:,:) :: phibc
 END MODULE fedvar
 
 
@@ -151,6 +153,7 @@ INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2,i2y,i2z
 double precision :: rrsph,rrsph3,rsph3,T0=1.d3
+integer :: modegrv
 
 write(*,*)'START'!,NARANK
 open(8,file='/work/maedarn/3DMHD/samplecnv2/INPUT3D.DAT')
@@ -172,7 +175,7 @@ open(8,file='/work/maedarn/3DMHD/samplecnv2/INPUT3D.DAT')
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv,iffed
   read(8,*)  rhoth,LSFE
 close(8)
-write(*,*)'READ',NARANK
+write(*,*)'READ',NRANK
 
 !WNM ntot = 1.024
 !goto 10000
@@ -422,6 +425,9 @@ goto 3225
    !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
    rrsph3 = ql1x*0.2d0
+   rrsph3x=ql1x
+   rrsph3y=ql1y
+   rrsph3z=ql1z
    if(rsph3 .le. rrsph3 ) then
       U(i,j,k,1) = dinit1
       U(i,j,k,2) = 0.0d0
@@ -472,6 +478,7 @@ end do
 !******sph*******
 
 !******sph-BE*******
+goto 3226
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*)'BE-pre'
 
@@ -481,12 +488,127 @@ write(*,*)'BE-pre'
   dinit2=5.d-1
   pinit2=dinit1*kb*(5.d1/T0)
 
-  open(18,file='/work/maedarn/3DMHD/samplecnv2/BE.DAT')
+  rrsph3x=ql1x
+  rrsph3y=ql1y
+  rrsph3z=ql1z
+
+  open(18,file='/work/maedarn/3DMHD/samplecnv2/BE.dat')
   do i=1,isphloop
     read(18,*) rsphBE(i),rhosphBE(i)
   enddo
   close(18)
 
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  write(*,*)'BE-mid'
+
+Hini=1.d0*0.92d0;pini=Hini*3.d-4;H2ini=rhosphBE(isphloop)/2.d0;Hmini=1.d-50
+Heini=rhosphBE(isphloop)/2.d0*0.08d0;Hepini=Heini*3.d-7;Cpini=rhosphBE(isphloop)/2.d0*1.4d-4;COini=Cpini*1.d-50; Cini=Cpini*1.d-50
+
+    do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+     i2  = IST*Ncellx+i
+     i2y = JST*Ncelly+j
+     i2z = KST*Ncellz+k
+     !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+     rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+     isph=int(rsph3/rsphBE(1))
+     rsphBE1=rsphBE(1)
+     rdmod=dmod(rsph3,rsphBE1)
+
+     U(i,j,k,1) = rhosphBE(isph)!*(rdmod/rsphBE(1))+rhosphBE(isph+1)*((rsphBE(1)-rdmod)/rsphBE(1))
+     U(i,j,k,2) = 0.0d0
+     U(i,j,k,3) = 0.0d0
+     U(i,j,k,4) = 0.0d0
+     U(i,j,k,5) = rhosphBE(isph)*cs0*cs0!1.d1*kb*1.d-3*(Hini+pini+U(i,j,k,1)/2.d0+Hmini+Heini+Hepini)!rhosphBE(isph)*cs0*cs0
+     U(i,j,k,6) = binitx1
+     U(i,j,k,7) = binitx1
+     U(i,j,k,8) = binitx1
+     ndH(i,j,k)   = 0.0d0
+     ndp(i,j,k)   = pini
+     ndH2(i,j,k)  = U(i,j,k,1)/2.d0
+     ndHe(i,j,k)  = Heini
+     ndHep(i,j,k) = Hepini
+     ndC(i,j,k)   = Cini
+     ndCO(i,j,k)  = COini
+     ndCp(i,j,k)  = Cpini
+     nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+     ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+     Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+
+    enddo; enddo; enddo
+
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  write(*,*)'BE-pst'
+
+
+
+dinit1=rhosphBE(isphloop)
+!pinit1=rhosphBE(isphloop)*cs0*cs0
+pinit1=1.d1*kb*1.d-3*(Hini+pini+H2ini+Hmini+Heini+Hepini); pinit2=pinit1
+!Hini=0.d0
+!H2ini=rhosphBE(isphloop)/2.d0
+
+!pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
+pinit1=rhosphBE(isphloop)*cs0*cs0; pinit2=pinit1
+!Hini=0.d0; pini=0.9503446d-2; H2ini=rhosphBE(isphloop)/2.d0; Heini=0.9155226d-1; Hepini=0.5655353d-3
+!Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
+dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
+
+gamma  = ( 5.d0*(Hini+pini+Heini+Hepini)+7.d0*H2ini )/( 3.d0*(Hini+pini+Heini+Hepini)+5.d0*H2ini )
+gammi1 = gamma - 1.0d0; gammi2 = gamma - 2.0d0; gammi3 = gamma - 3.0d0
+gampl1 = gamma + 1.0d0; gampl2 = gamma + 2.0d0; gampl3 = gamma + 3.0d0
+pi     = 3.14159265358979323846d0
+
+
+!pmin = 1.829797d0 * 8.6336d0   !p/kb=1.d3
+!pmax = 1.d10  !604.5288d0 !p/kb =7.d4
+!rmin = 0.1949628d0
+!rmax = 1.d10  !4168.669d0*1.27d0
+pmin = 0.5d0 * 8.6336d0
+pmax = 3.d5 * 8.6336d-3
+rmin = 0.1d0
+rmax = 1.d10  !4168.669d0*1.27d0
+
+ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
+ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
+
+!***** for constrained boundary *****!
+!BBRV_cm(1)=0.d0 !H
+!BBRV_cm(2)=pini !p
+!BBRV_cm(3)=rhosphBE(isphloop)/2.d0 !H2
+!BBRV_cm(4)=Heini !He
+!BBRV_cm(5)=Hepini !Hep
+!BBRV_cm(8)=Cpini !Cp
+!BBRV_cm(6)=Cini  !C
+!BBRV_cm(7)=COini !CO
+
+vinitx1=0.d0
+vinity1=0.d0
+vinitz1=0.d0
+vinitx2=0.d0
+vinity2=0.d0
+vinitz2=0.d0
+
+dBC = mH*BBRV_cm(1) + mH*BBRV_cm(2) + mH2*BBRV_cm(3) + mHe*BBRV_cm(4) + mHe*BBRV_cm(5)
+BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC;     BBRV(1,2,2) =  dBC
+BBRV(2,1,1) = vinitx1; BBRV(2,2,1) = dBC*vinitx1; BBRV(2,1,2) = -vinitx1; BBRV(2,2,2) = -dBC*vinitx1
+BBRV(3,1,1) = vinity1; BBRV(3,2,1) = dBC*vinity1; BBRV(3,1,2) =  vinity1; BBRV(3,2,2) =  dBC*vinity1
+BBRV(4,1,1) = vinitz1; BBRV(4,2,1) = dBC*vinitz1; BBRV(4,1,2) =  vinitz1; BBRV(4,2,2) =  dBC*vinitz1
+BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(6,1,1) = binitx1; BBRV(6,2,1) = binitx1; BBRV(6,1,2) = binitx2; BBRV(6,2,2) = binitx2
+BBRV(7,1,1) = binity1; BBRV(7,2,1) = binity1; BBRV(7,1,2) = binity2; BBRV(7,2,2) = binity2
+BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2) = binitz2
+WRITE(*,*)gammi1,rhosphBE(isphloop)/2.d0,pinit1,'gammi1'
+3226 continue
+!******sph-BE*******
+
+!******test-rad*******
+Hini=1.d2;pini=Hini*3.d-4;H2ini=1.d-20;Hmini=1.d-50
+Heini=0.675d0;Hepini=0.5655353d-3;Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
+pinit1=4.17696334d3*kb*1.d-3; pinit2=pinit1
 
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    i2  = IST*Ncellx+i
@@ -498,17 +620,17 @@ write(*,*)'BE-pre'
    rsphBE1=rsphBE(1)
    rdmod=dmod(rsph3,rsphBE1)
 
-   U(i,j,k,1) = rhosphBE(isph)!*(rdmod/rsphBE(1))+rhosphBE(isph+1)*((rsphBE(1)-rdmod)/rsphBE(1))
+   U(i,j,k,1) = dinit1!rhosphBE(isph)!*(rdmod/rsphBE(1))+rhosphBE(isph+1)*((rsphBE(1)-rdmod)/rsphBE(1))
    U(i,j,k,2) = 0.0d0
    U(i,j,k,3) = 0.0d0
    U(i,j,k,4) = 0.0d0
-   U(i,j,k,5) = U(i,j,k,1)*cs0*cs0
-   U(i,j,k,6) = 0.0d0
-   U(i,j,k,7) = 0.0d0
-   U(i,j,k,8) = 0.0d0
-   ndH(i,j,k)   = 0.0d0
+   U(i,j,k,5) = pinit1!rhosphBE(isph)*cs0*cs0!1.d1*kb*1.d-3*(Hini+pini+U(i,j,k,1)/2.d0+Hmini+Heini+Hepini)!rhosphBE(isph)*cs0*cs0
+   U(i,j,k,6) = binitx1
+   U(i,j,k,7) = binitx1
+   U(i,j,k,8) = binitx1
+   ndH(i,j,k)   = Hini
    ndp(i,j,k)   = pini
-   ndH2(i,j,k)  = U(i,j,k,1)/2.d0
+   ndH2(i,j,k)  = H2ini
    ndHe(i,j,k)  = Heini
    ndHep(i,j,k) = Hepini
    ndC(i,j,k)   = Cini
@@ -521,9 +643,60 @@ write(*,*)'BE-pre'
 
   enddo; enddo; enddo
 
+
+
+BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
+
+gamma  = ( 5.d0*(Hini+pini+Heini+Hepini)+7.d0*H2ini )/( 3.d0*(Hini+pini+Heini+Hepini)+5.d0*H2ini )
+gammi1 = gamma - 1.0d0; gammi2 = gamma - 2.0d0; gammi3 = gamma - 3.0d0
+gampl1 = gamma + 1.0d0; gampl2 = gamma + 2.0d0; gampl3 = gamma + 3.0d0
+pi     = 3.14159265358979323846d0
+
+
+!pmin = 1.829797d0 * 8.6336d0   !p/kb=1.d3
+!pmax = 1.d10  !604.5288d0 !p/kb =7.d4
+!rmin = 0.1949628d0
+!rmax = 1.d10  !4168.669d0*1.27d0
+pmin = 0.5d0 * 8.6336d0
+pmax = 3.d5 * 8.6336d-3
+rmin = 0.1d0
+rmax = 1.d10  !4168.669d0*1.27d0
+
+ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
+ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
+
+!***** for constrained boundary *****!
+!BBRV_cm(1)=0.d0 !H
+!BBRV_cm(2)=pini !p
+!BBRV_cm(3)=rhosphBE(isphloop)/2.d0 !H2
+!BBRV_cm(4)=Heini !He
+!BBRV_cm(5)=Hepini !Hep
+!BBRV_cm(8)=Cpini !Cp
+!BBRV_cm(6)=Cini  !C
+!BBRV_cm(7)=COini !CO
+
+vinitx1=0.d0
+vinity1=0.d0
+vinitz1=0.d0
+vinitx2=0.d0
+vinity2=0.d0
+vinitz2=0.d0
+
+dBC = mH*BBRV_cm(1) + mH*BBRV_cm(2) + mH2*BBRV_cm(3) + mHe*BBRV_cm(4) + mHe*BBRV_cm(5)
+BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC;     BBRV(1,2,2) =  dBC
+BBRV(2,1,1) = vinitx1; BBRV(2,2,1) = dBC*vinitx1; BBRV(2,1,2) = -vinitx1; BBRV(2,2,2) = -dBC*vinitx1
+BBRV(3,1,1) = vinity1; BBRV(3,2,1) = dBC*vinity1; BBRV(3,1,2) =  vinity1; BBRV(3,2,2) =  dBC*vinity1
+BBRV(4,1,1) = vinitz1; BBRV(4,2,1) = dBC*vinitz1; BBRV(4,1,2) =  vinitz1; BBRV(4,2,2) =  dBC*vinitz1
+BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(6,1,1) = binitx1; BBRV(6,2,1) = binitx1; BBRV(6,1,2) = binitx2; BBRV(6,2,2) = binitx2
+BBRV(7,1,1) = binity1; BBRV(7,2,1) = binity1; BBRV(7,1,2) = binity2; BBRV(7,2,2) = binity2
+BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2) = binitz2
+
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*)'BE-pst'
-!******sph-BE*******
+!******test-rad*******
 
 
 
@@ -615,6 +788,9 @@ if(nunit.eq.1) goto 120
 IF(BCx1.eq.4) THEN; IF(IST.EQ.0)        LEFT = MPI_PROC_NULL; END IF
 IF(BCx2.eq.4) THEN; IF(IST.EQ.NSPLTx-1) RIGT = MPI_PROC_NULL; END IF
 
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*)'CC-pre'
+
 call CC(4,0.d0)
 
 do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
@@ -624,13 +800,31 @@ do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
   Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; NCO(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
 end do; end do; end do
 
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*)'rad-pre'
+
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*)'gr-pre'
 
 if(ifgrv.eq.2) then
-  N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
-  Lbox=ql1x+ql2x; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
+  N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1
+
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  write(*,*)'gr-pre-BC-rho'
+  CALL BC_MPI(1,1)
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  write(*,*)'gr-pst-BC-rho'
+
+  Lbox=ql1x+ql2x
+  modegrv=1
+  call GRAVTY(0.d0,modegrv)
+  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  write(*,*)'gr-mid'
+  modegrv=2
+  call GRAVTY(0.d0,modegrv)
+
+
 end if
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 write(*,*)'gr-pst'
@@ -761,7 +955,7 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
     call SOURCE(0.5d0*dt)
     !if(iffed.eq.2) then; call feedback(dt,1); end if
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
 !***** Godunov parts *****
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
@@ -789,7 +983,7 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     end if
 1000 continue
     DEALLOCATE(Bcc)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
 !***** CT part *****
     ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
     call CC(1,dt)
@@ -859,8 +1053,8 @@ write(filenm,'(I3.3)') nunit
 open(10,FILE='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
-  do k = 1, Ncellz+1
-  do j = 1, Ncelly+1
+  do k = -1, Ncellz+2
+  do j = -1, Ncelly+2
 !    write(10) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
 !               sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
 !               sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
@@ -870,7 +1064,7 @@ open(10,FILE='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat',FORM='UNF
                sngl(U(i,j,k,6)),sngl(U(i,j,k,7)),sngl(U(i,j,k,8)), &
                sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
                sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
-               sngl(Phi(i,j,k)),i=1,Ncellx+1 )
+               sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
   end do
   end do
 
@@ -979,6 +1173,8 @@ DOUBLE PRECISION  :: VECU
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 
 IF(iwx.EQ.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_x-pre-rho'
   CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
 !********************************  BC for the leftsides of domains  *****
@@ -1071,10 +1267,14 @@ IF(iwx.EQ.1) THEN
   END DO
 !************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_x-pst-rho'
 END IF
 
 
 IF(iwy.EQ.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_y-pre-rho'
   CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
 !*************************************  BC for the downsides of domains  ****
@@ -1104,10 +1304,14 @@ IF(iwy.EQ.1) THEN
   END DO
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_y-pst-rho'
 END IF
 
 
 IF(iwz.EQ.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_z-pre-rho'
   CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
 !*************************************  BC for the downsides of domains  ****
@@ -1128,7 +1332,7 @@ IF(iwz.EQ.1) THEN
                       U(-1,-1,Ncellz+1     ,N_MPI(K)),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 
     IF((BCz2.eq.1).and.(KST.eq.NSPLTz-1)) THEN
-      DO KZ = Ncellz+1, Ncellz+N_o; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+      DO KZ = Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
         U(IX,JY,KZ,N_MPI(K)) = U(IX,JY,Ncellz,N_MPI(K))
       END DO;END DO;END DO
     END IF
@@ -1136,6 +1340,8 @@ IF(iwz.EQ.1) THEN
   END DO
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_z-pst-rho'
 END IF
 
 END SUBROUTINE
@@ -1191,6 +1397,8 @@ IF(iwx.eq.1) THEN
   END IF
 !********************************************************  BC for Bcc ******
   IF(N_MPI(11).eq.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_x-pre'
     DO K = 1, 3
       CALL MPI_SENDRECV(Bcc(Ncellx+1-N_ol,-1,-1,K),1,VECU,RIGT,1, &
                         Bcc(       1-N_ol,-1,-1,K),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
@@ -1233,6 +1441,9 @@ IF(iwx.eq.1) THEN
       END IF
 
     END DO
+
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_x-pst'
   END IF
 !********************************************************  BC for Blg ******
   IF(N_MPI(12).eq.1) THEN
@@ -1409,12 +1620,13 @@ IF(iwy.eq.1) THEN
   END IF
 !********************************************************  BC for Bcc ******
   IF(N_MPI(11).eq.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_y-pre'
     DO K = 1, 3
       CALL MPI_SENDRECV(Bcc(-1,Ncelly+1-N_ol,-1,K),1,VECU,TOP ,1, &
                         Bcc(-1,       1-N_ol,-1,K),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Bcc(-1,1            ,-1,K),1,VECU,BOTM,1, &
                         Bcc(-1,Ncelly+1     ,-1,K),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
 
     IF((BCy1.eq.1).and.(JST.eq.0)) THEN
         DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
@@ -1428,6 +1640,10 @@ IF(iwy.eq.1) THEN
         END DO;END DO;END DO
     END IF
 
+    END DO
+
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_y-pst'
   END IF
 !********************************************************  BC for Blg ******
   IF(N_MPI(12).eq.1) THEN
@@ -1436,7 +1652,6 @@ IF(iwy.eq.1) THEN
                         Blg(-1,       1-N_ol,-1,K),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Blg(-1,1            ,-1,K),1,VECU,BOTM,1, &
                         Blg(-1,Ncelly+1     ,-1,K),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
 
     IF((BCy1.eq.1).and.(JST.eq.0)) THEN
       DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
@@ -1449,7 +1664,8 @@ IF(iwy.eq.1) THEN
         Blg(IX,JY,KZ,K) = Blg(IX,Ncelly,KZ,K)
       END DO;END DO;END DO
     END IF
-
+    
+    END DO
   END IF
 !********************************************************  BC for Vfc ******
   IF(N_MPI(13).eq.1) THEN
@@ -1459,7 +1675,6 @@ IF(iwy.eq.1) THEN
                         Vfc(-1,       1-N_ol,-1,NV(K)),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Vfc(-1,1            ,-1,NV(K)),1,VECU,BOTM,1, &
                         Vfc(-1,Ncelly+1     ,-1,NV(K)),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
 
     IF((BCy1.eq.1).and.(JST.eq.0)) THEN
       DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
@@ -1472,6 +1687,8 @@ IF(iwy.eq.1) THEN
         Vfc(IX,JY,KZ,NV(K)) = Vfc(IX,Ncelly,KZ,NV(K))
       END DO;END DO;END DO
     END IF
+    
+    END DO
 
   END IF
 !***********************************  BC for chemical species  **********
@@ -1560,12 +1777,14 @@ IF(iwz.eq.1) THEN
   END IF
 !********************************************************  BC for Bcc ******
   IF(N_MPI(11).eq.1) THEN
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_z-pre'
     DO K = 1, 3
       CALL MPI_SENDRECV(Bcc(-1,-1,Ncellz+1-N_ol,K),1,VECU,UP  ,1, &
                         Bcc(-1,-1,       1-N_ol,K),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Bcc(-1,-1,1            ,K),1,VECU,DOWN,1, &
                         Bcc(-1,-1,Ncellz+1     ,K),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
+
 
     IF((BCz1.eq.1).and.(KST.eq.0)) THEN
         DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
@@ -1578,6 +1797,10 @@ IF(iwz.eq.1) THEN
           Bcc(IX,JY,KZ,K) = Bcc(IX,JY,Ncellz,K)  !!! divfree
         END DO;END DO;END DO
     END IF
+
+    END DO
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'sub-BC_PMI_OT_z-pst'
   END IF
 !********************************************************  BC for Blg ******
   IF(N_MPI(12).eq.1) THEN
@@ -1586,7 +1809,7 @@ IF(iwz.eq.1) THEN
                         Blg(-1,-1,       1-N_ol,K),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Blg(-1,-1,1            ,K),1,VECU,DOWN,1, &
                         Blg(-1,-1,Ncellz+1     ,K),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
+
 
     IF((BCz1.eq.1).and.(KST.eq.0)) THEN
       DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
@@ -1599,6 +1822,8 @@ IF(iwz.eq.1) THEN
         Blg(IX,JY,KZ,K) = Blg(IX,JY,Ncellz,K)
       END DO;END DO;END DO
     END IF
+
+    END DO
   END IF
 !********************************************************  BC for Vfc ******
   IF(N_MPI(13).eq.1) THEN
@@ -1608,7 +1833,6 @@ IF(iwz.eq.1) THEN
                         Vfc(-1,-1,       1-N_ol,NV(K)),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
       CALL MPI_SENDRECV(Vfc(-1,-1,1            ,NV(K)),1,VECU,DOWN,1, &
                         Vfc(-1,-1,Ncellz+1     ,NV(K)),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-    END DO
 
     IF((BCz1.eq.1).and.(KST.eq.0)) THEN
       DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
@@ -1621,6 +1845,8 @@ IF(iwz.eq.1) THEN
         Vfc(IX,JY,KZ,NV(K)) = Vfc(IX,JY,Ncellz,NV(K))
       END DO;END DO;END DO
     END IF
+    END DO
+
   END IF
 !***********************************  BC for chemical species  **********
   IF(N_MPI(10).eq.10) THEN
@@ -1709,9 +1935,11 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   ix = iwx*i    + iwy*j + iwz*k
   xlag(i,j,k) = xelr(ix)
 end do; end do; end do
-
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD1'
 call RHS(dt,dxelr)
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD2'
 call MOC(dt,xelr)
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD3'
 
 !do k = 1, Ncellz; do j = 1, Ncelly;do i = 1, Ncellx
 !  U(i,j,k,2) = U(i,j,k,2) * U(i,j,k,1); U(i,j,k,3) = U(i,j,k,3) * U(i,j,k,1)
@@ -1774,6 +2002,8 @@ double precision  :: depend1,depend2,cm
 double precision  :: dm(-1:ndmax)
 double precision  :: ndHm,ndpm,ndHem,ndHepm,ndH2m
 
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS1'
+
 itrn = 5
 
 if(iwx.eq.1) then; Ncell = Ncellx; Ncm = Ncelly; Ncl = Ncellz; BT1 = 2; BT2 = 3; VN = 2; end if
@@ -1788,6 +2018,8 @@ N_MPI(3)  = 5
 CALL BC_MPI(2,1)
 
 N_MPI(10) = 10; CALL BC_MPI_OT(2,1); N_MPI(10) = 0 ! for chemical boundary
+
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS2'
 
 DO Lnum = 1, Ncl
 DO Mnum = 1, Ncm
@@ -1847,6 +2079,8 @@ do i = 0, Ncell
 
 end do
 
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS3'
+
 !***** store lagrangian mass *****
 do i = 0, Ncell
   ix  = iwx*i    + iwy*Lnum + iwz*Mnum
@@ -1897,6 +2131,7 @@ end do
 END DO
 END DO
 
+!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS4'
 END SUBROUTINE RHS
 
 
@@ -2151,7 +2386,11 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( U(ixp,jyp,kzp,k)-U(ixm,jym,kzm,k) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
+  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
+  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
+  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2176,7 +2415,11 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Bcc(ixp,jyp,kzp,kbc)-Bcc(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
+  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
+  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
+  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2201,7 +2444,11 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Blg(ixp,jyp,kzp,kbc)-Blg(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
+  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
+  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
+  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2226,7 +2473,11 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Vfc(ixp,jyp,kzp,kbc)-Vfc(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
+  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
+  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
+  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2260,7 +2511,11 @@ do i = i_sta, Ncell+i_end
   jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
   kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
 
-  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
+  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
+  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
+  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
 
   delp = ndH(ixp,jyp,kzp)-ndH(ix ,jy ,kz ); delm = ndH(ix ,jy ,kz )-ndH(ixm,jym,kzm)
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps))
@@ -2550,6 +2805,7 @@ USE comvar
 USE mpivar
 integer :: mode
 double precision  :: dt,dS
+INCLUDE 'mpif.h'
 
 if(mode.eq.1) then !FCVF & FCMFBC
   N_MPI(20) = 3
@@ -2602,15 +2858,21 @@ if(mode.eq.3) then !update FCMF
 end if
 
 if(mode.eq.4) then !CCMF
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*)'sub-CC-pre'
   ALLOCATE(Bcc(-1:ndx,-1:ndy,-1:ndz,3))
   do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
     Bcc(i,j,k,1) = 0.5d0 * ( U(i,j,k,6) + U(i+1,j,k,6) )
     Bcc(i,j,k,2) = 0.5d0 * ( U(i,j,k,7) + U(i,j+1,k,7) )
     Bcc(i,j,k,3) = 0.5d0 * ( U(i,j,k,8) + U(i,j,k+1,8) )
   end do; end do; end do
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*)'sub-CC-pst'
   N_MPI(10) = 0; N_MPI(11) = 1; N_MPI(12) = 0; N_MPI(13) = 0
   iwx=1; iwy=1; iwz=1; CALL BC_MPI_OT(2,1)
   N_MPI(11) = 0
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+write(*,*)'sub-CC-BC'
 end if
 
 END SUBROUTINE CC

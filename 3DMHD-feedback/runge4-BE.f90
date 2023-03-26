@@ -20,7 +20,7 @@ program main
   xstart=0.d0
   vstart=0.d0
   tstart=0.d0
-  dt=0.01d0
+  dt=0.02d0
   iend=5000
   cs0=0.19d0/0.953d0
   rhoc=1.d0*1.d4*2.d0

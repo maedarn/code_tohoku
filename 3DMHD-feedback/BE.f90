@@ -10,7 +10,7 @@ PROGRAM MAIN
   pi=3.1415926535d0
   loop=500
   rhoc=1.d4
-  dr=0.01d0
+  dr=0.05d0
 
   allocate(rho(0:loop),M(0:loop),lnrho(0:loop),r(0:loop))
   rho(0)=rhoc
@@ -24,7 +24,7 @@ PROGRAM MAIN
   rho(i)=dexp(lnrho(i))
   enddo
 
-  open(20,file = dir//'BE.dat')
+  open(20,file = dir//'BE-2.dat')
   do i=0,loop
   write(20,*) r(i),',',M(i),',',rho(i),',',lnrho(i)
   end do
