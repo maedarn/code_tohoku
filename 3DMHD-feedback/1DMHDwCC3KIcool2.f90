@@ -4,18 +4,16 @@
 !*******************************************************!
 
 MODULE comvar
-INTEGER, parameter :: nd=1024+2
+INTEGER, parameter :: nd=2+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
-integer, dimension(-1:nd,8) :: is
-double precision, dimension(-1:nd,4) :: ns
 
 double precision  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 double precision  :: CFL,facdep,tfinal,time
-double precision  :: pmin,pmax,rmin,rmax
+double precision  :: pmin,pmax,rmin,rmax, ratio
 INTEGER :: Ncell,maxstp,nitera
 INTEGER :: iflag,ifchem,ifthrm,ifrad
-INTEGER :: BCx1,BCx2,nsink
+INTEGER :: BCx1,BCx2
 
 double precision, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 double precision, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0
@@ -24,8 +22,9 @@ double precision, dimension(-1:nd) :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,
 double precision, dimension(-1:nd,2) :: Ntot,NH2,NnC,NCO,tCII
 double precision  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-CHARACTER(58) :: dir='/Users/maeda/Desktop/Dropbox/code/code/1DMHDimprv/freebnd/'
-
+!CHARACTER(33) :: dir='/Users/maeda/Desktop/code/KIcool/'
+CHARACTER(61) ::  dir='/Users/maeda/Desktop/Dropbox/code/code/3DMHD-feedback/KIcool/'
+character(4) :: title
 END MODULE comvar
 
 
@@ -34,7 +33,7 @@ END MODULE comvar
 !======================================================================*
 
 PROGRAM MAIN
-!coment
+
 call INITIA
 call EVOLVE
 
@@ -64,32 +63,69 @@ open(8,file=dir//'INPUT.DAT')
   read(8,*)  vinity1,vinity2
   read(8,*)  vinitz1,vinitz2
   read(8,*)  pinit1,pinit2
+!     write(*,*)'a'
   read(8,*)  binitx1,binitx2
   read(8,*)  binity1,binity2
   read(8,*)  binitz1,binitz2
-  read(8,*)  Hini1,Hini2
+!     write(*,*)'a'
+     read(8,*)  Hini1,Hini2
+!        write(*,*)'a'
   read(8,*)  pini1,pini2
+!     write(*,*)'a'
   read(8,*)  H2ini1,H2ini2
   read(8,*)  Heini1,Heini2
   read(8,*)  Hepini1,Hepini2
   read(8,*)  Cini1,Cini2
   read(8,*)  COini1,COini2
   read(8,*)  Cpini1,Cpini2
+!     write(*,*)'a'
   read(8,*)  CFL,facdep
+!   write(*,*)'a'
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2
   read(8,*)  iflag,ifchem,ifthrm,ifrad
-close(8)
+  !read(8,*) title
+  close(8)
+
+
+  !rho0=1.0d0
+  !v0=48.89d0
+  !B0=1.57734d0
+  pinit1=8.810807d3*kb*1.d-3
+  pinit2=8.810807d3*kb*1.d-3
+  pinit1=4.17696334d3*kb*1.d-3
+  pinit2=4.17696334d3*kb*1.d-3
+  pinit1=356999.d0*kb*1.d-3
+  pinit2=356999.d0*kb*1.d-3
+
+  pinit1=86.d0*kb*1.d-3*20.d0
+  pinit2=86.d0*kb*1.d-3*20.d0
+  !dinit1 = 1.d2
+  !dinit2 = 1.d2
+  !dinit1 = 35709.999626243880d0
+  !dinit2 = 35709.999626243880d0
+  dinit1 = 86.d0*1.27d0
+  dinit2 = 86.d0*1.27d0
+  !gamma=5.0d0/3.d0
+  !nu=1.27d0
+  !PtoPkb= 1.52d0/1.38d0 * 1.d2
+  !metal=1.d0
+  !dx=1.d0
+  !dt=0.001d0
+  !tstep=1000
+  !M=10.d0
 
 
 !UEQ ntot = 5.059326
-goto 10002
- pinit1=5.233297d3*kb*1.d-3; pinit2=pinit1 !セミコロンは文の区切り。
- Hini1=0.4632418d1; pini1=0.9158390d-2; H2ini1=0.6125440d-5; Heini1=0.4171380d0; Hepini1=0.6050313d-3
- Cini1=0.2951134d-7; COini1=0.1783309d-15; Cpini1=0.7082769d-3
+!goto 10002
+!ratio=100.d0/5.059326
+ratio=dinit1/1.27d0/5.059326
+ !pinit1=5.233297d3*kb*1.d-3; pinit2=pinit1 !セミコロンは文の区切り。
+ Hini1=0.4632418d1*ratio; pini1=0.9158390d-2*ratio; H2ini1=0.6125440d-5*ratio; Heini1=0.4171380d0*ratio; Hepini1=0.6050313d-3*ratio
+ Cini1=0.2951134d-7*ratio; COini1=0.1783309d-15*ratio; Cpini1=0.7082769d-3*ratio
  Hini2=Hini1; pini2=pini1; H2ini2=H2ini1; Heini2=Heini1; Hepini2=Hepini1; Cini2=Cini1; COini2=COini1; Cpini2=Cpini1
- dinit1=mH*Hini1+mH*pini1+mH2*H2ini1+mHe*Heini1+mHe*Hepini1; dinit2=dinit1
-10002 continue
+ !dinit1=mH*Hini1+mH*pini1+mH2*H2ini1+mHe*Heini1+mHe*Hepini1; dinit2=dinit1
+!10002 continue
 
 gamma  = ( 5.d0*(Hini1+pini1+Heini1+Hepini1)+7.d0*H2ini1 )/( 3.d0*(Hini1+pini1+Heini1+Hepini1)+5.d0*H2ini1 )
 gammi1 = gamma - 1.0d0; gammi2 = gamma - 2.0d0; gammi3 = gamma - 3.0d0
@@ -245,10 +281,12 @@ open(3,file=dir//'time.DAT')
   read(3,'(d25.17)') t(i)
   end do
 close(3)
-
+write(*,*) U(2,1)
+!open(100,file='cooling.dat')
+!write(100,*) time,U(1,1)/1.27d0,U(1,5)*1.52d0/1.38d0 * 1.d2,U(1,6)
 do in10 = 1, maxstp
   if(time.ge.tfinal) goto 9000
-  call SAVEU(nunit,dt,t,0)
+  !call SAVEU(nunit,dt,t,0)
 
   do in20 = 1, nitera
     if(time.ge.tfinal) goto 9000
@@ -256,66 +294,45 @@ do in10 = 1, maxstp
     dt = tfinal
     call Couran(tLMT)
     dt = dmin1( dt, CFL * tLMT )
-    
+
     if(ifthrm.eq.2) then
       call Stblty(tLMT)
       dt = dmin1( dt, 0.2d0 * tLMT )
     end if
-    
+
     if(mod(in20,10).eq.1) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
 
 !***** Source parts *****
     call SOURCE(dt*0.5d0)
 !***** Godunov parts *****
-    call MHD(dt)
+    !call MHD(dt)
 !***** Source parts *****
     call SOURCE(dt*0.5d0)
 !************************
     time = time + dt
-  end do
+    write(100,*) time,U(1,1)/1.27d0,U(1,5)*1.52d0/1.38d0 * 1.d2,U(1,7)
+ end do
+ call SAVEU(nunit,dt,t,0)
+ !write(100,*) time,U(512,1)/1.27d0,U(512,5)*1.52d0/1.38d0 * 1.d2,U(512,6)
 end do
 
 9000 continue
 call SAVEU(nunit,dt,t,1)
-
+!close(100)
 END SUBROUTINE EVOLVE
 
 
 !----------------------------------------------------------- SAVE VARIABLES ---!
-
-SUBROUTINE sink
-USE comvar
-integer ix
-
-is(:)=0
-nsink=1
-do ix=1,nd-2
-if(U(ix,1) > 1.d4) then
-is(nsink)=ix
-nsink=nsink+1
-endif
-enddo
-
-do ix=1,nsink
-if(U(is(ix),1)<U(is(ix+1),1) .and. U(is(ix),1)<U(is(ix-1),1)) then
-is(ix)=0
-endif
-if(((U(is(ix+1),2)-U(is(ix),2))<0.d0) .and. ((U(is(ix-1),2)-U(is(ix),2))<0.d0)) then
-is(ix)=0
-endif
-enddo
-END SUBROUTINE sink
-
 
 SUBROUTINE SAVEU(nunit,dt,t,msig)
 USE comvar
 
 integer :: nunit,msig
 double precision  :: dt,t(10000)
-character(5) filenm
+character(7) filenm
 
-write(filenm,'("bw",I3.3)') nunit
+write(filenm,'("titl",I3.3)') nunit
 100 format(E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3, &
          E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3) !再利用のため100をつけておく
 !100 format(E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12, &
@@ -325,6 +342,8 @@ open(10,file=dir//filenm//'.dat')
    write(10,100) ( 0.5d0*(x(i)+x(i-1)),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
                    ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=1,Ncell )
 close(10)
+
+!open(10,file=dir//filenm//'.dat')
 
 !write(*,*) U(-1,1),U(-1,2),U(-1,3),U(-1,4),U(-1,5),U(-1,6),U(-1,7),U(-1,8)
 !write(*,*) U(0,1),U(0,2),U(0,3),U(0,4),U(0,5),U(0,6),U(0,7),U(0,8)
@@ -342,7 +361,7 @@ close(10)
 !enddo
 ! write(*,*) '*************************************'
 !endif
-!write(*,*) U(512,5), nunit
+write(*,*) U(1,5), nunit
 
 t(nunit) = time
 open(3,file=dir//'time.DAT')
@@ -395,6 +414,8 @@ if(BC2.eq.3) then
   Q(Ncell+1) = Q(1)
   Q(Ncell+2) = Q(2)
 end if
+
+
 END SUBROUTINE BC
 
 
@@ -790,7 +811,7 @@ do i = 1,Ncell
   dxlag(i) = xlag(i)-xlag(i-1)
 end do
 CALL BC(Ncell,dxlag(-1),BCx1,BCx2)
-
+  
 CALL BC(Ncell,U(-1,1),BCx1,BCx2); call VLIMIT(Ncell,U(-1,1),grdU(-1,1),dxlag,0,1)
 CALL BC(Ncell,U(-1,3),BCx1,BCx2); call VLIMIT(Ncell,U(-1,3),grdU(-1,3),dxlag,0,1)
 CALL BC(Ncell,U(-1,4),BCx1,BCx2); call VLIMIT(Ncell,U(-1,4),grdU(-1,4),dxlag,0,1)
@@ -869,7 +890,7 @@ double precision :: ndpold,ndHold,ndH2old,ndHeold,ndHepold,ndCold,ndCpold,ndCOol
 double precision :: zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec, &
           kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep
 double precision :: temp1,temp2,temp3,omeps,eps
-double precision :: Tn(-1:nd),Pn(-1:nd),Qx(-1:nd)
+double precision :: Tn(-1:nd),Pn(-1:nd),Qx(-1:nd),N(-1:nd)
 double precision :: rtTx,tcd,CooL
 
 do i = 1, Ncell
@@ -891,8 +912,8 @@ CALL BC(Ncell,ndp(-1)  ,BCx1,BCx2)
 CALL BC(Ncell,ndH2(-1) ,BCx1,BCx2)
 CALL BC(Ncell,ndHe(-1) ,BCx1,BCx2)
 CALL BC(Ncell,ndHep(-1),BCx1,BCx2)
-
 do i = 0, Ncell+1
+   N(i) = U(i,1)/1.27d0
   Tn(i) = U(i,5)/( kb*(ndp(i)+ndH(i)+ndH2(i)+ndHe(i)+ndHep(i)) )
   Pn(i) = U(i,5)
 end do
@@ -902,13 +923,13 @@ do i = 0, Ncell
 end do
 do i = 1, Ncell
 !----- Cooling ---------------------------------------------------------
-  Call Fcool( CooL,Tn(i),i)
+  Call Fcool( CooL,N(i),Tn(i))
   gammi1 =   3.d0*(ndH(i)+ndp(i)+ndHe(i)+ndHep(i))+5.d0*ndH2(i)
   gammi1 = ( 2.d0*(ndH(i)+ndp(i)+ndHe(i)+ndHep(i))+2.d0*ndH2(i) )/gammi1
   if( dt .le. 0.2d0*Pn(i)/(gammi1*dabs(CooL)) ) then
     U(i,5) = U(i,5) - gammi1*CooL*dt*0.5d0 !explicit
   else
-    Call IMC( U(i,5),ndH(i)+ndp(i)+ndHe(i)+ndHep(i)+ndH2(i),dt*0.5d0,i ) !implicit
+    Call IMC( U(i,5),ndH(i)+ndp(i)+ndHe(i)+ndHep(i)+ndH2(i),dt*0.5d0,N(i) ) !implicit
   end if
 !----- Conduction ------------------------------------------------------
   U(i,5) = U(i,5) + gammi1*dt*0.5d0*(Qx(i)-Qx(i-1))/dx(i)
@@ -928,13 +949,13 @@ do i = 0, Ncell
 end do
 do i = 1, Ncell
 !----- Cooling ---------------------------------------------------------
-  Call Fcool( CooL,Tn(i),i)
+  Call Fcool( CooL,N(i),Tn(i))
   gammi1 =   3.d0*(ndH(i)+ndp(i)+ndHe(i)+ndHep(i))+5.d0*ndH2(i)
   gammi1 = ( 2.d0*(ndH(i)+ndp(i)+ndHe(i)+ndHep(i))+2.d0*ndH2(i) )/gammi1
   if( dt .le. 0.2d0*Pn(i)/(gammi1*dabs(CooL)) ) then
     U(i,5) = Pn(i) - gammi1*CooL*dt !explicit
-  else
-    Call IMC( Pn(i),ndH(i)+ndp(i)+ndHe(i)+ndHep(i)+ndH2(i),dt,i ) !implicit
+ else
+    Call IMC( Pn(i),ndH(i)+ndp(i)+ndHe(i)+ndHep(i)+ndH2(i),dt,N(i) ) !implicit
     U(i,5) = Pn(i)
   end if
 !----- Conduction ------------------------------------------------------
@@ -1107,11 +1128,12 @@ SUBROUTINE Stblty(tLMT)
 USE comvar
 
 double precision  tLMT,alpha,tauC,Nn,Tn
-double precision  CooL
+double precision  CooL,N
 
 tLMT = tfinal
 
 do i = 1, Ncell
+   N = U(i,1)/1.27d0
   Nn = ndH(i)+ndp(i)+ndH2(i)+ndHe(i)+ndHep(i)
   Tn = U(i,5)/(kb*Nn)
   gammi1 =   3.d0*(ndH(i)+ndp(i)+ndHe(i)+ndHep(i))+5.d0*ndH2(i)
@@ -1120,7 +1142,7 @@ do i = 1, Ncell
   alpha = gammi1*Kcond*dsqrt(Tn)
   alpha = Nn*kb*dx(i)**2/alpha
 !*** Avoid over cooling ***!
-  Call Fcool(CooL,Tn,i)
+  Call Fcool(CooL,N,Tn)
   tauC = U(i,5)/gammi1/dabs(CooL)
 
   tLMT =  dmin1( tLMT, alpha )
@@ -1131,9 +1153,9 @@ if(tLMT.lt.0.d0) write(*,*) time,NRANK,'err at Stblty'
 END SUBROUTINE Stblty
 
 
-SUBROUTINE IMC( P,n,dt,i )
+SUBROUTINE IMC( P,n,dt,NN )
 USE comvar
-double precision P,n,T,dt
+double precision P,n,T,dt,NN
 double precision Pu,Pd,Pm,fev,iud
 double precision CooL,Pmold,nkbi
 Pu    = 1.d10
@@ -1143,7 +1165,7 @@ Pmold = -1.d0
 nkbi  = 1.d0/(kb*n)
 do kkk = 1,30
   T = Pm*nkbi
-  call Fcool(CooL,T,i)
+  call Fcool(CooL,NN,T)
   fev = Pm + CooL*dt*gammi1 - P
   iud = dsign(1.d0,fev)
   Pd  = dmax1(-iud*Pm,Pd)
@@ -1165,7 +1187,7 @@ END SUBROUTINE Omexp
 
 
 
-SUBROUTINE Fcool(CooL,T,i)
+SUBROUTINE Fcool(CooL,N,T)
 USE comvar
 double precision :: CooL,T,Av1,Av2,x1,x2
 double precision :: Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,pha,ncr
@@ -1175,79 +1197,22 @@ double precision :: tau1,tau2,ct1,ct2,ym1,ym2,fes
 double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2
 double precision :: n1,n2,b21
 
-double precision :: heat , KIcool,samm,sammm,sammmm,st,sss,check1,check2
+double precision :: heat,KIcool,samm,sammm
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
 !( 1 pc * 1.d-17  = 3.0857d1 )
 !( 1 pc * 1.405656457d-22  = 4.33743413d-4 )
 
-double precision ::   NN,AbsL,T0
-  NN = U(i,1) /1.27d0
+double precision ::   N,AbsL,T0
+      
 AbsL = 3.94656d1
 T0   = 1.0d3
 !-------------------------( Cooling & Heating )
 Laml = 1.0d7 * dexp( -1.184d5/(T*T0+1.0d3) )
 Laml = dmin1(Laml,5.d3)
 Lamc = 1.4d-2 * dsqrt(T*T0) * dexp( -9.2d1/(T*T0) )
-CooL = ( NN**2.d0 * ( Laml + Lamc ) - NN ) * AbsL
-
-!heat = 39.351d0
-!heat = (0.01d0) * (1.2d0)
-!KIcool = heat * (10.0d0**7 * dexp(-118400.0d0/(T+1000.0d0)) + 0.014d0 * dsqrt(T) * dexp(-92.0d0/T))
-!sammmm = (1.0d7)*dexp(-1.184d5/(T*T0+1.0d3))
-
-!samm= 1.4d-2* dsqrt(T*T0)*dexp(-9.2d1/(T*T0))
-
-!st = dsqrt(T*T0)
-!sss =  sammmm + 1.4d-2 * st * samm
-!check2 = AbsL*(NN - NN**2.d0 * (samm+sammmm))
-!check1 = (NN**2.d0 * (samm+sammmm)-NN)*AbsL
-!CooL = check1
-write(*,*) check1, check2
-!CooL = 0.0d0
-
-!sammm = CooL*dt*gammi1
-!write(*,*) CooL
-
-!Av1  = 1.63542d-3*Ntot(i,1); x1 = 6.1714d3*NH2(i,1)
-!Av2  = 1.63542d-3*Ntot(i,2); x2 = 6.1714d3*NH2(i,2)
-!ATN1 = ( dexp(-2.5d0*Av1)     + dexp(-2.5d0*Av2) ) * 0.5d0
-!ATN2 = ( dexp(-3.77358d0*Av1) + dexp(-3.77358d0*Av2) ) * 0.5d0
-!pha  = G0 * dsqrt(1.d3*T) * ATN1 / nde(i)
-!------------------------- Lya Cooling
-!Laml = ndH(i)*nde(i) * 1.44049d9*dexp( -1.184d2/T)
-!------------------------- CII Cooling L
-!call fesc(tCII(i,1),fesC1); call fesc(tCII(i,2),fesC2); b21 = fesC1+fesC2
-!call LEVC2(T,b21,ndH(i),ndH2(i),nde(i),ndCp(i),n1,n2)
-!Lamc = 6.0157d7*n2*b21
-!***------------------------- OI Cooling
-!tO1  = 11.6618d0*Ntot(i,1)*xo ; tO2 = 11.6618d0*Ntot(i,2)*xo
-!call fesc(tO1,fesO1); call fesc(tO2,fesO2)
-!Lamo = (dmax1(ndtot(i)*xo-ndCO(i),0.d0)/xo) * (ndH(i)+0.5d0*ndH2(i)) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )
-!Lamo = Lamo * (fesO1+fesO2)
-!***------------------------- DustRec Cooling
-!Lamd = nde(i)*ndtot(i)*6.06236d0 * (T**0.94d0) * ( pha**( 0.462628d0/(T**6.8d-2) ) )
-!***------------------------- CO Cooling
-!ncr  = 3.3d6*(T**0.75d0)/(ndH(i)+ndp(i)+ndH2(i)+ndHe(i)+ndHep(i))
-!tau1 = 1.33194d1*NCO(i,1)/(T*dv); tau2 = 1.33194d1*NCO(i,2)/(T*dv)
-!ct1  = tau1*dsqrt( 6.283d0*dlog(2.13d0+(tau1*0.36788d0)**2) ); ct2 = tau2*dsqrt( 6.283d0*dlog(2.13d0+(tau2*0.36788d0)**2) )
-!ym1  = dlog( 1.d0+ct1/(1.d0+1.d1*ncr) ); ym2  = dlog( 1.d0+ct2/(1.d0+1.d1*ncr) )
-!fes  = (2.d0+ym1+0.6d0*ym1**2)/(1.d0+ct1+ncr+1.5d0*dsqrt(ncr)) + (2.d0+ym2+0.6d0*ym2**2)/(1.d0+ct2+ncr+1.5d0*dsqrt(ncr))
-!LCOr = ndCO(i) * 1.91505d10*(T**2)*fes
-!LCOH = ndH(i) *ndCO(i) * 7.96086d4*dsqrt(T)*dexp(-(2.d0/T)**3.43d0)*dexp(-3.08d0/T)
-!LCOH2= ndH2(i)*ndCO(i) * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.08d0/T)
-!***------------------------- Photo-electric Heating
-!Gampe = ndtot(i) * 2.56526d3 * G0*ATN1 * &
-!       ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
-!------------------------- CR Heating
-!Gamcr = (ndH(i)+ndHe(i)+ndH2(i)) * 1.89435d0
-!***------------------------- Photo-destruction Heating
-!SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
-!SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
-!Gampd = ndH2(i) * 4.16362d4 * G0*ATN2 * ( SHLD1+SHLD2 )*0.5d0
-
-!CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd
+CooL = ( N**2.d0 * ( Laml + Lamc ) - N ) * AbsL
 
 END SUBROUTINE Fcool
 
