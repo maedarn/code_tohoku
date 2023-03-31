@@ -1655,6 +1655,7 @@ do lsph = 0, lsphmax
 end do
 
 Phiwv(:,:,:,1)=0.d0
+Phiwv(:,:,:,4)=0.d0
 do lsph = 0, lsphmax
   do msph = -lsph, lsph
     Ylm0_coeff=0.d0
@@ -1678,8 +1679,8 @@ do lsph = 0, lsphmax
     !Jacob=rg*rg*dsin(thetag)
     Ylmreal=(Ylmrealb*sgn_pm+Ylmrealb*(1.d0-sgn_pm))*(1.d0-Ylm0_coeff)+Ylmreal0*Ylm0_coeff
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
-    Phiwv(i,j,k,1)=G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,1)
-    Phiwv(i,j,k,4)=-Phiwv(i,j,k,1)
+    Phiwv(i,j,k,1)=-G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,1)
+    Phiwv(i,j,k,4)= G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,4)
     !Phiwv(i,j,k,5)=Ylmreal/(rg**dble(lsph+1))
     enddo; enddo; enddo
   end do
