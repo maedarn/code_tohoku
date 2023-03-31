@@ -785,14 +785,15 @@ do in10 = 1, maxstp
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
     if(NRANK.eq.0) write(*,*) in20,time,dt
-    if(time+dt.gt.tfinal) then; dt = tfinal - time; dt_vfast = tfinal - time; end if
-    if(time+dt.gt.tsave ) then; dt = tsave  - time; dt_vfast = tsave  - time; end if
+    if(time+dt.gt.tfinal) then; dt = tfinal - time; end if
+    if(time+dt.gt.tsave ) then; dt = tsave  - time; end if
 
     tcool_tv_ratio = int(dt_vfast/dt)
     dntdiv = 0.5d0 + dsign(0.5d0,dble(tcool_tv_ratio-itrcgmin))
-    itrcg=itrcgmin/tcool_tv_ratio+1
-    itrcg=min0(itrcg,itrcgmin)
+    !itrcg=itrcgmin/tcool_tv_ratio+1
+    !itrcg=min0(itrcg,itrcgmin)
     !ntdiv = 1*int(dntdiv)+itrcg*int(1.d0-dntdiv)
+    ntdiv = 1*int(dntdiv)+itrcgmin*int(1.d0-dntdiv)
 
 
 
