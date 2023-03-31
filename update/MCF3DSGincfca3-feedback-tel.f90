@@ -30,7 +30,7 @@ INTEGER ::ntdiv=5,itrcgmin=10
 character(31)::dir='/work/maedarn/3DMHD/samplegrvA/'
 character(17)  :: svdir
 DOUBLE PRECISION  :: prss1,Rst1
-INTEGER ::BCphi=200,BCphigrd=210
+INTEGER ::BCphi=100,BCphigrd=110
 integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 integer :: time_end_c6,time_end_c7,time_end_c8
 

@@ -124,6 +124,7 @@ U(i,j,k,1) = dble(dmy(28))
      !endif
  !    call movesph(dt)
      tdm=dx1/cg*tratio
+     ntdiv=ntdiv*int(1.d0/tratio)
      do nt=1,ntdiv
      iwx=1;iwy=1;iwz=1
      call BCgrv(BCphi,1,1)
@@ -654,21 +655,21 @@ IF(iwy.EQ.1) THEN
    do idm=is,ie
    CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
         Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(JST.eq.0) THEN
-        DO KZ = -1, Ncellz+2; DO JY =  1-N_ol, 0; DO IX = -1, Ncellx+2
-        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
+   !IF(JST.eq.0) THEN
+   !     DO KZ = -1, Ncellz+2; DO JY =  1-N_ol, 0; DO IX = -1, Ncellx+2
+   !     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+   !     END DO;END DO;END DO
+   !  END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
    CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
         Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(JST.eq.NSPLTy-1) THEN
-        DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX = -1, Ncellx+2
-        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
+   !IF(JST.eq.NSPLTy-1) THEN
+   !     DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX = -1, Ncellx+2
+   !     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+   !     END DO;END DO;END DO
+   !  END IF
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -685,21 +686,21 @@ IF(iwz.EQ.1) THEN
   do idm=is,ie
   CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
   Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(KST.eq.0) THEN
-        DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
-        Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
+  ! IF(KST.eq.0) THEN
+  !      DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+  !      Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+  !      END DO;END DO;END DO
+  !   END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
    CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
    Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(KST.eq.NSPLTz-1) THEN
-     DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
-     Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
-     END DO;END DO;END DO
-  END IF
+  !IF(KST.eq.NSPLTz-1) THEN
+  !   DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+  !   Phiwv(IX,JY,KZ,idm)= Phiexa(IX,JY,KZ)
+  !   END DO;END DO;END DO
+  !END IF
    enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
@@ -782,23 +783,23 @@ IF(iwy.EQ.1) THEN
    do idm=is,ie
    CALL MPI_SENDRECV(Phigrdwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
         Phigrdwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(JST.eq.0) THEN
-        DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
-        Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
+   !IF(JST.eq.0) THEN
+   !     DO KZ = -1, Ncellz+2; DO JY = 1-N_ol, 0; DO IX = -1, Ncellx+2
+   !     Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
+   !     END DO;END DO;END DO
+   !  END IF
    enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
    CALL MPI_SENDRECV(Phigrdwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
         Phigrdwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(JST.eq.NSPLTy-1) THEN
-        DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX =  -1, Ncellx+2
+   !IF(JST.eq.NSPLTy-1) THEN
+   !     DO KZ = -1, Ncellz+2; DO JY = Ncelly+1, Ncelly+N_ol; DO IX =  -1, Ncellx+2
         !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
-        Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
-   enddo
+   !     Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
+   !     END DO;END DO;END DO
+   !  END IF
+   !enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -814,24 +815,24 @@ IF(iwz.EQ.1) THEN
    do idm=is,ie
   CALL MPI_SENDRECV(Phigrdwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
   Phigrdwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
-   IF(KST.eq.0) THEN
-        DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
+  ! IF(KST.eq.0) THEN
+  !      DO KZ = 1-N_ol, 0; DO JY = -1, Ncelly+2; DO IX = -1, Ncellx+2
         !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
-        Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
-        END DO;END DO;END DO
-     END IF
-   enddo
+  !      Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
+  !      END DO;END DO;END DO
+  !   END IF
+  ! enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
    CALL MPI_SENDRECV(Phigrdwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
    Phigrdwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
-  IF(KST.eq.NSPLTz-1) THEN
-       DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX =  -1, Ncellx+2
+  !IF(KST.eq.NSPLTz-1) THEN
+  !     DO KZ =  Ncellz+1, Ncellz+N_ol; DO JY = -1, Ncelly+2; DO IX =  -1, Ncellx+2
        !Phigrdwv(IX,JY,KZ,idm)= Phigrd(IX,JY,KZ,idm)
-       Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
-       END DO;END DO;END DO
-    END IF
-   enddo
+  !     Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
+  !     END DO;END DO;END DO
+  !  END IF
+  ! enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
