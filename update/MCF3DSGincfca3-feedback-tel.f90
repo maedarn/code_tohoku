@@ -27,7 +27,7 @@ INTEGER :: svci=50!cfratio=5
 INTEGER ::ntdiv=5,itrcgmin=10
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
-character(31)::dir='/work/maedarn/3DMHD/samplegrvA/'
+character(31)::dir='/work/maedarn/3DMHD/smpgrvtelA/'
 character(17)  :: svdir
 DOUBLE PRECISION  :: prss1,Rst1
 INTEGER ::BCphi=100,BCphigrd=110

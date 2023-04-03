@@ -799,7 +799,7 @@ IF(iwy.EQ.1) THEN
    !     Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
    !     END DO;END DO;END DO
    !  END IF
-   !enddo
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   TOP = TOPt; BOTM = BOTMt
@@ -821,7 +821,7 @@ IF(iwz.EQ.1) THEN
   !      Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
   !      END DO;END DO;END DO
   !   END IF
-  ! enddo
+   enddo
 !**************************************  BC for the upsides of domains  ****
    do idm=is,ie
    CALL MPI_SENDRECV(Phigrdwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
@@ -832,7 +832,7 @@ IF(iwz.EQ.1) THEN
   !     Phigrdwv(IX,JY,KZ,idm)= cg*Phigrd(IX,JY,KZ,idm)+kappa*Phiexa(IX,JY,KZ)
   !     END DO;END DO;END DO
   !  END IF
-  ! enddo
+   enddo
 !***************************************************************************
   CALL MPI_TYPE_FREE(VECU,IERR)
   UP = UPt; DOWN = DOWNt
