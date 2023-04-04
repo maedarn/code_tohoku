@@ -652,7 +652,7 @@ end do
 
 
 !********************di-pole***********************
-  goto 6301
+!  goto 6301
 
  DTF(:,:,:) = 0.0d0
  !dinit1=1.0d0/G4pi
@@ -862,15 +862,15 @@ end do
 end do
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
-    Phiwv(i,j,k,1)=Phiexa(i,j,k)
-    Phigrdwv(i,j,k,1)=cg*Phigrd(i,j,k,1)*2.d0*Tdiff+Phiwv(i,j,k,1)
+    Phiwv(i,j,k,1)=0.d0!Phiexa(i,j,k)
+    Phigrdwv(i,j,k,1)=0.d0!cg*Phigrd(i,j,k,1)*2.d0*Tdiff+Phiwv(i,j,k,1)
 end do
 end do
 end do
 
 
 dinit1=0.0d0
-6301 continue
+!6301 continue
 !********************di-pole***********************
 
 

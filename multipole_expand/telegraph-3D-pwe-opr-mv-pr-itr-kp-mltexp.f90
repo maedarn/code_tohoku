@@ -1555,12 +1555,14 @@ INTEGER :: lsph,msph,factorial
 double precision :: xg_mpi(0:NPE-1),yg_mpi(0:NPE-1),zg_mpi(0:NPE-1)
 double precision :: mass1,pi=3.14159265358979d0
 double precision :: xg,yg,zg,rg,xr,yr,zr,thetag,phig,plgndr,Ylm_coeff,Ylm1,Ylm0_coeff,Ylm_xyz,Jacob
-COMPLEX(16) :: Ylm,Ylmcnj,Ylmm,Ylmreal,Ylmreal0,Ylmrealb,Ylmreals,i_cmplx,sgn_pm
+COMPLEX(16) :: Ylm,Ylmcnj,Ylmm,Ylmreal,Ylmreal0,Ylmrealb,Ylmreals,i_cmplx,sgn_pm,zero0,Ylm0_coeffc,one1
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Qlm
 DOUBLE PRECISION, dimension(:,:), allocatable :: Qlmall
 double precision :: eps_Q
 
 eps_Q=dx1*1.d-3
+zero0=(0.d0,0.d0)
+one1=(1.d0,1.d0)
 
 
 ALLOCATE( Qlm(0:lsphmax,-lsphmax:lsphmax,0:NPE-1) )
@@ -1604,8 +1606,9 @@ do lsph = 0, lsphmax
     !Ylm_coeff=1.d0
     !if(msph.lt.0) then; Ylm_coeff=(-1.d0)**iabs(msph); endif
     Ylm0_coeff=0.d0
-    if(msph==0) then; Ylm0_coeff=1.d0; endif
-    sgn_pm=0.5d0+dsign(0.5d0,dble(msph)+0.1d0)
+    Ylm0_coeffc=(0.d0,0.d0)
+    if(msph==0) then; Ylm0_coeffc=(1.d0,1.d0); endif
+    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.5d0+dsign(0.5d0,dble(msph)+0.1d0))
     do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     !spherical polar coordinate
     rg=dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0+(z(k)-zg)**2.d0)
@@ -1617,13 +1620,15 @@ do lsph = 0, lsphmax
     !Real spherical harmonics
      !Qlm(lsph,msph)=U(i,j,k,1)*dx1*dy1*dz1*rg**dble(lsph)*Ylm(i,j,k,l,m)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))
     Ylm1=plgndr(lsph,iabs(msph),dcos(thetag))*dsqrt((2.d0*dble(lsph)+1.d0)/4.d0/pi*dble(factorial(lsph-iabs(msph)))/dble(factorial(lsph+iabs(msph)))) !Ylm(m=|m|)
-    Ylm=cmplx(Ylm1*dcos(dble(iabs(msph))*phig),Ylm1*sin(dble(iabs(msph))*phig)) !Ylm(m=|m|)
+    !Ylm1=plgndr(lsph,msph,dcos(thetag))*dsqrt((2.d0*dble(lsph)+1.d0)/4.d0/pi*dble(factorial(lsph-msph))/dble(factorial(lsph+msph)))
+    !Ylm=cmplx(Ylm1*dcos(dble(iabs(msph))*phig),Ylm1*dsin(dble(iabs(msph))*phig)) !Ylm(m=|m|)
+    Ylm=Ylm1*CQEXP(dble(iabs(msph))*phig*i_cmplx)
     Ylmcnj=conjg(Ylm)
     Ylmrealb=(-1.d0)**msph/dsqrt(2.d0)*(Ylm+Ylmcnj)         !m>0
     Ylmreals=(-1.d0)**msph/dsqrt(2.d0)*(Ylm-Ylmcnj)/i_cmplx !m<0
     Ylmreal0=Ylm                                            !m=0
     !Jacob=rg*rg*dsin(thetag)
-    Ylmreal=(Ylmrealb*sgn_pm+Ylmrealb*(1.d0-sgn_pm))*(1.d0-Ylm0_coeff)+Ylmreal0*Ylm0_coeff
+    Ylmreal=(Ylmrealb*sgn_pm+Ylmreals*(one1-sgn_pm))*(one1-Ylm0_coeffc)+Ylmreal0*Ylm0_coeffc
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
     Phiwv(i,j,k,2)=Ylmreal
     Phiwv(i,j,k,3)=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
@@ -1659,8 +1664,9 @@ Phiwv(:,:,:,4)=0.d0
 do lsph = 0, lsphmax
   do msph = -lsph, lsph
     Ylm0_coeff=0.d0
-    if(msph==0) then; Ylm0_coeff=1.d0; endif
-    sgn_pm=0.5d0+dsign(0.5d0,dble(msph)+0.1d0)
+    Ylm0_coeffc=(0.d0,0.d0)
+    if(msph==0) then; Ylm0_coeffc=(1.d0,1.d0); endif
+    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.5d0+dsign(0.5d0,dble(msph)+0.1d0))
     do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     !spherical polar coordinate
     rg=dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0+(z(k)-zg)**2.d0)
@@ -1671,13 +1677,15 @@ do lsph = 0, lsphmax
 
     !Real spherical harmonics
     Ylm1=plgndr(lsph,iabs(msph),dcos(thetag))*dsqrt((2.d0*dble(lsph)+1.d0)/4.d0/pi*dble(factorial(lsph-iabs(msph)))/dble(factorial(lsph+iabs(msph)))) !Ylm(m=|m|)
-    Ylm=cmplx(Ylm1*dcos(dble(iabs(msph))*phig),Ylm1*sin(dble(iabs(msph))*phig)) !Ylm(m=|m|)
+    !Ylm=cmplx(Ylm1*dcos(dble(iabs(msph))*phig),Ylm1*dsin(dble(iabs(msph))*phig)) !Ylm(m=|m|)
+    Ylm=Ylm1*CQEXP(dble(iabs(msph))*phig*i_cmplx)
     Ylmcnj=conjg(Ylm)
     Ylmrealb=(-1.d0)**msph/dsqrt(2.d0)*(Ylm+Ylmcnj)         !m>0
     Ylmreals=(-1.d0)**msph/dsqrt(2.d0)*(Ylm-Ylmcnj)/i_cmplx !m<0
     Ylmreal0=Ylm                                            !m=0
     !Jacob=rg*rg*dsin(thetag)
-    Ylmreal=(Ylmrealb*sgn_pm+Ylmrealb*(1.d0-sgn_pm))*(1.d0-Ylm0_coeff)+Ylmreal0*Ylm0_coeff
+    !Ylmreal=(Ylmrealb*sgn_pm+Ylmrealb*(1.d0-sgn_pm))*(1.d0-Ylm0_coeff)+Ylmreal0*Ylm0_coeff
+    Ylmreal=(Ylmrealb*sgn_pm+Ylmreals*(one1-sgn_pm))*(one1-Ylm0_coeffc)+Ylmreal0*Ylm0_coeffc
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
     Phiwv(i,j,k,1)=-G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,1)
     Phiwv(i,j,k,4)= G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,4)
