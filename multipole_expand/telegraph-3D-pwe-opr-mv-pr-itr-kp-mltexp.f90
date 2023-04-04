@@ -1556,16 +1556,16 @@ double precision :: xg_mpi(0:NPE-1),yg_mpi(0:NPE-1),zg_mpi(0:NPE-1)
 double precision :: mass1,pi=3.14159265358979d0
 double precision :: xg,yg,zg,rg,xr,yr,zr,thetag,phig,plgndr,Ylm_coeff,Ylm1,Ylm0_coeff,Ylm_xyz,Jacob
 COMPLEX(16) :: Ylm,Ylmcnj,Ylmm,Ylmreal,Ylmreal0,Ylmrealb,Ylmreals,i_cmplx,sgn_pm,zero0,Ylm0_coeffc,one1
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Qlm
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Qlm,Qlmtst
 DOUBLE PRECISION, dimension(:,:), allocatable :: Qlmall
 double precision :: eps_Q
 
 eps_Q=dx1*1.d-3
 zero0=(0.d0,0.d0)
-one1=(1.d0,1.d0)
+one1=(1.d0,0.d0)
 
 
-ALLOCATE( Qlm(0:lsphmax,-lsphmax:lsphmax,0:NPE-1) )
+ALLOCATE( Qlm(0:lsphmax,-lsphmax:lsphmax,0:NPE-1))!,Qlmtst(0:lsphmax,-lsphmax:lsphmax,0:NPE-1) )
 ALLOCATE( Qlmall(0:lsphmax,-lsphmax:lsphmax) )
 
 !centroid
@@ -1607,8 +1607,8 @@ do lsph = 0, lsphmax
     !if(msph.lt.0) then; Ylm_coeff=(-1.d0)**iabs(msph); endif
     Ylm0_coeff=0.d0
     Ylm0_coeffc=(0.d0,0.d0)
-    if(msph==0) then; Ylm0_coeffc=(1.d0,1.d0); endif
-    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.5d0+dsign(0.5d0,dble(msph)+0.1d0))
+    if(msph==0) then; Ylm0_coeffc=(1.d0,0.d0); Ylm0_coeff=1.d0; endif
+    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.d0)
     do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     !spherical polar coordinate
     rg=dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0+(z(k)-zg)**2.d0)
@@ -1635,9 +1635,10 @@ do lsph = 0, lsphmax
     !Ylmm=Ylm_coeff*Ylmcnj
     !Qlm(lsph,msph)=U(i,j,k,1)*dx1*dy1*dz1*rg**dble(lsph)*dble(Ylmreal)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
-    Qlm(lsph,msph,NRANK)=U(i,j,k,1)*dx1*dy1*dz1*(rg**dble(lsph))*dble(Ylmreal)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
+    Qlm(lsph,msph,NRANK)   =U(i,j,k,1)*dx1*dy1*dz1*(rg**dble(lsph))*dble(Ylmreal)                             *dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
+    !Qlmtst(lsph,msph,NRANK)=U(i,j,k,1)*dx1*dy1*dz1*(rg**dble(lsph))*Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
+    !write(*,*)'Qlm',lsph,msph,NRANK,Ylmreal,Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg),sgn_pm,Ylmreals,Ylmrealb
     enddo; enddo; enddo
-    write(*,*)'Qlm',lsph,msph,NRANK,Qlm(lsph,msph,NRANK)
   end do
 end do
 
@@ -1665,8 +1666,8 @@ do lsph = 0, lsphmax
   do msph = -lsph, lsph
     Ylm0_coeff=0.d0
     Ylm0_coeffc=(0.d0,0.d0)
-    if(msph==0) then; Ylm0_coeffc=(1.d0,1.d0); endif
-    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.5d0+dsign(0.5d0,dble(msph)+0.1d0))
+    if(msph==0) then; Ylm0_coeffc=(1.d0,0.d0); endif
+    sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.d0)
     do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     !spherical polar coordinate
     rg=dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0+(z(k)-zg)**2.d0)
@@ -1694,7 +1695,7 @@ do lsph = 0, lsphmax
   end do
 end do
 
-DEALLOCATE(Qlm,Qlmall)
+DEALLOCATE(Qlm,Qlmall)!,Qlmtst)
 end subroutine mlt_expnd
 
 ! numerical in F77
