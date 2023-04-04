@@ -201,8 +201,8 @@ U(i,j,k,1) = dble(dmy(28))
            do i = -1, Ncellx+2
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-           !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phiwv(i,j,k,2)),sngl(U(i,j,k,1))
-           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiexa(i,j,k))
+           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phiwv(i,j,k,2)),sngl(U(i,j,k,1))
+           !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiexa(i,j,k))
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiexa(i,j,k)),sngl(Phiwv(i,j,k,4)),sngl(U(i,j,k,1))
           enddo
         end do

@@ -20,7 +20,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
 DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0!rmove=0.25d0!rmove=0.35d0!,adiff=0.375d0,cg=1.0d0,
 double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.5d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
-double precision :: kappa=1.d0/0.2d0,Msph1=0.d0
+double precision :: kappa=1.d0/0.2d0,Msph1=0.d0,di_pos
 INTEGER, parameter :: mvstp=2!cfratio=5
 INTEGER :: svci=50!cfratio=5
 INTEGER ::ntdiv=5
@@ -198,7 +198,7 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  binitx1,binitx2
   read(8,*)  binity1,binity2
   read(8,*)  binitz1,binitz2
-  read(8,*)  CFL,facdep
+  read(8,*)  CFL,facdep,di_pos
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2,BCy1,BCy2,BCz1,BCz2
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv
@@ -674,13 +674,13 @@ end do
   !ceny2=ql1y+0.5d0*dy1-ql1x*0.5d0
   !cenz2=ql1z+0.5d0*dz1-ql1x*0.5d0
  
-  cenx1=ql1x+ql1x*0.5d0
-  ceny1=ql1y+ql1x*0.5d0
-  cenz1=ql1z+ql1x*0.5d0
+  cenx1=ql1x+ql1x*di_pos
+  ceny1=ql1y+ql1x*di_pos
+  cenz1=ql1z+ql1x*di_pos
 
-  cenx2=ql1x-ql1x*0.5d0
-  ceny2=ql1y-ql1x*0.5d0
-  cenz2=ql1z-ql1x*0.5d0
+  cenx2=ql1x-ql1x*di_pos
+  ceny2=ql1y-ql1x*di_pos
+  cenz2=ql1z-ql1x*di_pos
 
   
   !rsph = ql1x-ql1x/5.0d0
@@ -849,17 +849,17 @@ end do
 end do
 end do
 
-do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-!U(i,j,k,1) =((Phiexa(i+1,j,k)-2.d0*Phiexa(i,j,k)+Phiexa(i-1,j,k))/dx1/dx1+ &
-!             (Phiexa(i,j+1,k)-2.d0*Phiexa(i,j,k)+Phiexa(i,j-1,k))/dy1/dy1+ &
-!             (Phiexa(i,j,k+1)-2.d0*Phiexa(i,j,k)+Phiexa(i,j,k-1))/dz1/dz1)/G4pi
+!do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
+ !U(i,j,k,1) =((Phiexa(i+1,j,k)-2.d0*Phiexa(i,j,k)+Phiexa(i-1,j,k))/dx1/dx1+ &
+ !             (Phiexa(i,j+1,k)-2.d0*Phiexa(i,j,k)+Phiexa(i,j-1,k))/dy1/dy1+ &
+ !             (Phiexa(i,j,k+1)-2.d0*Phiexa(i,j,k)+Phiexa(i,j,k-1))/dz1/dz1)/G4pi
 
-U(i,j,k,1) =((-Phiexa(i+2,j,k)+16.d0*Phiexa(i+1,j,k)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i-1,j,k)-Phiexa(i-2,j,k))/dx1/dx1/12.d0+ &
-             (-Phiexa(i,j+2,k)+16.d0*Phiexa(i,j+1,k)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i,j-1,k)-Phiexa(i,j-2,k))/dy1/dy1/12.d0+ &
-             (-Phiexa(i,j,k+2)+16.d0*Phiexa(i,j,k+1)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i,j,k-1)-Phiexa(i,j,k-2))/dz1/dz1/12.d0)/G4pi
-end do
-end do
-end do
+!U(i,j,k,1) =((-Phiexa(i+2,j,k)+16.d0*Phiexa(i+1,j,k)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i-1,j,k)-Phiexa(i-2,j,k))/dx1/dx1/12.d0+ &
+!             (-Phiexa(i,j+2,k)+16.d0*Phiexa(i,j+1,k)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i,j-1,k)-Phiexa(i,j-2,k))/dy1/dy1/12.d0+ &
+!             (-Phiexa(i,j,k+2)+16.d0*Phiexa(i,j,k+1)-30.d0*Phiexa(i,j,k)+16.d0*Phiexa(i,j,k-1)-Phiexa(i,j,k-2))/dz1/dz1/12.d0)/G4pi
+!end do
+!end do
+!end do
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     Phiwv(i,j,k,1)=0.d0!Phiexa(i,j,k)
