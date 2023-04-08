@@ -41,7 +41,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      Phigrdwv(i,j,k,1)= amp*dsin(wvpt*2.d0*pi*x(i)/Lbox)*dsin(wvpt*2.d0*pi*y(j)/Lbox)*dsin(wvpt*2.d0*pi*z(k)/Lbox)
      end do; end do; end do
 
-     write(*,*)'initial',Lbox
+     !write(*,*)'initial',Lbox
   end if
 
 
@@ -304,6 +304,7 @@ if(mode==100) then
   !END IF
   enddo
 CALL MPI_TYPE_FREE(VECU,IERR)
+!write(*,*)'BC',Nrank,RIGT,LEFT,RIGTt,LEFTt
 LEFT = LEFTt; RIGT = RIGTt
 END IF
 
@@ -527,7 +528,7 @@ if(iwz.eq.1) then; Ncell = ndz; Ncm = ndx; Ncl = ndy; deltalen=dz1; endif! BT1 =
            end do
         end DO
      end DO
-     write(*,*) 'IN',nu2
+     !write(*,*) 'IN',nu2
      !------------calcurate dt/2------------
      call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
      !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,0.0d0,1,is,ie)
