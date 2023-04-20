@@ -37,8 +37,11 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      !xpi = 0.5d0*( x(i)+x(i-1) )
      amp = 1.d0
      wvpt = 4.d0
-     Phiwv(i,j,k,1)   = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
-     Phigrdwv(i,j,k,1)= amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     U(i,j,k,1) = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     Phiexa(i,j,k) = -amp*G4pi/((2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     Phiwv(i,j,k,1)   = 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     Phigrdwv(i,j,k,1)= 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     
      end do; end do; end do
 
      !write(*,*)'initial',Lbox
@@ -104,8 +107,8 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
         do j = -1, Ncelly+2
            do i = -1, Ncellx+2
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
-           !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-           write(28) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
+           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+           !write(28) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
           enddo
         end do
         !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))

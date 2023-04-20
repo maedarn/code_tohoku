@@ -1,8 +1,8 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 !INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
 DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
 DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
@@ -788,16 +788,17 @@ goto 342
        !---debug---
        !call  SELFGRAVWAVE(0.0d0,4)
        !call SELFGRAVWAVE(dt*0.5d0,3)
+       call SELFGRAVWAVE(dt,2)
 
-       iwx=iwxts;iwy=iwyts;iwz=iwzts
-       call BCgrv(100,1,1)
-       call muslcslv1D(Phiwv(-1,-1,-1,1)   ,dt,1)
-       call BCgrv(110,1,1)
-       call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
-       t_test=t_test+dt
-       if(dmod(t_test,Lbox*0.5d0)==0.d0) then
-       call SELFGRAVWAVE(0.0d0,4)
-       endif
+       !iwx=iwxts;iwy=iwyts;iwz=iwzts
+       !call BCgrv(100,1,1)
+       !call muslcslv1D(Phiwv(-1,-1,-1,1)   ,dt,1)
+       !call BCgrv(110,1,1)
+       !call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
+       !t_test=t_test+dt
+       !if(dmod(t_test,Lbox*0.5d0)==0.d0) then
+       !call SELFGRAVWAVE(0.0d0,4)
+       !endif
        !---------------debug-------------------
        !write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
        !---------------debug-------------------
