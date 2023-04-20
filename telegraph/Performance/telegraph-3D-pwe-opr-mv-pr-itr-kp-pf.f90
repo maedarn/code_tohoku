@@ -37,8 +37,8 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      !xpi = 0.5d0*( x(i)+x(i-1) )
      amp = 1.d0
      wvpt = 4.d0
-     Phiwv(i,j,k,1)   = amp*dsin(wvpt*2.d0*pi*x(i)/Lbox)*dsin(wvpt*2.d0*pi*y(j)/Lbox)*dsin(wvpt*2.d0*pi*z(k)/Lbox)
-     Phigrdwv(i,j,k,1)= amp*dsin(wvpt*2.d0*pi*x(i)/Lbox)*dsin(wvpt*2.d0*pi*y(j)/Lbox)*dsin(wvpt*2.d0*pi*z(k)/Lbox)
+     Phiwv(i,j,k,1)   = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     Phigrdwv(i,j,k,1)= amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      end do; end do; end do
 
      !write(*,*)'initial',Lbox

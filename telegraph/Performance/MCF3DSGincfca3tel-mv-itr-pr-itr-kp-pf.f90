@@ -19,8 +19,8 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
 DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0!rmove=0.25d0!rmove=0.35d0!,adiff=0.375d0,cg=1.0d0,
-double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.5d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
-double precision :: kappa=1.d0/0.2d0,Msph1=0.d0,di_pos
+double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.125d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
+double precision :: kappa=1.d0/0.2d0,Msph1=0.d0,di_pos,tratio1
 INTEGER, parameter :: mvstp=2!cfratio=5
 INTEGER :: svci=50!cfratio=5
 INTEGER ::ntdiv=5
@@ -29,7 +29,7 @@ INTEGER ::ntdiv=5
 !character(43) :: dir='/work/maedarn/3DMHD/tel/tel-mesh128-cy-k20/'
  character(43) :: dir='/work/maedarn/3DMHD/tel/test-wvpropagation/'
 character(17)  :: svdir
-integer :: ntimeint=0,lsphmax=4
+integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts
 END MODULE comvar
 
 MODULE mpivar
@@ -202,9 +202,12 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2,BCy1,BCy2,BCz1,BCz2
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv
+  read(8,*)  iwxts,iwyts,iwzts,tratio1
 close(8)
+tratio=tratio*tratio1
 vmove=vmove*cg/rmove
 kappa=0.5d0/Tdiff
+write(*,*)'INT',tratio,kappa
 
 open(unit=49,file=dir//svdir//'/ntimeint.DAT',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
 read(49,*) ntimeint
@@ -786,15 +789,15 @@ goto 342
        !call  SELFGRAVWAVE(0.0d0,4)
        !call SELFGRAVWAVE(dt*0.5d0,3)
 
-       iwx=1;iwy=0;iwz=0
+       iwx=iwxts;iwy=iwyts;iwz=iwzts
        call BCgrv(100,1,1)
        call muslcslv1D(Phiwv(-1,-1,-1,1)   ,dt,1)
        call BCgrv(110,1,1)
        call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
        t_test=t_test+dt
-       !if(dmod(t_test,Lbox*0.5d0)==0.d0) then
+       if(dmod(t_test,Lbox*0.5d0)==0.d0) then
        call SELFGRAVWAVE(0.0d0,4)
-       !endif
+       endif
        !---------------debug-------------------
        !write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
        !---------------debug-------------------
