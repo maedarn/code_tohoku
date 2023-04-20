@@ -38,7 +38,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      amp = 1.d0
      wvpt = 4.d0
      U(i,j,k,1) = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
-     Phiexa(i,j,k) = -amp*G4pi/((2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     Phiexa(i,j,k) = -amp*G4pi/wvpt/wvpt/((2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      Phiwv(i,j,k,1)   = 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      Phigrdwv(i,j,k,1)= 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      
@@ -76,14 +76,14 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
  !    call movesph(dt)
      tdm=dt!/dble(ntdiv)
      do nt=1,ntdiv
-     iwx=1;iwy=1;iwz=1
-     call BCgrv(100,1,8)
-     if(mod(svc1,svci)==0) then
-     call SELFGRAVWAVE(0.0d0,4)
+    ! iwx=1;iwy=1;iwz=1
+    ! call BCgrv(100,1,8)
+    ! if(mod(svc1,svci)==0) then
+    ! call SELFGRAVWAVE(0.0d0,4)
      !call movesph(dt)
-     endif
+    ! endif
      call slvmuscle(tdm)
-     svc1=svc1+1
+    ! svc1=svc1+1
      enddo
   end if
 
@@ -134,7 +134,7 @@ subroutine slvmuscle(dt)
   double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
   double precision  grdxy2zp,grdxy2zm,grdxy2mn,grdyz2xp,grdyz2xm,grdyz2mn,grdzx2yp,grdzx2ym,grdzx2mn
   double precision  grdxy2zpp,grdxy2zmm,grdyz2xpp,grdyz2xmm,grdzx2ypp,grdzx2ymm
-  double precision :: adiff2=0.5d0
+  double precision :: adiff2=0.5d0,dtration=0.5d0
   double precision dtt2
   double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 
@@ -148,36 +148,10 @@ subroutine slvmuscle(dt)
   !   rhomean=rhomean+rho(i,j,k)
   end do;end do;end do
   
-
-
-  !****************slv-wv****************
-  !%%%%%%%%%%%%%%%%%phi(t+0.5*dt)%%%%%%%%%%%%%%%%%%
-  iwx=1;iwy=0;iwz=0
-  call BCgrv(100,1,1)
-  !Phiwvtest(:,:,:)=NRANK
-  call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-  call BCgrv(110,1,1)
-  call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
-  iwx=0;iwy=1;iwz=0
-  call BCgrv(100,1,1)
-  call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-  iwx=0;iwy=1;iwz=0
-  call BCgrv(110,1,1)
-  call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
-  iwx=0;iwy=0;iwz=1
-  call BCgrv(100,1,1)
-  call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-  call BCgrv(110,1,1)
-  call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
 do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
-  Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
-  Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
+Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
+Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
 enddo; enddo; enddo
-
-
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
@@ -226,8 +200,86 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
      (-2.d0*cg*cg*grdxy1/dx1/dy1 &
       -2.d0*cg*cg*grdyz1/dy1/dz1 &
-      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt &
-     -G4pi*cg*cg*rho(i,j,k)*dt
+      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
+     -G4pi*cg*cg*rho(i,j,k)*dt * dtration
+enddo; enddo; enddo
+
+iwx=1;iwy=0;iwz=0
+call BCgrv(100,1,1)
+!Phiwvtest(:,:,:)=NRANK
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+call BCgrv(110,1,1)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+
+iwx=0;iwy=1;iwz=0
+call BCgrv(100,1,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+iwx=0;iwy=1;iwz=0
+call BCgrv(110,1,1)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+
+iwx=0;iwy=0;iwz=1
+call BCgrv(100,1,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt,1)
+call BCgrv(110,1,1)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
+
+iwx=0;iwy=1;iwz=0
+call BCgrv(100,1,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+call BCgrv(110,1,1)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+
+iwx=1;iwy=0;iwz=0
+call BCgrv(100,1,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+call BCgrv(110,1,1)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+
+iwx=1;iwy=1;iwz=1
+call BCgrv(100,1,1)
+
+do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
+     grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)
+     grdyz1=adiff*Phiwv(i,j+1,k+1,1)+adiff*Phiwv(i,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j-1,k+1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)
+     grdzx1=adiff*Phiwv(i+1,j,k+1,1)+adiff*Phiwv(i-1,j,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j,k-1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
+
+     grdxy1zp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)
+     grdxy1zm=adiff*Phiwv(i+1,j+1,k-1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)
+     grdxy1mn=(grdxy1+grdxy1zp+grdxy1zm)/3.d0
+
+     grdyz1xp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)
+     grdyz1xm=adiff*Phiwv(i-1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)
+     grdyz1mn=(grdyz1+grdyz1xp+grdyz1xm)/3.d0
+
+     grdzx1yp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)
+     grdzx1ym=adiff*Phiwv(i+1,j-1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1) &
+     +(4.d0*adiff-1.d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+&
+     (-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)
+     grdzx1mn=(grdzx1+grdzx1yp+grdzx1ym)/3.d0
+
+
+     Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
+     (-2.d0*cg*cg*grdxy1/dx1/dy1 &
+      -2.d0*cg*cg*grdyz1/dy1/dz1 &
+      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
+     -G4pi*cg*cg*rho(i,j,k)*dt * dtration
 enddo; enddo; enddo
 
 do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
@@ -242,24 +294,6 @@ Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0*
 enddo; enddo; enddo
 
 
-
- iwx=0;iwy=0;iwz=1
- call BCgrv(100,1,1)
- call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
- call BCgrv(110,1,1)
- call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
- iwx=0;iwy=1;iwz=0
- call BCgrv(100,1,1)
- call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
- call BCgrv(110,1,1)
- call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
- iwx=1;iwy=0;iwz=0
- call BCgrv(100,1,1)
- call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
- call BCgrv(110,1,1)
- call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
 
 !iwx=1;iwy=1;iwz=1
 !call BCgrv(100,1,8)

@@ -27,7 +27,7 @@ INTEGER ::ntdiv=5
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 !character(43) :: dir='/work/maedarn/3DMHD/tel/tel-mesh128-cy-k20/'
- character(43) :: dir='/work/maedarn/3DMHD/tel/test-wvpropagation/'
+ character(43) :: dir='/work/maedarn/3DMHD/tel/ts-paformance-time/'
 character(17)  :: svdir
 integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts
 END MODULE comvar
@@ -541,11 +541,11 @@ USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
 
-double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3)
+double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3), time_pfm(0:NPE-1,1:3)!, time_pfm(3)
 double precision  :: tsave,dtsave,tsave2D,dtsave2D
-integer :: nunit, st, st_mpi(0:1024), st_gat(0:2047), Time_signal
+integer :: nunit, st, st_mpi(0:1024), st_gat(0:2047), Time_signal, Time_pfm_signal
 character*7 stb(3)
-character*3 fnunit,fnpe
+character*3 fnunit,fnpe,cntctj
 double precision :: dtdif, t_test=0.d0
 
 
@@ -582,6 +582,13 @@ time_CPU(1) = 0.d0
 time_CPU(2) = 0.d0
 time_CPU(3) = 0.d0
 Time_signal = 0
+
+time_pfm(:,:)=0.d0
+
+!time_pfm(1) = 0.d0
+!time_pfm(2) = 0.d0
+!time_pfm(3) = 0.d0
+!Time_pfm_signal = 0
 
 !---------------debug-------------------
 !write(*,*) '-------------3-----------',NRANK
@@ -788,8 +795,12 @@ goto 342
        !---debug---
        !call  SELFGRAVWAVE(0.0d0,4)
        !call SELFGRAVWAVE(dt*0.5d0,3)
+       !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+       time_pfm(NRANK,1)=MPI_WTIME()
        call SELFGRAVWAVE(dt,2)
-
+       time_pfm(NRANK,2)=MPI_WTIME()
+       time_pfm(NRANK,3)=time_pfm(NRANK,2)-time_pfm(NRANK,1)
+       write(*,*) time_pfm(NRANK,1),time_pfm(NRANK,2),NRANK
        !iwx=iwxts;iwy=iwyts;iwz=iwzts
        !call BCgrv(100,1,1)
        !call muslcslv1D(Phiwv(-1,-1,-1,1)   ,dt,1)
@@ -846,6 +857,7 @@ goto 342
 
 
 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
   IF(NRANK.EQ.0) THEN
     time_CPU(2) = MPI_WTIME()
@@ -878,6 +890,25 @@ end do
 !write(*,*) 'save',NRANK
 
 9000 continue
+
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+do Nroot=0,NPE-1
+CALL MPI_BCAST(time_pfm(Nroot,1),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+CALL MPI_BCAST(time_pfm(Nroot,2),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+if(NRANK==0) then
+open(521,file=dir//svdir//'/CPU_TIME.DAT',access='stream',FORM='UNFORMATTED')
+do Nroot=0,NPE-1
+write(521) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3)
+write(*,*) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3)
+end do
+close(521)
+endif
+
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
 !call SAVEU(nunit,dt,stb,st,t,1)
 
