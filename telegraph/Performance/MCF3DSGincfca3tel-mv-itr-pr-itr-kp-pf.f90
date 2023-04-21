@@ -91,11 +91,19 @@ if(NPE.eq.4)    then; NSPLTx = 2; NSPLTy = 2; NSPLTz = 1; end if
 if(NPE.eq.8)    then; NSPLTx = 2; NSPLTy = 2; NSPLTz = 2; end if
 if(NPE.eq.16)   then; NSPLTx = 4; NSPLTy = 2; NSPLTz = 2; end if
 if(NPE.eq.32)   then; NSPLTx = 4; NSPLTy = 4; NSPLTz = 2; end if
+if(NPE.eq.40)   then; NSPLTx = 5; NSPLTy = 4; NSPLTz = 2; end if
 if(NPE.eq.64)   then; NSPLTx = 4; NSPLTy = 4; NSPLTz = 4; end if
 if(NPE.eq.128)  then; NSPLTx = 8; NSPLTy = 4; NSPLTz = 4; end if
+if(NPE.eq.240)  then; NSPLTx = 8; NSPLTy = 6; NSPLTz = 5; end if
 if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
+if(NPE.eq.480)  then; NSPLTx =10; NSPLTy = 8; NSPLTz = 6; end if
 if(NPE.eq.512)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 8; end if
 if(NPE.eq.1024) then; NSPLTx = 8; NSPLTy = 8; NSPLTz =16; end if
+if(NPE.eq.1200) then; NSPLTx =12; NSPLTy =10; NSPLTz =10; end if
+if(NPE.eq.2400) then; NSPLTx =20; NSPLTy =12; NSPLTz =10; end if
+if(NPE.eq.4800) then; NSPLTx =20; NSPLTy =20; NSPLTz =12; end if
+if(NPE.eq.4800) then; NSPLTx =20; NSPLTy =20; NSPLTz =12; end if
+if(NPE.eq.9600) then; NSPLTx =24; NSPLTy =20; NSPLTz =20; end if
 
 !loopbc=NSPLTy*NSPLTz/(ndx-2)-1
 
