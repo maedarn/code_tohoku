@@ -122,6 +122,7 @@ end subroutine SELFGRAVWAVE
 subroutine slvmuscle(dt)
   use comvar
   use slfgrv
+  use mpivar
   INCLUDE 'mpif.h'
   double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
   integer :: i=0,n,m,l,countn
@@ -138,6 +139,9 @@ subroutine slvmuscle(dt)
   double precision dtt2
   double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 
+!time_pfm(NRANK,4)=MPI_WTICK()
+!write(*,*)'slvmuscle',NRANK,time_pfm(NRANK,4)
+
   dtt2=dt!*0.3d0
   !rhomean=0.d0
   do l=1,ndz-2
@@ -153,13 +157,19 @@ Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
 Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
 enddo; enddo; enddo
 
+!time_pfm(NRANK,5)=MPI_WTICK()
+
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
     Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
 enddo; enddo; enddo
 
+!time_pfm(NRANK,6)=MPI_WTICK()
+
 iwx=1;iwy=1;iwz=1
 call BCgrv(100,1,1)
+
+!time_pfm(NRANK,7)=MPI_WTICK()
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
@@ -204,19 +214,32 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      -G4pi*cg*cg*rho(i,j,k)*dt * dtration
 enddo; enddo; enddo
 
+!time_pfm(NRANK,8)=MPI_WTICK()
+
 iwx=1;iwy=0;iwz=0
 call BCgrv(100,1,1)
+
+!time_pfm(NRANK,9)=MPI_WTICK()
 !Phiwvtest(:,:,:)=NRANK
-call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  ,1)
+
+!time_pfm(NRANK,10)=MPI_WTICK()
 call BCgrv(110,1,1)
-call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  ,2)
+
+
+!time_pfm(NRANK,11)=MPI_WTICK()
 
 iwx=0;iwy=1;iwz=0
 call BCgrv(100,1,1)
-call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+call muslcslv1D(Phiwv(-1,-1,-1,1),dt  ,1)
 iwx=0;iwy=1;iwz=0
 call BCgrv(110,1,1)
-call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  ,2)
 
 iwx=0;iwy=0;iwz=1
 call BCgrv(100,1,1)
@@ -224,17 +247,19 @@ call muslcslv1D(Phiwv(-1,-1,-1,1),dt,1)
 call BCgrv(110,1,1)
 call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
 
-iwx=0;iwy=1;iwz=0
-call BCgrv(100,1,1)
-call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-call BCgrv(110,1,1)
-call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+!iwx=0;iwy=1;iwz=0
+!call BCgrv(100,1,1)
+!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+!call BCgrv(110,1,1)
+!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
 
-iwx=1;iwy=0;iwz=0
-call BCgrv(100,1,1)
-call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-call BCgrv(110,1,1)
-call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+!iwx=1;iwy=0;iwz=0
+!call BCgrv(100,1,1)
+!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
+!call BCgrv(110,1,1)
+!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
+
+!time_pfm(NRANK,12)=MPI_WTICK()
 
 iwx=1;iwy=1;iwz=1
 call BCgrv(100,1,1)
@@ -299,6 +324,7 @@ enddo; enddo; enddo
 !call BCgrv(100,1,8)
 !call BCgrv(110,1,8)
 end subroutine slvmuscle
+
 
 
 subroutine BCgrv(mode,is,ie)
