@@ -139,18 +139,36 @@ subroutine slvmuscle(dt)
   double precision dtt2
   double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 
+call slvPWE(dt)
+call slvexplist(dt)
+call slvmusclephi(dt)
+end subroutine slvmuscle
+
+subroutine slvPWE(dt)
+  use comvar
+  use slfgrv
+  use mpivar
+  INCLUDE 'mpif.h'
+  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+  integer :: i=0,n,m,l,countn
+  double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
+  double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
+                      Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
+  double precision  grdxy1,grdyz1,grdzx1,grdxy2,grdyz2,grdzx2,grdxy3,grdyz3,grdzx3,grdxy4,grdyz4,grdzx4,&
+                    grdxy5,grdyz5,grdzx5,grdxy7,grdyz7,grdzx7,grdxy8,grdyz8,grdzx8,grdxy6,grdyz6,grdzx6
+
+  double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
+  double precision  grdxy2zp,grdxy2zm,grdxy2mn,grdyz2xp,grdyz2xm,grdyz2mn,grdzx2yp,grdzx2ym,grdzx2mn
+  double precision  grdxy2zpp,grdxy2zmm,grdyz2xpp,grdyz2xmm,grdzx2ypp,grdzx2ymm
+  double precision :: adiff2=0.5d0,dtration=0.5d0
+  double precision dtt2
+  double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
+
 !time_pfm(NRANK,4)=MPI_WTICK()
 !write(*,*)'slvmuscle',NRANK,time_pfm(NRANK,4)
 
   dtt2=dt!*0.3d0
   !rhomean=0.d0
-  do l=1,ndz-2
-  do m=1,ndy-2
-  do n=1,ndx-2
-     !rho(n,m,l) = U(n,m,l,1)
-     rho(n,m,l) = U(n,m,l,1)!-rhomean
-  !   rhomean=rhomean+rho(i,j,k)
-  end do;end do;end do
   
 do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
 Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
@@ -163,13 +181,42 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
     Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
 enddo; enddo; enddo
+end subroutine slvPWE
 
-!time_pfm(NRANK,6)=MPI_WTICK()
+subroutine slvexplist(dt)
+  use comvar
+  use slfgrv
+  use mpivar
+  INCLUDE 'mpif.h'
+  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+  integer :: i=0,n,m,l,countn
+  double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
+  double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
+                      Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
+  double precision  grdxy1,grdyz1,grdzx1,grdxy2,grdyz2,grdzx2,grdxy3,grdyz3,grdzx3,grdxy4,grdyz4,grdzx4,&
+                    grdxy5,grdyz5,grdzx5,grdxy7,grdyz7,grdzx7,grdxy8,grdyz8,grdzx8,grdxy6,grdyz6,grdzx6
 
+  double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
+  double precision  grdxy2zp,grdxy2zm,grdxy2mn,grdyz2xp,grdyz2xm,grdyz2mn,grdzx2yp,grdzx2ym,grdzx2mn
+  double precision  grdxy2zpp,grdxy2zmm,grdyz2xpp,grdyz2xmm,grdzx2ypp,grdzx2ymm
+  double precision :: adiff2=0.5d0,dtration=0.5d0
+  double precision dtt2
+  double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
+
+!time_pfm(NRANK,4)=MPI_WTICK()
+!write(*,*)'slvmuscle',NRANK,time_pfm(NRANK,4)
+
+dtt2=dt!*0.3d0
 iwx=1;iwy=1;iwz=1
 call BCgrv(100,1,1)
 
-!time_pfm(NRANK,7)=MPI_WTICK()
+do l=1,ndz-2
+do m=1,ndy-2
+do n=1,ndx-2
+   !rho(n,m,l) = U(n,m,l,1)
+   rho(n,m,l) = U(n,m,l,1)!-rhomean
+!   rhomean=rhomean+rho(i,j,k)
+end do;end do;end do
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
@@ -213,8 +260,28 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
       -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
      -G4pi*cg*cg*rho(i,j,k)*dt * dtration
 enddo; enddo; enddo
+end subroutine slvexplist
 
-!time_pfm(NRANK,8)=MPI_WTICK()
+subroutine slvmusclephi(dt)
+  use comvar
+  use slfgrv
+  use mpivar
+  INCLUDE 'mpif.h'
+  double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+  integer :: i=0,n,m,l,countn
+  double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
+  double precision :: Phiwvdffxpyp,Phiwvdffxmyp,Phiwvdffypzp,Phiwvdffymzp,Phiwvdffzpxp,Phiwvdffzmxp, &
+                      Phiwvdffxpym,Phiwvdffxmym,Phiwvdffypzm,Phiwvdffymzm,Phiwvdffzpxm,Phiwvdffzmxm
+  double precision  grdxy1,grdyz1,grdzx1,grdxy2,grdyz2,grdzx2,grdxy3,grdyz3,grdzx3,grdxy4,grdyz4,grdzx4,&
+                    grdxy5,grdyz5,grdzx5,grdxy7,grdyz7,grdzx7,grdxy8,grdyz8,grdzx8,grdxy6,grdyz6,grdzx6
+
+  double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
+  double precision  grdxy2zp,grdxy2zm,grdxy2mn,grdyz2xp,grdyz2xm,grdyz2mn,grdzx2yp,grdzx2ym,grdzx2mn
+  double precision  grdxy2zpp,grdxy2zmm,grdyz2xpp,grdyz2xmm,grdzx2ypp,grdzx2ymm
+  double precision :: adiff2=0.5d0,dtration=0.5d0
+  double precision dtt2
+  double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
+
 
 iwx=1;iwy=0;iwz=0
 call BCgrv(100,1,1)
@@ -246,85 +313,7 @@ call BCgrv(100,1,1)
 call muslcslv1D(Phiwv(-1,-1,-1,1),dt,1)
 call BCgrv(110,1,1)
 call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
-
-!iwx=0;iwy=1;iwz=0
-!call BCgrv(100,1,1)
-!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-!call BCgrv(110,1,1)
-!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
-!iwx=1;iwy=0;iwz=0
-!call BCgrv(100,1,1)
-!call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
-!call BCgrv(110,1,1)
-!call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt  *0.5d0,2)
-
-!time_pfm(NRANK,12)=MPI_WTICK()
-
-iwx=1;iwy=1;iwz=1
-call BCgrv(100,1,1)
-
-do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-     grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)
-     grdyz1=adiff*Phiwv(i,j+1,k+1,1)+adiff*Phiwv(i,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j-1,k+1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)
-     grdzx1=adiff*Phiwv(i+1,j,k+1,1)+adiff*Phiwv(i-1,j,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j,k-1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
-
-     grdxy1zp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)
-     grdxy1zm=adiff*Phiwv(i+1,j+1,k-1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)
-     grdxy1mn=(grdxy1+grdxy1zp+grdxy1zm)/3.d0
-
-     grdyz1xp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)
-     grdyz1xm=adiff*Phiwv(i-1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)
-     grdyz1mn=(grdyz1+grdyz1xp+grdyz1xm)/3.d0
-
-     grdzx1yp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)
-     grdzx1ym=adiff*Phiwv(i+1,j-1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)
-     grdzx1mn=(grdzx1+grdzx1yp+grdzx1ym)/3.d0
-
-
-     Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
-     (-2.d0*cg*cg*grdxy1/dx1/dy1 &
-      -2.d0*cg*cg*grdyz1/dy1/dz1 &
-      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
-     -G4pi*cg*cg*rho(i,j,k)*dt * dtration
-enddo; enddo; enddo
-
-do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
-Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
-Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
-enddo; enddo; enddo
-
-
-do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
-Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
-enddo; enddo; enddo
-
-
-
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,8)
-!call BCgrv(110,1,8)
-end subroutine slvmuscle
-
+end subroutine slvmusclephi
 
 
 subroutine BCgrv(mode,is,ie)
