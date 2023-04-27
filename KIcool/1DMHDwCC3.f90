@@ -8,6 +8,9 @@ INTEGER, parameter :: nd=1024+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
 
+
+
+
 double precision  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 double precision  :: CFL,facdep,tfinal,time
 double precision  :: pmin,pmax,rmin,rmax
