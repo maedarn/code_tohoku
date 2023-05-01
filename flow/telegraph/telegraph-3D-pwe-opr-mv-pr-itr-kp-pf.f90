@@ -142,6 +142,8 @@ subroutine slvmuscle(dt)
 call slvPWE(dt)
 call slvexplist(dt)
 call slvmusclephi(dt)
+call slvexplist(dt)
+call slvPWE(dt)
 end subroutine slvmuscle
 
 subroutine slvPWE(dt)
