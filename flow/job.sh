@@ -19,7 +19,7 @@ mpiexec ./a.out
 #PJM -L elapse=1:00:00
 #PJM -j
 #PJM -S
-#PJM --mail-list maeda.ryunosuke@j.mbox.nagoya-u.ac.jp
+#PJM --mail-list maeda.ryunosuke1995@gmail.com
 #PJM -m b
 #PJM -m e
 #PJM -o log.txt
