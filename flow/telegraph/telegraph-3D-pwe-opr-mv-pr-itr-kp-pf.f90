@@ -137,6 +137,7 @@ DOUBLE PRECISION , dimension(-1:ndx) :: slop
 double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
 double precision  grdxy1,grdyz1,grdzx1
 double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
+double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 !double precision dtt2
 
 !call slvPWE(dt*0.5d0)
