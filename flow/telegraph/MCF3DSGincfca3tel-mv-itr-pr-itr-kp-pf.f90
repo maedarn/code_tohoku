@@ -1,6 +1,6 @@
 MODULE comvar
-INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+!INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
+INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 !INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
@@ -51,7 +51,7 @@ END MODULE chmvar
 
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
-INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=8
+INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=1
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
@@ -124,7 +124,7 @@ if(NPE.eq.48000)then; NSPLTx =40; NSPLTy =40; NSPLTz =30; end if
 
 !loopbc=NSPLTy*NSPLTz/(ndx-2)-1
 
-   !write(*,*) 'OK1',NRANK
+!   write(*,*) 'OK1',NRANK
    !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
    !write(*,*) 'OK2',NRANK
 
@@ -150,7 +150,7 @@ ALLOCATE(time_pfm(0:NPE-1,1:12))
 
 !*********grvwave*********
 ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
-ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
+!ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
 ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
@@ -176,7 +176,7 @@ DEALLOCATE(Phi)
 
 !********gravwave**********
 DEALLOCATE(Phiexa,Phigrd)
-DEALLOCATE(Phiexab1,phiexab2)
+!DEALLOCATE(Phiexab1,phiexab2)
 DEALLOCATE(Phiwv,Phigrdwv)
 DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 DEALLOCATE(time_pfm)
@@ -827,29 +827,51 @@ do in10 = 1, maxstp
        time_pfm(NRANK,1)=MPI_WTIME()
        call fipp_start
        !call fapp_start("loop1",1,0)
-       call SELFGRAVWAVE(dt,2)
-       call fipp_stop
+       !call SELFGRAVWAVE(dt,2)
+       !call fipp_stop
        !call fapp_stop("loop1",1,0)
 
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
-call SELFGRAVWAVE(dt,2)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
+!call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)

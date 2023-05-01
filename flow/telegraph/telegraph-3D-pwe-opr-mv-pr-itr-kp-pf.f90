@@ -277,15 +277,6 @@ end DO
       DO Lnum = 1, ndz-2
         DO Mnum = 1, ndy-2
            do i = is,ie
-              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
-              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
-              kz  = iwx*Lnum + iwy*Mnum + iwz*i
-              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
-              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
-              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
-              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
-              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
-              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
               Phiwv(i,Mnum,Lnum,1) = Phipre(i,Mnum,Lnum) - nu2 * (Phiu(i,Mnum,Lnum) - Phiu(i-1,Mnum,Lnum))
            end do
         end DO
@@ -323,16 +314,6 @@ DO Lnum = 1, ndz-2
 DO Mnum = 1, ndy-2
 !call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
 do i = is-1 , ie+1
-ix  = iwx*i    + iwy*Lnum + iwz*Mnum
-jy  = iwx*Mnum + iwy*i    + iwz*Lnum
-kz  = iwx*Lnum + iwy*Mnum + iwz*i
-ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
-jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
-kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
-ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
-jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
-kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
-
 delp = Phipregrd(i+1,Mnum,Lnum)-Phipregrd(i,Mnum,Lnum)
 delm = Phipregrd(i,Mnum,Lnum)-Phipregrd(i-1,Mnum,Lnum)
 !flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
@@ -356,15 +337,6 @@ end DO
 DO Lnum = 1, ndz-2
 DO Mnum = 1, ndy-2
       do i = is,ie
-         ix  = iwx*i    + iwy*Lnum + iwz*Mnum
-         jy  = iwx*Mnum + iwy*i    + iwz*Lnum
-         kz  = iwx*Lnum + iwy*Mnum + iwz*i
-         ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
-         jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
-         kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
-         ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
-         jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
-         kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
          Phigrdwv(i,Mnum,Lnum,1) = Phipregrd(i,Mnum,Lnum) + nu2 * (Phiu(i+1,Mnum,Lnum) - Phiu(i,Mnum,Lnum))
       end do
    end DO
@@ -438,15 +410,6 @@ end DO
       DO Lnum = 1, ndx-2
         DO Mnum = 1, ndz-2
            do i = is,ie
-              ix  = iwx*i    + iwy*Lnum + iwz*Mnum
-              jy  = iwx*Mnum + iwy*i    + iwz*Lnum
-              kz  = iwx*Lnum + iwy*Mnum + iwz*i
-              ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
-              jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
-              kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
-              ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
-              jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
-              kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
               Phiwv(Lnum,i,Mnum,1) = Phipre(Lnum,i,Mnum) - nu2 * (Phiu(Lnum,i,Mnum) - Phiu(Lnum,i-1,Mnum))
            end do
         end DO
@@ -2087,20 +2050,20 @@ double precision :: rsph3,tint=0.d0,dinit1!,dt
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
      Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
                       +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-     Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!     Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                      +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
   end do
   end do
   end do
@@ -2248,20 +2211,20 @@ end do
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
                     +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
-   Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
-                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+!   Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                    +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
 end do
 end do
 end do
