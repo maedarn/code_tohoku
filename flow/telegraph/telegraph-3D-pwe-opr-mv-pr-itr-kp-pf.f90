@@ -327,7 +327,7 @@ subroutine BCgrv(mode,is,ie)
   INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   DOUBLE PRECISION  :: VECU
  
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !***************BC-for-Phigrd***********************
 if(mode==100) then
   IF(iwx.EQ.1) THEN
