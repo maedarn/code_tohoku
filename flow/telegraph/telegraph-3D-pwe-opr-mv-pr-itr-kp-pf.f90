@@ -534,7 +534,7 @@ end subroutine BCgrv
 
 subroutine muslcslv1D(Phiv,dt,mode)
   use comvar
-  double precision :: nu2,w=6.0d0,dt,deltalen! , deltap,deltam !kappa -> comver  better?
+  double precision :: nu2,w=6.0d0,dt,deltalen,eps=1.0d-10! , deltap,deltam !kappa -> comver  better?
   integer :: mode,cnt=0
   DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phipre,Phiv,Phi2dt,Phiu!,Phigrad
   !character(5) name
@@ -607,7 +607,25 @@ end DO
      !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,1,is,ie)
 DO Lnum = 1, Ncl-2
 DO Mnum = 1, Ncm-2
-call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+!call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+do i = is-1 , ie+1
+   ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+   jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+   kz  = iwx*Lnum + iwy*Mnum + iwz*i
+   ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+   jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+   kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+   ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+   jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+   kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+
+   delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+   delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+   !flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+   slop(i) = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+   !Phigrad(ix,jy,kz) = flmt
+   !slop(i) = flmt
+end do
 do i = is-1,ie+1
 ix  = iwx*i    + iwy*Lnum + iwz*Mnum
 jy  = iwx*Mnum + iwy*i    + iwz*Lnum
@@ -696,7 +714,25 @@ end DO
      !call fluxcal(Phi2dt,Phipre,Phiu,1.0d0,1.d0/3.0d0,4,is,ie)
 DO Lnum = 1, Ncl-2
 DO Mnum = 1, Ncm-2
-call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+!call vanalbada(Mnum,Lnum,pre,slop,is,ie,Ncell)
+do i = is-1 , ie+1
+   ix  = iwx*i    + iwy*Lnum + iwz*Mnum
+   jy  = iwx*Mnum + iwy*i    + iwz*Lnum
+   kz  = iwx*Lnum + iwy*Mnum + iwz*i
+   ixp = iwx*(i+1)+ iwy*Lnum + iwz*Mnum
+   jyp = iwx*Mnum + iwy*(i+1)+ iwz*Lnum
+   kzp = iwx*Lnum + iwy*Mnum + iwz*(i+1)
+   ixm = iwx*(i-1)+ iwy*Lnum + iwz*Mnum
+   jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
+   kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
+
+   delp = Phipre(ixp,jyp,kzp)-Phipre(ix,jy,kz)
+   delm = Phipre(ix,jy,kz)-Phipre(ixm,jym,kzm)
+   !flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+   slop(i) = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+   !Phigrad(ix,jy,kz) = flmt
+   !slop(i) = flmt
+end do
 do i = is-1,ie+1
 ix  = iwx*i    + iwy*Lnum + iwz*Mnum
 jy  = iwx*Mnum + iwy*i    + iwz*Lnum
@@ -743,7 +779,7 @@ end DO
   end if
   !------------ul.solver.-cg-------------
 
-  cnt=cnt+2
+  !cnt=cnt+2
 end subroutine muslcslv1D
 
 !subroutine vanalbada(fg,gradfg,iwx,iwy,iwz)
