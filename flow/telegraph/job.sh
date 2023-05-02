@@ -3,7 +3,7 @@
 #PJM -L rscunit=fx
 #PJM -L rscgrp=fx-debug
 #PJM -L node=1
-#PJM --mpi proc=48
+#PJM --mpi proc=8
 #PJM -L elapse=1:00:00
 #PJM -S
 #PJM -N grv_tel_cnvrg
@@ -15,4 +15,4 @@
 #fapp -C -d./rep4 -Hevent=pa4 mpiexec -n 8 ./pfm.out
 #fapp -C -d./rep5 -Hevent=pa5 mpiexec -n 8 ./pfm.out
 
-fipp -C -d./tmp13 mpiexec -n 48 ./pfm.out
+fipp -C -d./tmp14 mpiexec -n 8 ./pfm.out

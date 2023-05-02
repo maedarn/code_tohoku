@@ -54,7 +54,7 @@ DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=1
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
-DOUBLE PRECISION :: Lbox
+DOUBLE PRECISION :: Lbox,Lboxx,Lboxy,Lboxz
 !double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
 double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
 
@@ -234,7 +234,7 @@ close(8)
 tratio=tratio*tratio1
 vmove=vmove*cg/rmove
 kappa=0.5d0/Tdiff
-write(*,*)'INT',tratio,kappa
+!write(*,*)'INT',tratio,kappa
 
 open(unit=49,file=dir//'/ntimeint.DAT',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
 read(49,*) ntimeint
@@ -344,7 +344,7 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
   end if
 end do; end do; end do
-write(*,*) NRANK,'INIT'
+!write(*,*) NRANK,'INIT'
 ALLOCATE(dx_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE(dy_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE(dz_i(-1-1:Ncellz*NSPLTz+2+1))
 ALLOCATE( x_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE( y_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE( z_i(-1-1:Ncellz*NSPLTz+2+1))
 
@@ -419,7 +419,7 @@ open(2,file=dir//'tsave.DAT')
 
 !goto 6701 
 dt=dx(1)/cg*tratio
-call SELFGRAVWAVE(dt,52)
+!call SELFGRAVWAVE(dt,52)
 !6701 continue
 
 
@@ -528,6 +528,9 @@ if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
+  Lboxx=ql1x+ql2x
+  Lboxy=ql1y+ql2y
+  Lboxz=ql1z+ql2z
   !call SELFGRAVWAVE(0.0d0,1)
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
@@ -540,6 +543,8 @@ endif
 !write(*,*) 'OK6'
 !call  SELFGRAVWAVE(0.0d0,41)
 !call move()
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'end-INIT'
 END SUBROUTINE INITIA
 
 
@@ -570,12 +575,16 @@ INCLUDE 'mpif.h'
 
 double precision  :: t(1000),dt, time_CPU(3)!, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_pfm(3)
 double precision  :: tsave,dtsave!,tsave2D!,dtsave2D
-integer :: nunit, st,Time_signal!, st_mpi(0:1024), st_gat(0:2047)!, Time_pfm_signal
+integer :: nunit, st,Time_signal,count=0!, st_mpi(0:1024), st_gat(0:2047)!, Time_pfm_signal
 character*7 stb(3)
 character*3 fnunit,fnpe!,cntctj
 double precision :: t_test=0.d0
+character(3) NPENUM
+character(6) countcha
 !double precision  tLMT
 
+
+!write(*,*)'evol1'
 
 open(2,file=dir//'tsave.DAT')
   read(2,*) time
@@ -596,6 +605,7 @@ close(3)
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
 open(5,file=dir//'info'//fnunit//'.DAT')
 !open(5,file='/work/maedarn/3DMHD/test/info'//fnunit//fnpe//'.DAT')
+close(5)
 
 st    = 1
 ifEVO = 1
@@ -618,6 +628,8 @@ time_pfm(:,:)=0.d0
 !time_pfm(3) = 0.d0
 !Time_pfm_signal = 0
 
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'evol2'
 !---------------debug-------------------
 !write(*,*) '-------------3-----------',NRANK
 !---------------debug-------------------
@@ -626,10 +638,33 @@ if(ifgrv.eq.2) then
 !do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
 !    Phiwv(i,j,k,1)=0.d0
 !end do;end do;end do
-call SELFGRAVWAVE(0.0d0,0)
-call  SELFGRAVWAVE(0.0d0,4)
-call  SELFGRAVWAVE(0.0d0,4)
+call  SELFGRAVWAVE(0.0d0,0)
+
+WRITE(NPENUM,'(I3.3)') NRANK
+WRITE(countcha,'(I6.6)') count
+!write(*,*)'SAVE_Phi_pre',count,dir,svdir
+open(10,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+do k = 1, Ncellz
+   write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
+   do j = 1, Ncelly
+      do i = 1, Ncellx
+      !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
+      !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+      write(10) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+      !write(10) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
+     enddo
+   end do
+   !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
+end do
+close(10)
+count=count+1
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'SAVE_Phi',count,dir,svdir
+!call  SELFGRAVWAVE(0.0d0,4)
+!call  SELFGRAVWAVE(0.0d0,4)
 end if
+
+!write(*,*)'evol3'
 
 do in10 = 1, maxstp
 
@@ -824,6 +859,7 @@ do in10 = 1, maxstp
        !call  SELFGRAVWAVE(0.0d0,4)
        !call SELFGRAVWAVE(dt*0.5d0,3)
        !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!write(*,*)'evol4'
        time_pfm(NRANK,1)=MPI_WTIME()
        call fipp_start
        !call fapp_start("loop1",1,0)
@@ -832,26 +868,26 @@ do in10 = 1, maxstp
        !call fapp_stop("loop1",1,0)
 
 call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
 
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
+!call slvmuscle(dt)
 
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
@@ -955,7 +991,7 @@ call slvmuscle(dt)
 
 call fipp_stop
 
-call SELFGRAVWAVE(dt,4)
+!call SELFGRAVWAVE(dt,4)
 
        time_pfm(NRANK,2)=MPI_WTIME()
        time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/100.d0
@@ -1053,24 +1089,24 @@ end do
 9000 continue
 
 
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-do Nroot=0,NPE-1
-CALL MPI_BCAST(time_pfm(Nroot,1),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-CALL MPI_BCAST(time_pfm(Nroot,2),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!do Nroot=0,NPE-1
+!CALL MPI_BCAST(time_pfm(Nroot,1),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(time_pfm(Nroot,2),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!end do
 
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-if(NRANK==0) then
-open(521,file=dir//svdir//'/CPU_TIME.DAT',access='stream',FORM='UNFORMATTED')
-do Nroot=0,NPE-1
-write(521) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3),time_pfm(Nroot,4)-time_pfm(Nroot,2),time_pfm(Nroot,5)-time_pfm(Nroot,4),time_pfm(Nroot,6)-time_pfm(Nroot,5)&
-,time_pfm(Nroot,7)-time_pfm(Nroot,6),time_pfm(Nroot,8)-time_pfm(Nroot,7),time_pfm(Nroot,9)-time_pfm(Nroot,8),time_pfm(Nroot,10)-time_pfm(Nroot,9)&
-,time_pfm(Nroot,11)-time_pfm(Nroot,10),time_pfm(Nroot,12)-time_pfm(Nroot,11)
-write(*,*) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3),time_pfm(Nroot,4),time_pfm(Nroot,5),time_pfm(Nroot,6),time_pfm(Nroot,7),time_pfm(Nroot,8),time_pfm(Nroot,9)
-end do
-close(521)
-endif
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!if(NRANK==0) then
+!open(521,file=dir//svdir//'/CPU_TIME.DAT',access='stream',FORM='UNFORMATTED')
+!do Nroot=0,NPE-1
+!write(521) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3),time_pfm(Nroot,4)-time_pfm(Nroot,2),time_pfm(Nroot,5)-time_pfm(Nroot,4),time_pfm(Nroot,6)-time_pfm(Nroot,5)&
+!,time_pfm(Nroot,7)-time_pfm(Nroot,6),time_pfm(Nroot,8)-time_pfm(Nroot,7),time_pfm(Nroot,9)-time_pfm(Nroot,8),time_pfm(Nroot,10)-time_pfm(Nroot,9)&
+!,time_pfm(Nroot,11)-time_pfm(Nroot,10),time_pfm(Nroot,12)-time_pfm(Nroot,11)
+!write(*,*) time_pfm(Nroot,1),time_pfm(Nroot,2),time_pfm(Nroot,3),time_pfm(Nroot,4),time_pfm(Nroot,5),time_pfm(Nroot,6),time_pfm(Nroot,7),time_pfm(Nroot,8),time_pfm(Nroot,9)
+!end do
+!close(521)
+!endif
 
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
 !call SAVEU(nunit,dt,stb,st,t)

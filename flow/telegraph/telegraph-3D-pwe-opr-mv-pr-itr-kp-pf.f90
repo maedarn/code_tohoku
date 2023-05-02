@@ -35,16 +35,16 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      !test of wave propagation
      do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
      !xpi = 0.5d0*( x(i)+x(i-1) )
-     amp = 1.d0
+     amp = 1.d5
      wvpt = 4.d0
-     U(i,j,k,1) = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
-     Phiexa(i,j,k) = -amp*G4pi/wvpt/wvpt/((2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0+(2.d0*pi/Lbox)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
+     U(i,j,k,1) = amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
+     Phiexa(i,j,k) = -amp*G4pi/wvpt/wvpt/((2.d0*pi/Lboxx)**2.d0+(2.d0*pi/Lboxy)**2.d0+(2.d0*pi/Lboxz)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
      Phiwv(i,j,k,1)   = 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      Phigrdwv(i,j,k,1)= 0.d0!amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lbox)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lbox)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lbox)
      
      end do; end do; end do
-
-     !write(*,*)'initial',Lbox
+     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+     write(*,*)'initial',Lbox
   end if
 
 
@@ -94,7 +94,9 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      !write(*,*) 'save???'
      WRITE(NPENUM,'(I3.3)') NRANK
      WRITE(countcha,'(I6.6)') count
-     open(unit=28,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     write(*,*)'SAVE_Phi_pre',count,dir,svdir
+     open(10,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     write(*,*)'SAVE_Phi_pre_op',count,dir,svdir,Ncellz,Ncelly,Ncellx
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
@@ -103,20 +105,25 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      !iwx = 1; iwy = 1; iwz = 1
      !call BCgrv(101)
      !call BCgrv(102)
-     do k = -1, Ncellz+2
-        do j = -1, Ncelly+2
-           do i = -1, Ncellx+2
+     do k = 1, Ncellz
+        write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
+        do j = 1, Ncelly
+           do i = 1, Ncellx
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
-           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+           !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+           write(10) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
            !write(28) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
           enddo
         end do
         !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
      end do
-     close(28)
+     close(10)
      count=count+1
-  end if
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+  !write(*,*)'SAVE_Phi',count,dir,svdir
+end if
 end subroutine SELFGRAVWAVE
+
 
 
 subroutine slvmuscle(dt)
@@ -131,7 +138,7 @@ double precision :: nu2,w=6.0d0,deltalen,eps=1.0d-10! , deltap,deltam !kappa -> 
 integer :: cnt=0
 DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phipre,Phi2dt,Phiu,Phipregrd!,Phigrad
 !character(5) name
-integer Ncell,Ncm,Ncl,ix,jy,kz,Lnum,Mnum,is,ie!,idm,hazi
+integer Ncell,Ncm,Ncl,Lnum,Mnum,is,ie!,idm,hazi
 !DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur
 DOUBLE PRECISION , dimension(-1:ndx) :: slop
 double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
@@ -139,6 +146,10 @@ double precision  grdxy1,grdyz1,grdzx1
 double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
 double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 !double precision dtt2
+
+!call fipp_start
+
+!write(*,*)NRANK,'mscl1'
 
 !call slvPWE(dt*0.5d0)
 do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
@@ -161,6 +172,8 @@ do n=1,ndx-2
    rho(n,m,l) = U(n,m,l,1)!-rhomean
 !   rhomean=rhomean+rho(i,j,k)
 end do;end do;end do
+
+!write(*,*)NRANK,'mscl2'
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
@@ -207,11 +220,14 @@ enddo; enddo; enddo
 
 !call slvmusclephi(dt)
 
+!write(*,*)NRANK,'mscl3'
+
 iwx=1;iwy=1;iwz=1
 call BCgrv(100,1,1)
 iwx=1;iwy=1;iwz=1
 call BCgrv(110,1,1)
 
+!write(*,*)NRANK,'mscl4'
 !time_pfm(NRANK,9)=MPI_WTICK()
 !Phiwvtest(:,:,:)=NRANK
 !call muslcslv1D(Phiwv(-1,-1,-1,1),dt  *0.5d0,1)
@@ -595,6 +611,8 @@ end DO
         end DO
      end DO
 
+!write(*,*)NRANK,'mscl5'
+
 !call slvexplist(dt*0.5d0)
 
 !do n=1,ndx-2
@@ -659,6 +677,8 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
     Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
     Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
 enddo; enddo; enddo
+
+!call fipp_stop
 end subroutine slvmuscle
 
 subroutine slvPWE(dt)
