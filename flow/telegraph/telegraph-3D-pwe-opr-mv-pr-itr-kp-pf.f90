@@ -95,7 +95,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      WRITE(NPENUM,'(I3.3)') NRANK
      WRITE(countcha,'(I6.6)') count
      write(*,*)'SAVE_Phi_pre',count,dir,svdir
-     open(10,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(17,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      write(*,*)'SAVE_Phi_pre_op',count,dir,svdir,Ncellz,Ncelly,Ncellx
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
@@ -111,13 +111,13 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
            do i = 1, Ncellx
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
            !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-           write(10) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+           write(17) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
            !write(28) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
           enddo
         end do
         !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
      end do
-     close(10)
+     close(17)
      count=count+1
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !write(*,*)'SAVE_Phi',count,dir,svdir

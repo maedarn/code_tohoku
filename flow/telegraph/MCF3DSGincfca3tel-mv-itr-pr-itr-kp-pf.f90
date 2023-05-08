@@ -579,8 +579,9 @@ integer :: nunit, st,Time_signal,count=0!, st_mpi(0:1024), st_gat(0:2047)!, Time
 character*7 stb(3)
 character*3 fnunit,fnpe!,cntctj
 double precision :: t_test=0.d0
-character(3) NPENUM
-character(6) countcha
+!character(3) NPENUM
+!character(6) countcha
+!integer :: isv,jsv,ksv
 !double precision  tLMT
 
 
@@ -640,24 +641,25 @@ if(ifgrv.eq.2) then
 !end do;end do;end do
 call  SELFGRAVWAVE(0.0d0,0)
 
-WRITE(NPENUM,'(I3.3)') NRANK
-WRITE(countcha,'(I6.6)') count
-!write(*,*)'SAVE_Phi_pre',count,dir,svdir
-open(10,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-do k = 1, Ncellz
-   write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
-   do j = 1, Ncelly
-      do i = 1, Ncellx
+!WRITE(NPENUM,'(I3.3)') NRANK
+!WRITE(countcha,'(I6.6)') count
+ !write(*,*)'SAVE_Phi_pre',count,dir,svdir
+!open(19,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!do ksv = 1, Ncellz
+   !write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
+!   do jsv = 1, Ncelly
+!      do isv = 1, Ncellx
       !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
       !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-      write(10) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
+!      write(19) sngl(Phiwv(isv,jsv,ksv,1)),sngl(Phigrdwv(isv,jsv,ksv,1)),sngl(Phiexa(isv,jsv,ksv))&
+!               ,sngl(cg*Phigrd(isv,jsv,ksv,1)+kappa*Phiexa(isv,jsv,ksv)),sngl(U(isv,jsv,ksv,1))
       !write(10) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
-     enddo
-   end do
+!     enddo
+!   end do
    !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
-end do
-close(10)
-count=count+1
+!end do
+!close(19)
+!count=count+1
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !write(*,*)'SAVE_Phi',count,dir,svdir
 !call  SELFGRAVWAVE(0.0d0,4)
@@ -843,7 +845,7 @@ do in10 = 1, maxstp
     !---------------debug-------------------
     !write(*,*) '-------------10-----------',NRANK
     !---------------debug-------------------
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+
 !write(*,*) 'OK7'
 !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
@@ -860,6 +862,7 @@ do in10 = 1, maxstp
        !call SELFGRAVWAVE(dt*0.5d0,3)
        !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !write(*,*)'evol4'
+       CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
        time_pfm(NRANK,1)=MPI_WTIME()
        call fipp_start
        !call fapp_start("loop1",1,0)
@@ -868,26 +871,26 @@ do in10 = 1, maxstp
        !call fapp_stop("loop1",1,0)
 
 call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
 
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
-!call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
+call slvmuscle(dt)
 
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
