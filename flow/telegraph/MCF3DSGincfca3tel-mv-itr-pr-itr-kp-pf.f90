@@ -79,6 +79,7 @@ USE mpivar
 USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
+!integer :: i_flow, i_flow_end=1000000
 
 CALL MPI_INIT(IERR)
 CALL MPI_COMM_SIZE(MPI_COMM_WORLD,NPE  ,IERR)
@@ -165,7 +166,24 @@ ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 
 call INITIA
 !write(*,*) 'OK'
-call EVOLVE
+dt=dx(1)/cg*tratio
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!call fipp_start
+call SELFGRAVWAVE(0.0d0,0)
+!call fapp_start("loop1",1,0)
+
+!do i_flow=1,i_flow_end
+!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
+!Phiwv(i,j,k,1)=1.d0
+!Phigrdwv(i,j,k,1)=1.d0*dt
+!enddo; enddo; enddo
+call slvmuscle(dt)
+!enddo
+
+!call fipp_stop
+!call fapp_stop("loop1",1,0)
+
+!call EVOLVE
 
 !write(*,*) 'OK'
 
@@ -201,7 +219,7 @@ double precision ::  ql1x,ql2x,ql1y,ql2y,ql1z,ql2z,dinit1,dinit2,pinit1,pinit2, 
            vinitx1,vinitx2,vinity1,vinity2,vinitz1,vinitz2,           &
            binitx1,binitx2,binity1,binity2,binitz1,binitz2
 double precision, dimension(:), allocatable :: x_i,y_i,z_i,dx_i,dy_i,dz_i
-double precision :: pi,amp!,xpi,ypi,zpi,phase1,phase2,phase3
+double precision :: pi!,amp!,xpi,ypi,zpi,phase1,phase2,phase3
 double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC
 !double precision :: ampn(2048),ampn0(2048)
 character*3 :: NPENUM!,MPIname
@@ -236,9 +254,10 @@ vmove=vmove*cg/rmove
 kappa=0.5d0/Tdiff
 !write(*,*)'INT',tratio,kappa
 
-open(unit=49,file=dir//'/ntimeint.DAT',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
-read(49,*) ntimeint
-close(49)
+
+!open(unit=49,file=dir//'/ntimeint.DAT',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!read(49,*) ntimeint
+!close(49)
 
 
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -402,19 +421,19 @@ do k = -1-1, Ncellz+2+1
   dz(k) =  dz_i(kz)
 end do
 
-IF(NRANK.EQ.0) THEN
-  400 format(D25.17)
-  open(4,file=dir//'cdnt.DAT')
-    write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
-    write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
-    write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
-  close(4)
-END IF
+!IF(NRANK.EQ.0) THEN
+!  400 format(D25.17)
+!  open(4,file=dir//'cdnt.DAT')
+!    write(4,400) ( 0.5d0 * ( x_i(i-1)+x_i(i) ), i=1, Ncellx*NSPLTx )
+!    write(4,400) ( 0.5d0 * ( y_i(j-1)+y_i(j) ), j=1, Ncelly*NSPLTy )
+!    write(4,400) ( 0.5d0 * ( z_i(k-1)+z_i(k) ), k=1, Ncellz*NSPLTz )
+!  close(4)
+!END IF
 
-open(2,file=dir//'tsave.DAT')
-  read(2,'(1p1d25.17)') amp
-  read(2,'(i8)') nunit
-  close(2)
+!open(2,file=dir//'tsave.DAT')
+!  read(2,'(1p1d25.17)') amp
+!  read(2,'(i8)') nunit
+!  close(2)
 
 
 !goto 6701 
@@ -496,6 +515,7 @@ dt=dx(1)/cg*tratio
 
 DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCATE(y_i); DEALLOCATE(z_i)
 
+nunit=1
 !***** Read Initial Conditions *****!
 if(nunit.eq.1) goto 120
   WRITE(NPENUM,'(I3.3)') NRANK
@@ -535,9 +555,9 @@ if(ifgrv.eq.2) then
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
 end if
-if (ntimeint.ne.0) then
-call SELFGRAVWAVE(0.0d0,140)
-endif
+!if (ntimeint.ne.0) then
+!call SELFGRAVWAVE(0.0d0,140)
+!endif
  !write(*,*) 'posgrv1'
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !write(*,*) 'OK6'
@@ -870,27 +890,27 @@ do in10 = 1, maxstp
        !call fipp_stop
        !call fapp_stop("loop1",1,0)
 
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
 
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
-call slvmuscle(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
+call slvmuscle_tst(dt)
 
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
