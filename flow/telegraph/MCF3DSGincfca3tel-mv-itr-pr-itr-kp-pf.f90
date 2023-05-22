@@ -61,7 +61,7 @@ double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
 !DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
 DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa,Phiexab1,Phiexab2
-DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
+DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv!,Phiwvpre, Phigrdwvpre
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
@@ -154,8 +154,8 @@ ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
 !ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
 ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 
-ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
+ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))!,Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
+ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))!,Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
 ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
 ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
@@ -196,6 +196,7 @@ DEALLOCATE(Phi)
 DEALLOCATE(Phiexa,Phigrd)
 !DEALLOCATE(Phiexab1,phiexab2)
 DEALLOCATE(Phiwv,Phigrdwv)
+!DEALLOCATE(Phiwvpre,Phigrdwvpre)
 DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 DEALLOCATE(time_pfm)
 !********gravwave**********
