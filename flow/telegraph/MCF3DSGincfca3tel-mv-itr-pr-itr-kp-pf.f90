@@ -19,7 +19,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
 DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0!rmove=0.25d0!rmove=0.35d0!,adiff=0.375d0,cg=1.0d0,
-double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.125d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
+double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.5d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
 double precision :: kappa=1.d0/0.2d0,Msph1=0.d0,di_pos,tratio1
 INTEGER, parameter :: mvstp=2!cfratio=5
 INTEGER :: svci=50!cfratio=5
@@ -28,7 +28,7 @@ INTEGER ::ntdiv=5
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 !character(43) :: dir='/work/maedarn/3DMHD/tel/tel-mesh128-cy-k20/'
 !character(43) :: dir='/work/maedarn/3DMHD/tel/ts-paformance-time/'
- character(43) :: dir='/data/group1/z40309n/telegraph/performance/'
+character(43) :: dir='/data/group1/z40309n/telegraph/performance/'
 character(17)  :: svdir
 integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts
 DOUBLE PRECISION, dimension(:,:), allocatable :: time_pfm
@@ -79,7 +79,9 @@ USE mpivar
 USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
-!integer :: i_flow, i_flow_end=1000000
+integer :: i_flow, i_flow_end=4000
+double precision :: dt
+character*5 :: NPENUM
 
 CALL MPI_INIT(IERR)
 CALL MPI_COMM_SIZE(MPI_COMM_WORLD,NPE  ,IERR)
@@ -166,19 +168,48 @@ ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 
 call INITIA
 !write(*,*) 'OK'
-dt=dx(1)/cg*tratio
+!dt=dx(1)/cg*tratio
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !call fipp_start
 call SELFGRAVWAVE(0.0d0,0)
+!call SELFGRAVWAVE(0.0d0,4)
+!call SELFGRAVWAVE(0.0d0,4)
+!write(*,*)'dt',dx1/cg*tratio
 !call fapp_start("loop1",1,0)
-
-!do i_flow=1,i_flow_end
+!time_pfm(:,:)=0.d0
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+time_pfm(NRANK,1)=MPI_WTIME()
+!write(*,*)
+!call fapp_start("loop1",1,0)
+do i_flow=1,i_flow_end
 !do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
 !Phiwv(i,j,k,1)=1.d0
 !Phigrdwv(i,j,k,1)=1.d0*dt
 !enddo; enddo; enddo
+dt=dx1/cg*tratio
 call slvmuscle(dt)
-!enddo
+enddo
+
+!call SELFGRAVWAVE(0.0d0,4)
+time_pfm(NRANK,2)=MPI_WTIME()
+time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
+
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!do Nroot=0,NPE-1
+!CALL MPI_BCAST(time_pfm(Nroot,1),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(time_pfm(Nroot,2),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+!end do
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+WRITE(NPENUM,'(I5.5)') NRANK
+!if(NRANK==0) then
+open(521,file=dir//svdir//'/CPU_TIME'//NPENUM//'.DAT',access='stream',FORM='UNFORMATTED')
+!do Nroot=0,NPE-1
+write(521) time_pfm(NRANK,1),time_pfm(NRANK,2),time_pfm(NRANK,3)
+!end do
+close(521)
+!endif
 
 !call fipp_stop
 !call fapp_stop("loop1",1,0)
@@ -386,6 +417,7 @@ dx1= dx_i(0)
 dy1= dy_i(0)
 dz1= dz_i(0)
 !dx=dy=dz
+dt=dx1/cg*tratio
 
 x_i(-1) = -dx_i(0)
 x_i(-2) = x_i(-1)-dx_i(0)
@@ -885,7 +917,7 @@ do in10 = 1, maxstp
 !write(*,*)'evol4'
        CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
        time_pfm(NRANK,1)=MPI_WTIME()
-       call fipp_start
+       !call fipp_start
        !call fapp_start("loop1",1,0)
        !call SELFGRAVWAVE(dt,2)
        !call fipp_stop
@@ -1013,7 +1045,7 @@ call slvmuscle_tst(dt)
 !call SELFGRAVWAVE(dt,2)
 !call SELFGRAVWAVE(dt,2)
 
-call fipp_stop
+!call fipp_stop
 
 !call SELFGRAVWAVE(dt,4)
 
