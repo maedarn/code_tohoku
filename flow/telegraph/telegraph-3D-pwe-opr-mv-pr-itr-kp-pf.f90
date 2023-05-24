@@ -140,8 +140,9 @@ double precision :: nu2,w=6.0d0,eps=1.0d-10! , deltap,deltam,deltalen !kappa -> 
 integer :: cnt=0
 DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phiu,Phiugrd!,Phi2dt,Phi2dtgrd!,Phigrad,Phipre,Phipregrd,Phi2dt,Phi2dtgrd
 DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phiy,Phiygrd!,Phiprez,Phipregrdz!,Phiprey_swp,Phipregrdy_swp
+!DOUBLE PRECISION, dimension(-1:ndx,-1:ndy,-1:ndz) :: Phivec,Phivecgrd
 !character(5) name
-integer :: Lnum,Mnum,is,ie,n_exp=13!,idm,hazi,Ncell,Ncm,Ncl
+integer :: Lnum,Mnum,is,ie,n_exp=13,N_ol=2,idm!,idm,hazi,Ncell,Ncm,Ncl
 !DOUBLE PRECISION , dimension(-1:ndx,-1:ndy,-1:ndz) :: ul,ur
 DOUBLE PRECISION , dimension(-1:ndx) :: slop,slopgrd
 !double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
@@ -150,11 +151,14 @@ double precision  grdxy1,grdyz1,grdzx1
 !double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:1)!,Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:1)
 double precision :: expand_exp,expand_dx!,expand_trm,expand_dbi
 double precision :: kp_i,exp_m,exp_p,exp_k
-integer :: iswp1,iswp2!,i_flow, i_flow_end=15000
-double precision :: delp,delm,delpgrd,delmgrd,phiwv_d
+integer :: iswp1,iswp2,i_flow, i_flow_end=4000
+double precision :: delp,delm,delpgrd,delmgrd,phiwv_d!,phigrdwv_d
+INTEGER :: MSTATUS(MPI_STATUS_SIZE)
+DOUBLE PRECISION  :: VECU
 
 !call fapp_start("loop2",1,0)
-!do i_flow=1,i_flow_end
+!call fipp_start
+do i_flow=1,i_flow_end
 !call fipp_start
 !do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
 !Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
@@ -167,9 +171,45 @@ double precision :: delp,delm,delpgrd,delmgrd,phiwv_d
 
 
 
-iwx=1;iwy=1;iwz=1
-call BCgrv(100,1,1)
-!call BCgrv(110,1,1)
+!iwx=1;iwy=1;iwz=1
+!call BCgrv(100,1,1)
+
+N_ol=1
+idm=1
+
+CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
+RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+LEFT = LEFTt; RIGT = RIGTt
+
+CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
+TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+      Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+      Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+TOP = TOPt; BOTM = BOTMt
+
+CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
+UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+ Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+UP = UPt; DOWN = DOWNt
+
 
 
 expand_dx=-2.d0*kappa * 0.5d0 * dt
@@ -179,14 +219,20 @@ exp_m=(1.d0-expand_exp)
 exp_p=(1.d0+expand_exp)
 exp_k=exp_m*kp_i
 !call fapp_start("loop1",1,0)
-do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
+!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
+do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
     !Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
     !Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
 !Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+expand_exp)+Phigrdwvpre(i,j,k,1)*(1.d0-expand_exp)*kp_i
 phiwv_d=Phiwv(i,j,k,1)
+!phigrdwv_d=Phigrdwv(i,j,k,1)
+!Phivec(i,j,k)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
 Phiwv(i,j,k,1)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
+!Phiwv(i,j,k,1)    = 0.5d0*phiwv_d*exp_p+phigrdwv_d*exp_k
 !Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-expand_exp)+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+expand_exp)
-Phigrdwv(i,j,k,1) = 0.5d0*kappa*phiwv_d*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
+!Phivecgrd(i,j,k) = 0.5d0*kappa*phiwv_d*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
+Phigrdwv(i,j,k,1) = 0.5d0*Phigrdwv(i,j,k,1)*exp_p+0.5d0*kappa*phiwv_d*exp_m
+!Phigrdwv(i,j,k,1) = 0.5d0*phigrdwv_d*exp_p+0.5d0*kappa*phiwv_d*exp_m
 enddo; enddo; enddo
 !call fapp_stop("loop1",1,0)
 
@@ -206,15 +252,25 @@ enddo; enddo; enddo
 !call fapp_start("loop2",1,0)
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-     grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)
-     grdyz1=adiff*Phiwv(i,j+1,k+1,1)+adiff*Phiwv(i,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j-1,k+1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)
-     grdzx1=adiff*Phiwv(i+1,j,k+1,1)+adiff*Phiwv(i-1,j,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j,k-1,1) &
-     +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
-     (-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
+     !grdxy1=adiff*Phivec(i+1,j+1,k)+adiff*Phivec(i-1,j-1,k)+(adiff-0.5d0)*Phivec(i+1,j-1,k)+(adiff-0.5d0)*Phivec(i-1,j+1,k) &
+     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i+1,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j+1,k)+&
+     !(-2.d0*adiff+0.5d0)*Phivec(i-1,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j-1,k)
+     !grdyz1=adiff*Phivec(i,j+1,k+1)+adiff*Phivec(i,j-1,k-1)+(adiff-0.5d0)*Phivec(i,j+1,k-1)+(adiff-0.5d0)*Phivec(i,j-1,k+1) &
+     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j+1,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k+1)+&
+     !(-2.d0*adiff+0.5d0)*Phivec(i,j-1,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k-1)
+     !grdzx1=adiff*Phivec(i+1,j,k+1)+adiff*Phivec(i-1,j,k-1)+(adiff-0.5d0)*Phivec(i-1,j,k+1)+(adiff-0.5d0)*Phivec(i+1,j,k-1) &
+     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k+1)+(-2.d0*adiff+0.5d0)*Phivec(i+1,j,k)+&
+     !(-2.d0*adiff+0.5d0)*Phivec(i,j,k-1)+(-2.d0*adiff+0.5d0)*Phivec(i-1,j,k)
+
+grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
++(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)
+grdyz1=adiff*Phiwv(i,j+1,k+1,1)+adiff*Phiwv(i,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i,j-1,k+1,1) &
++(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+&
+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)
+grdzx1=adiff*Phiwv(i+1,j,k+1,1)+adiff*Phiwv(i-1,j,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j,k-1,1) &
++(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
 
      !grdxy1zp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1) &
      !+(4.d0*adiff-1.d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+&
@@ -241,11 +297,19 @@ do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      !grdzx1mn=(grdzx1+grdzx1yp+grdzx1ym)/3.d0
 
 
-     Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
-     (-2.d0*cg*cg*grdxy1/dx1/dy1 &
-      -2.d0*cg*cg*grdyz1/dy1/dz1 &
-      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
-     -G4pi*cg*cg*U(i,j,k,1)*dt * dtration
+!     Phigrdwv(i,j,k,1) = Phivecgrd(i,j,k) +&
+!     (-2.d0*cg*cg*grdxy1/dx1/dy1 &
+!      -2.d0*cg*cg*grdyz1/dy1/dz1 &
+!      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
+!     -G4pi*cg*cg*U(i,j,k,1)*dt * dtration
+
+Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
+(-2.d0*cg*cg*grdxy1/dx1/dy1 &
+ -2.d0*cg*cg*grdyz1/dy1/dz1 &
+ -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
+-G4pi*cg*cg*U(i,j,k,1)*dt * dtration
+
+     !Phiwv(i,j,k,1)=Phivec(i,j,k)
 enddo; enddo; enddo
 
 
@@ -254,10 +318,58 @@ enddo; enddo; enddo
 
 
 !----insart---wv
-iwx=1;iwy=1;iwz=1
-call BCgrv(100,1,1)
-iwx=1;iwy=1;iwz=1
-call BCgrv(110,1,1)
+!iwx=1;iwy=1;iwz=1
+!call BCgrv(100,1,1)
+!iwx=1;iwy=1;iwz=1
+!call BCgrv(110,1,1)
+
+N_ol=2
+idm=1
+
+CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
+RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+Phigrdwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+Phigrdwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+LEFT = LEFTt; RIGT = RIGTt
+
+CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
+TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+      Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+      Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+     Phigrdwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+     Phigrdwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+TOP = TOPt; BOTM = BOTMt
+
+CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
+UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+Phigrdwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phigrdwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+Phigrdwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+UP = UPt; DOWN = DOWNt
 
 !call fapp_start("loop3",1,0)
 
@@ -373,9 +485,41 @@ end do;end DO;end DO
 
 !call fapp_stop("loop5",1,0)
 
-iwx=1;iwy=1;iwz=1
-call BCgrv(100,1,1)
+!iwx=1;iwy=1;iwz=1
+!call BCgrv(100,1,1)
 !call BCgrv(110,1,1)
+CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
+RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+LEFT = LEFTt; RIGT = RIGTt
+
+CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
+TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+      Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+      Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+TOP = TOPt; BOTM = BOTMt
+
+CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
+UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+ Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+UP = UPt; DOWN = DOWNt
 
 !call fapp_start("loop4",1,0)
 do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
@@ -449,9 +593,9 @@ enddo; enddo; enddo
 !call fapp_stop("loop5",1,0)
 
 !call fapp_stop("loop5",1,0)
-!enddo
+enddo
 !call fapp_stop("loop2",1,0)
-
+!call fipp_stop
 end subroutine slvmuscle
 
 subroutine slvPWE(dt)

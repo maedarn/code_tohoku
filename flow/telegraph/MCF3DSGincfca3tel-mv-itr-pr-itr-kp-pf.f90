@@ -79,9 +79,9 @@ USE mpivar
 USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
-integer :: i_flow, i_flow_end=4000
+!integer :: i_flow, i_flow_end=4000
 double precision :: dt
-character*5 :: NPENUM
+!character*5 :: NPENUM
 
 CALL MPI_INIT(IERR)
 CALL MPI_COMM_SIZE(MPI_COMM_WORLD,NPE  ,IERR)
@@ -121,6 +121,8 @@ if(NPE.eq.4800) then; NSPLTx =20; NSPLTy =20; NSPLTz =12; end if
 if(NPE.eq.4800) then; NSPLTx =20; NSPLTy =20; NSPLTz =12; end if
 if(NPE.eq.9600) then; NSPLTx =24; NSPLTy =20; NSPLTz =20; end if
 if(NPE.eq.24000)then; NSPLTx =40; NSPLTy =30; NSPLTz =20; end if
+if(NPE.eq.24000)then; NSPLTx =40; NSPLTy =30; NSPLTz =20; end if
+if(NPE.eq.36480)then; NSPLTx =48; NSPLTy =40; NSPLTz =19; end if
 if(NPE.eq.48000)then; NSPLTx =40; NSPLTy =40; NSPLTz =30; end if
 
 
@@ -170,29 +172,29 @@ call INITIA
 !write(*,*) 'OK'
 !dt=dx(1)/cg*tratio
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!call fipp_start
 call SELFGRAVWAVE(0.0d0,0)
 !call SELFGRAVWAVE(0.0d0,4)
 !call SELFGRAVWAVE(0.0d0,4)
 !write(*,*)'dt',dx1/cg*tratio
 !call fapp_start("loop1",1,0)
 !time_pfm(:,:)=0.d0
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-time_pfm(NRANK,1)=MPI_WTIME()
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!time_pfm(NRANK,1)=MPI_WTIME()
 !write(*,*)
 !call fapp_start("loop1",1,0)
-do i_flow=1,i_flow_end
+!call fipp_start
+!do i_flow=1,i_flow_end
 !do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
 !Phiwv(i,j,k,1)=1.d0
 !Phigrdwv(i,j,k,1)=1.d0*dt
 !enddo; enddo; enddo
 dt=dx1/cg*tratio
 call slvmuscle(dt)
-enddo
+!enddo
 
 !call SELFGRAVWAVE(0.0d0,4)
-time_pfm(NRANK,2)=MPI_WTIME()
-time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
+!time_pfm(NRANK,2)=MPI_WTIME()
+!time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
 
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 !do Nroot=0,NPE-1
@@ -201,14 +203,14 @@ time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
 !CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
 !end do
 
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-WRITE(NPENUM,'(I5.5)') NRANK
-!if(NRANK==0) then
-open(521,file=dir//svdir//'/CPU_TIME'//NPENUM//'.DAT',access='stream',FORM='UNFORMATTED')
-!do Nroot=0,NPE-1
-write(521) time_pfm(NRANK,1),time_pfm(NRANK,2),time_pfm(NRANK,3)
-!end do
-close(521)
+!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+!WRITE(NPENUM,'(I5.5)') NRANK
+ !if(NRANK==0) then
+!open(521,file=dir//svdir//'/CPU_TIME'//NPENUM//'.DAT',access='stream',FORM='UNFORMATTED')
+ !do Nroot=0,NPE-1
+!write(521) time_pfm(NRANK,1),time_pfm(NRANK,2),time_pfm(NRANK,3)
+ !end do
+!close(521)
 !endif
 
 !call fipp_stop
