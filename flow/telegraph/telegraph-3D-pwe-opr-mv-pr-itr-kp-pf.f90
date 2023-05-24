@@ -218,7 +218,7 @@ kp_i=1.0/(2.d0*kappa+1.d-10)
 exp_m=(1.d0-expand_exp)
 exp_p=(1.d0+expand_exp)
 exp_k=exp_m*kp_i
-!call fapp_start("loop1",1,0)
+call fapp_start("loop1",1,0)
 !do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
 do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
     !Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
@@ -234,7 +234,7 @@ Phiwv(i,j,k,1)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
 Phigrdwv(i,j,k,1) = 0.5d0*Phigrdwv(i,j,k,1)*exp_p+0.5d0*kappa*phiwv_d*exp_m
 !Phigrdwv(i,j,k,1) = 0.5d0*phigrdwv_d*exp_p+0.5d0*kappa*phiwv_d*exp_m
 enddo; enddo; enddo
-!call fapp_stop("loop1",1,0)
+call fapp_stop("loop1",1,0)
 
 !do l=1,ndz-2
 !do m=1,ndy-2
@@ -249,7 +249,7 @@ enddo; enddo; enddo
 !call BCgrv(100,1,1)
 !call BCgrv(110,1,1)
 
-!call fapp_start("loop2",1,0)
+call fapp_start("loop2",1,0)
 
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
      !grdxy1=adiff*Phivec(i+1,j+1,k)+adiff*Phivec(i-1,j-1,k)+(adiff-0.5d0)*Phivec(i+1,j-1,k)+(adiff-0.5d0)*Phivec(i-1,j+1,k) &
@@ -314,7 +314,7 @@ enddo; enddo; enddo
 
 
 
-!call fapp_stop("loop2",1,0)
+call fapp_stop("loop2",1,0)
 
 
 !----insart---wv
