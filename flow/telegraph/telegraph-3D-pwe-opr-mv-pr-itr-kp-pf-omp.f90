@@ -132,6 +132,7 @@ subroutine slvmuscle(dt)
 use comvar
 use slfgrv
 use mpivar
+use omp_lib
 INCLUDE 'mpif.h'
 double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
 integer :: i=0!,n,m,l!,countn
@@ -151,32 +152,14 @@ double precision  grdxy1,grdyz1,grdzx1
 !double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:1)!,Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:1)
 double precision :: expand_exp,expand_dx!,expand_trm,expand_dbi
 double precision :: kp_i,exp_m,exp_p,exp_k
-integer :: iswp1,iswp2,i_flow, i_flow_end=4000
+integer :: iswp1,iswp2,i_flow!, i_flow_end=4000
 double precision :: delp,delm,delpgrd,delmgrd,phiwv_d!,phigrdwv_d
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
 
 
-!do i_flow=1,i_flow_end
-!call fapp_start("loop1",1,0)
 do i_flow=1,i_flow_end
-!call fipp_start
-!call fipp_start
-!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
-!Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
-!Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
-!enddo; enddo; enddo
-
-!time_pfm(NRANK,5)=MPI_WTICK()
-
-!call fapp_start("loop1",1,0)
-
-
-
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,1)
-
 N_ol=1
 idm=1
 
@@ -214,8 +197,6 @@ CALL MPI_TYPE_FREE(VECU,IERR)
 UP = UPt; DOWN = DOWNt
 
 
-
-!call fapp_start("loop1",1,0)
 expand_dx=-2.d0*kappa * 0.5d0 * dt
 expand_exp=dexp(expand_dx)
 kp_i=1.0/(2.d0*kappa+1.d-10)
@@ -223,56 +204,17 @@ exp_m=(1.d0-expand_exp)
 exp_p=(1.d0+expand_exp)
 exp_k=exp_m*kp_i
 
-!OCL SCACHE_ISOLATE_WAY(L2=13)
-!OCL SCACHE_ISOLATE_ASSIGN(Phiwv)
 
-!call fapp_start("loop1",1,0)
-!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
+!$omp parallel do private(i,j,k,phiwv_d)
 do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
-    !Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
-    !Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
-!Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+expand_exp)+Phigrdwvpre(i,j,k,1)*(1.d0-expand_exp)*kp_i
 phiwv_d=Phiwv(i,j,k,1)
-!phigrdwv_d=Phigrdwv(i,j,k,1)
-!Phivec(i,j,k)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
 Phiwv(i,j,k,1)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
-!Phiwv(i,j,k,1)    = 0.5d0*phiwv_d*exp_p+phigrdwv_d*exp_k
-!Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-expand_exp)+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+expand_exp)
-!Phivecgrd(i,j,k) = 0.5d0*kappa*phiwv_d*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
 Phigrdwv(i,j,k,1) = 0.5d0*Phigrdwv(i,j,k,1)*exp_p+0.5d0*kappa*phiwv_d*exp_m
-!Phigrdwv(i,j,k,1) = 0.5d0*phigrdwv_d*exp_p+0.5d0*kappa*phiwv_d*exp_m
 enddo; enddo; enddo
+!$omp end parallel do
 
-!OCL END_SCACHE_ISOLATE_ASSIGN
-!OCL END_SCACHE_ISOLATE_WAY
-
-
-!do l=1,ndz-2
-!do m=1,ndy-2
-!do n=1,ndx-2
-!rho(n,m,l) = U(n,m,l,1)!-rhomean
-!rhomean=rhomean+rho(i,j,k)
-!end do;end do;end do
-
-!call fapp_start("loop3",1,0)
-
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,1)
-!call BCgrv(110,1,1)
-
-!call fapp_start("loop2",1,0)
-
+!$omp parallel do private(i,j,k,grdxy1,grdyz1,grdzx1)
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-     !grdxy1=adiff*Phivec(i+1,j+1,k)+adiff*Phivec(i-1,j-1,k)+(adiff-0.5d0)*Phivec(i+1,j-1,k)+(adiff-0.5d0)*Phivec(i-1,j+1,k) &
-     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i+1,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j+1,k)+&
-     !(-2.d0*adiff+0.5d0)*Phivec(i-1,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j-1,k)
-     !grdyz1=adiff*Phivec(i,j+1,k+1)+adiff*Phivec(i,j-1,k-1)+(adiff-0.5d0)*Phivec(i,j+1,k-1)+(adiff-0.5d0)*Phivec(i,j-1,k+1) &
-     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j+1,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k+1)+&
-     !(-2.d0*adiff+0.5d0)*Phivec(i,j-1,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k-1)
-     !grdzx1=adiff*Phivec(i+1,j,k+1)+adiff*Phivec(i-1,j,k-1)+(adiff-0.5d0)*Phivec(i-1,j,k+1)+(adiff-0.5d0)*Phivec(i+1,j,k-1) &
-     !+(4.d0*adiff-1.d0)*Phivec(i,j,k)+(-2.d0*adiff+0.5d0)*Phivec(i,j,k+1)+(-2.d0*adiff+0.5d0)*Phivec(i+1,j,k)+&
-     !(-2.d0*adiff+0.5d0)*Phivec(i,j,k-1)+(-2.d0*adiff+0.5d0)*Phivec(i-1,j,k)
-
 grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
 +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
 (-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k,1)
@@ -283,60 +225,17 @@ grdzx1=adiff*Phiwv(i+1,j,k+1,1)+adiff*Phiwv(i-1,j,k-1,1)+(adiff-0.5d0)*Phiwv(i-1
 +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
 (-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
 
-     !grdxy1zp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)
-     !grdxy1zm=adiff*Phiwv(i+1,j+1,k-1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)
-     !grdxy1mn=(grdxy1+grdxy1zp+grdxy1zm)/3.d0
-
-     !grdyz1xp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)
-     !grdyz1xm=adiff*Phiwv(i-1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)
-     !grdyz1mn=(grdyz1+grdyz1xp+grdyz1xm)/3.d0
-
-     !grdzx1yp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)
-     !grdzx1ym=adiff*Phiwv(i+1,j-1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)
-     !grdzx1mn=(grdzx1+grdzx1yp+grdzx1ym)/3.d0
-
-
-!     Phigrdwv(i,j,k,1) = Phivecgrd(i,j,k) +&
-!     (-2.d0*cg*cg*grdxy1/dx1/dy1 &
-!      -2.d0*cg*cg*grdyz1/dy1/dz1 &
-!      -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
-!     -G4pi*cg*cg*U(i,j,k,1)*dt * dtration
-
 Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
 (-2.d0*cg*cg*grdxy1/dx1/dy1 &
  -2.d0*cg*cg*grdyz1/dy1/dz1 &
  -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
 -G4pi*cg*cg*U(i,j,k,1)*dt * dtration
-
-     !Phiwv(i,j,k,1)=Phivec(i,j,k)
 enddo; enddo; enddo
+!$omp end parallel do
 
-
-
-!call fapp_stop("loop2",1,0)
-
-
-!----insart---wv
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,1)
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(110,1,1)
 
 N_ol=2
 idm=1
-
 CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
 CALL MPI_TYPE_COMMIT(VECU,IERR)
 LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
@@ -382,13 +281,11 @@ Phigrdwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
 CALL MPI_TYPE_FREE(VECU,IERR)
 UP = UPt; DOWN = DOWNt
 
-!call fapp_start("loop3",1,0)
-
 is = 1
 ie = ndx-2
 nu2 = cg * dt / dx1
 
-
+!$omp parallel do private(i,Mnum,Lnum,delp,delm,delpgrd,delmgrd)
 DO Lnum = -1, ndz;DO Mnum = -1, ndy
 do i = is-1 , ie+1
 delp = Phiwv(i+1,Mnum,Lnum,1)-Phiwv(i  ,Mnum,Lnum,1)
@@ -409,27 +306,25 @@ Phiugrd(i,Mnum,Lnum) = Phigrdwv(i,Mnum,Lnum,1) + 0.5d0 * nu2 * ( Phigrdwv(i+1,Mn
      (1.0d0-slopgrd(i)*1.d0/3.0d0)*(Phigrdwv(i+1,Mnum,Lnum,1) - Phigrdwv(i,Mnum,Lnum,1)))
 end do
 end DO;end DO
+!$omp end parallel do
+!$omp parallel do private(i,Mnum,Lnum,iswp1,iswp2)
 DO Lnum = -1, ndz;DO Mnum = -1, ndy;do i = is,ie
 iswp1=Mnum
 iswp2=Lnum
-!Phiwv(i,Mnum,Lnum,1) = Phiwv(i,Mnum,Lnum,1) - nu2 * (Phiu(i,Mnum,Lnum) - Phiu(i-1,Mnum,Lnum))
 Phiy(i,iswp2,iswp1) = Phiwv(i,Mnum,Lnum,1) - nu2 * (Phiu(i,Mnum,Lnum) - Phiu(i-1,Mnum,Lnum))
-!Phigrdwv(i,Mnum,Lnum,1) = Phigrdwv(i,Mnum,Lnum,1) + nu2 * (Phiugrd(i+1,Mnum,Lnum) - Phiugrd(i,Mnum,Lnum))
 Phiygrd(i,iswp2,iswp1) = Phigrdwv(i,Mnum,Lnum,1) + nu2 * (Phiugrd(i+1,Mnum,Lnum) - Phiugrd(i,Mnum,Lnum))
 end do;end DO;end DO
+!$omp end parallel do
 
 
-!call fapp_stop("loop3",1,0)
-!call fapp_start("loop4",1,0)
 
 is = 1
 ie = ndy-2
 nu2 = cg * dt / dy1
 
+!$omp parallel do private(i,Mnum,Lnum,delp,delm,delpgrd,delmgrd)
 DO Mnum = -1, ndz;DO Lnum = 1, ndx-2
 do i = is-1 , ie+1
-!delp = Phiwv(Lnum,i+1,Mnum,1)-Phiwv(Lnum,i,Mnum,1)
-!delm = Phiwv(Lnum,i,Mnum,1)-Phiwv(Lnum,i-1,Mnum,1)
 delp = Phiy(Lnum,Mnum,i+1)-Phiy(Lnum,Mnum,i)
 delm = Phiy(Lnum,Mnum,i)-Phiy(Lnum,Mnum,i-1)
 slop(i) = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
@@ -439,35 +334,29 @@ delmgrd = Phiygrd(Lnum,Mnum,i)-Phiygrd(Lnum,Mnum,i-1)
 slopgrd(i) = dmax1( 0.d0,(2.d0*delpgrd*delmgrd+eps)/(delpgrd**2+delmgrd**2+eps) )
 end do
 do i = is-1,ie+1
-!Phiu(Lnum,i,Mnum) = Phiwv(Lnum,i,Mnum,1)- 0.5d0 * nu2 * ( Phiwv(Lnum,i,Mnum,1) - Phiwv(Lnum,i-1,Mnum,1)) &
-!     + 0.25d0 * 1.d0 * slop(i) * ((1.0d0-slop(i)*1.d0/3.0d0)*(Phiwv(Lnum,i,Mnum,1)-Phiwv(Lnum,i-1,Mnum,1)) + &
-!     (1.0d0+slop(i)*1.d0/3.0d0)*(Phiwv(Lnum,i+1,Mnum,1) - Phiwv(Lnum,i,Mnum,1)))
 Phiu(Lnum,Mnum,i) = Phiy(Lnum,Mnum,i)- 0.5d0 * nu2 * ( Phiy(Lnum,Mnum,i) - Phiy(Lnum,Mnum,i-1)) &
      + 0.25d0 * 1.d0 * slop(i) * ((1.0d0-slop(i)*1.d0/3.0d0)*(Phiy(Lnum,Mnum,i)-Phiy(Lnum,Mnum,i-1)) + &
      (1.0d0+slop(i)*1.d0/3.0d0)*(Phiy(Lnum,Mnum,i+1) - Phiy(Lnum,Mnum,i)))
 
-!Phiugrd(Lnum,i,Mnum) = Phigrdwv(Lnum,i,Mnum,1) + 0.5d0 * nu2 * ( Phigrdwv(Lnum,i+1,Mnum,1) - Phigrdwv(Lnum,i,Mnum,1)) &
-!     - 0.25d0 * 1.d0 * slopgrd(i) * ((1.0d0+slopgrd(i)*1.d0/3.0d0)*(Phigrdwv(Lnum,i,Mnum,1)-Phigrdwv(Lnum,i-1,Mnum,1)) + &
-!     (1.0d0-slopgrd(i)*1.d0/3.0d0)*(Phigrdwv(Lnum,i+1,Mnum,1) - Phigrdwv(Lnum,i,Mnum,1)))
 Phiugrd(Lnum,Mnum,i) = Phiygrd(Lnum,Mnum,i) + 0.5d0 * nu2 * ( Phiygrd(Lnum,Mnum,i+1) - Phiygrd(Lnum,Mnum,i)) &
      - 0.25d0 * 1.d0 * slopgrd(i) * ((1.0d0+slopgrd(i)*1.d0/3.0d0)*(Phiygrd(Lnum,Mnum,i)-Phiygrd(Lnum,Mnum,i-1)) + &
      (1.0d0-slopgrd(i)*1.d0/3.0d0)*(Phiygrd(Lnum,Mnum,i+1) - Phiygrd(Lnum,Mnum,i)))
 end do
 end DO;end DO
+!$omp end parallel do
+!$omp parallel do private(i,Mnum,Lnum,iswp1,iswp2)
 do i = is,ie;DO Mnum = -1, ndz;DO Lnum = 1, ndx-2
 iswp1=i
 iswp2=Mnum
-!Phiwv(Lnum,i,Mnum,1) = Phiwv(Lnum,i,Mnum,1) - nu2 * (Phiu(Lnum,i,Mnum) - Phiu(Lnum,i-1,Mnum))
-!Phigrdwv(Lnum,i,Mnum,1) = Phigrdwv(Lnum,i,Mnum,1) + nu2 * (Phiugrd(Lnum,i+1,Mnum) - Phiugrd(Lnum,i,Mnum))
 Phiwv(Lnum,iswp1,iswp2,1) = Phiy(Lnum,Mnum,i) - nu2 * (Phiu(Lnum,Mnum,i) - Phiu(Lnum,Mnum,i-1))
 Phigrdwv(Lnum,iswp1,iswp2,1) = Phiygrd(Lnum,Mnum,i) + nu2 * (Phiugrd(Lnum,Mnum,i+1) - Phiugrd(Lnum,Mnum,i))
 end do;end DO;end DO
-!call fapp_stop("loop4",1,0)
-!call fapp_start("loop5",1,0)
+!$omp end parallel do
 
 is = 1
 ie = ndz-2
 nu2 = cg * dt / dz1
+!$omp parallel do private(i,Mnum,Lnum,delp,delm,delpgrd,delmgrd)
 DO Lnum = 1, ndy-2;DO Mnum = 1, ndx-2
 do i = is-1 , ie+1
 delp = Phiwv(Mnum,Lnum,i+1,1)-Phiwv(Mnum,Lnum,i,1)
@@ -488,17 +377,15 @@ Phiugrd(Mnum,Lnum,i) = Phigrdwv(Mnum,Lnum,i,1) + 0.5d0 * nu2 * ( Phigrdwv(Mnum,L
      (1.0d0-slop(i)*1.d0/3.0d0)      *(Phigrdwv(Mnum,Lnum,i+1,1) -Phigrdwv(Mnum,Lnum,i  ,1)))
 end do
 end DO;end DO
+!$omp end parallel do
+!$omp parallel do private(i,Mnum,Lnum)
 DO Lnum = 1, ndy-2;DO Mnum = 1, ndx-2;do i = is,ie
 Phiwv(Mnum,Lnum,i,1)    = Phiwv(Mnum,Lnum,i,1) - nu2 * (Phiu(Mnum,Lnum,i) - Phiu(Mnum,Lnum,i-1))
 Phigrdwv(Mnum,Lnum,i,1) = Phigrdwv(Mnum,Lnum,i,1) + nu2 * (Phiugrd(Mnum,Lnum,i+1) - Phiugrd(Mnum,Lnum,i))
 end do;end DO;end DO
-!----insart---wv
+!$omp end parallel do
 
-!call fapp_stop("loop5",1,0)
 
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,1)
-!call BCgrv(110,1,1)
 CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
 CALL MPI_TYPE_COMMIT(VECU,IERR)
 LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
@@ -532,7 +419,7 @@ CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
 CALL MPI_TYPE_FREE(VECU,IERR)
 UP = UPt; DOWN = DOWNt
 
-!call fapp_start("loop4",1,0)
+!$omp parallel do private(i,j,k,grdxy1,grdyz1,grdzx1)
 do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
      grdxy1=adiff*Phiwv(i+1,j+1,k,1)+adiff*Phiwv(i-1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k,1) &
      +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k,1)+&
@@ -544,69 +431,23 @@ do k=0,ndz-1; do j=0,ndy-1; do i=0,ndx-1
      +(4.d0*adiff-1.d0)*Phiwv(i,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k,1)+&
      (-2.d0*adiff+0.5d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k,1)
 
-     !grdxy1zp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)
-     !grdxy1zm=adiff*Phiwv(i+1,j+1,k-1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)
-     !grdxy1mn=(grdxy1+grdxy1zp+grdxy1zm)/3.d0
-
-     !grdyz1xp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i+1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i+1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j,k-1,1)
-     !grdyz1xm=adiff*Phiwv(i-1,j+1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i-1,j,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k+1,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j,k-1,1)
-     !grdyz1mn=(grdyz1+grdyz1xp+grdyz1xm)/3.d0
-
-     !grdzx1yp=adiff*Phiwv(i+1,j+1,k+1,1)+adiff*Phiwv(i-1,j+1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j+1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j+1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j+1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j+1,k,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i,j+1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j+1,k,1)
-     !grdzx1ym=adiff*Phiwv(i+1,j-1,k+1,1)+adiff*Phiwv(i-1,j-1,k-1,1)+(adiff-0.5d0)*Phiwv(i-1,j-1,k+1,1)+(adiff-0.5d0)*Phiwv(i+1,j-1,k-1,1) &
-     !+(4.d0*adiff-1.d0)*Phiwv(i,j-1,k,1)+(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k+1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i+1,j-1,k,1)+&
-     !(-2.d0*adiff+0.5d0)*Phiwv(i,j-1,k-1,1)+(-2.d0*adiff+0.5d0)*Phiwv(i-1,j-1,k,1)
-     !grdzx1mn=(grdzx1+grdzx1yp+grdzx1ym)/3.d0
-
-
      Phigrdwv(i,j,k,1) = Phigrdwv(i,j,k,1) +&
      (-2.d0*cg*cg*grdxy1/dx1/dy1 &
       -2.d0*cg*cg*grdyz1/dy1/dz1 &
       -2.d0*cg*cg*grdzx1/dz1/dx1) *dt * dtration &
      -G4pi*cg*cg*U(i,j,k,1)*dt * dtration
 enddo; enddo; enddo
-!call fapp_stop("loop4",1,0)
+!$omp end parallel do
 
 
-!iwx=1;iwy=1;iwz=1
-!call BCgrv(100,1,1)
-!call BCgrv(110,1,1)
-
-!call slvPWE(dt*0.5d0)
-
-!call fapp_start("loop5",1,0)
-!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
-!do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-!Phiwvpre(i,j,k,1)=Phiwv(i,j,k,1)
-!Phigrdwvpre(i,j,k,1)=Phigrdwv(i,j,k,1)
-!enddo; enddo; enddo
-
-!time_pfm(NRANK,5)=MPI_WTICK()
+!$omp parallel do private(i,j,k,phiwv_d)
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-!Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa * 0.5d0 * dt))+Phigrdwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa * 0.5d0 * dt))/(2.d0*kappa+1.d-10)
-!Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*(1.d0-dexp(-2.d0*kappa *0.5d0* dt))+0.5d0*Phigrdwvpre(i,j,k,1)*(1.d0+dexp(-2.d0*kappa *0.5d0* dt))
-!Phiwv(i,j,k,1) = 0.5d0*Phiwvpre(i,j,k,1)*(1.d0+expand_exp)+Phigrdwvpre(i,j,k,1)*(1.d0-expand_exp)*kp_i
 phiwv_d=Phiwv(i,j,k,1)
 Phiwv(i,j,k,1)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
 Phigrdwv(i,j,k,1) = 0.5d0*kappa*phiwv_d*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
-!Phigrdwv(i,j,k,1) = 0.5d0*kappa*Phiwvpre(i,j,k,1)*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
 enddo; enddo; enddo
-!call fapp_stop("loop5",1,0)
-!call fapp_stop("loop1",1,0)
-!call fapp_stop("loop5",1,0)
+!$omp end parallel do
 enddo
-!call fapp_stop("loop1",1,0)
-!call fipp_stop
 end subroutine slvmuscle
 
 subroutine slvPWE(dt)
@@ -1762,7 +1603,7 @@ double precision  grdxy1,grdyz1,grdzx1
 !double precision  grdxy1zp,grdxy1zm,grdxy1mn,grdyz1xp,grdyz1xm,grdyz1mn,grdzx1yp,grdzx1ym,grdzx1mn
 double precision :: Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:2),Phigrdwvpre(-1:ndx,-1:ndy,-1:ndz,1:2)
 !double precision dtt2
-integer :: i_flow, i_flow_end=1000000
+integer :: i_flow!, i_flow_end=1000000
 
 do i_flow=1,i_flow_end
 !call fipp_start

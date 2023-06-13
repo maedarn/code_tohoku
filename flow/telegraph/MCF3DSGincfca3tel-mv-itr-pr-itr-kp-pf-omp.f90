@@ -1,6 +1,7 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !omp8
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 !INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
@@ -104,6 +105,7 @@ if(NPE.eq.48)   then; NSPLTx = 4; NSPLTy = 4; NSPLTz = 3; end if
 if(NPE.eq.96)   then; NSPLTx = 6; NSPLTy = 4; NSPLTz = 4; end if
 if(NPE.eq.64)   then; NSPLTx = 4; NSPLTy = 4; NSPLTz = 4; end if
 if(NPE.eq.128)  then; NSPLTx = 8; NSPLTy = 4; NSPLTz = 4; end if
+if(NPE.eq.150)  then; NSPLTx = 6; NSPLTy = 5; NSPLTz = 5; end if !for OMP
 if(NPE.eq.192)  then; NSPLTx = 8; NSPLTy = 6; NSPLTz = 4; end if
 if(NPE.eq.240)  then; NSPLTx = 8; NSPLTy = 6; NSPLTz = 5; end if
 if(NPE.eq.256)  then; NSPLTx = 8; NSPLTy = 8; NSPLTz = 4; end if
@@ -169,10 +171,10 @@ ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
 ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 !*********grvwave*********
 
-!write(*,*) 'OK3'
+write(*,*) 'OK3',NRANK
 
 call INITIA
-!write(*,*) 'OK'
+write(*,*) 'OK4',NRANK
 !dt=dx(1)/cg*tratio
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 call SELFGRAVWAVE(0.0d0,0)
@@ -181,6 +183,7 @@ call SELFGRAVWAVE(0.0d0,0)
 !write(*,*)'dt',dx1/cg*tratio
 !call fapp_start("loop1",1,0)
 !time_pfm(:,:)=0.d0
+write(*,*) 'OK5',NRANK
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 time_pfm(NRANK,1)=MPI_WTIME()
 !write(*,*)
@@ -194,7 +197,7 @@ time_pfm(NRANK,1)=MPI_WTIME()
 dt=dx1/cg*tratio
 call slvmuscle(dt)
 !enddo
-
+!write(*,*) 'OK6',NRANK
 !call SELFGRAVWAVE(0.0d0,4)
 time_pfm(NRANK,2)=MPI_WTIME()
 time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
@@ -265,7 +268,7 @@ character*3 :: NPENUM!,MPIname
 !integer i3,i4,i2y,i2z,rsph2,pls
 !double precision cenx,ceny,cenz,rsph,rrsph,Hsheet,censh,minexa,rsph3
 
-open(8,file=dir//'INPUT3D.DAT')
+open(8,file=dir//'ompINPUT3D.DAT')
   read(8,*)  svdir
   read(8,*)  cg,Tdiff,rncn,ntdiv,svci,vmove
   read(8,*)  Np1x,Np2x
