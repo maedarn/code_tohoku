@@ -1,7 +1,7 @@
 MODULE comvar
 !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
-INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
-!INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
+!INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
+INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 !INTEGER, parameter :: ndx=18, ndy=18, ndz=18, ndmax=18, Dim=3
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
 DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
@@ -27,12 +27,17 @@ INTEGER ::ntdiv=5
 !integer ifevogrv,ifevogrv2
 !character(25) :: dir='/work/maedarn/3DMHD/test/' !samplecnv2
 !character(43) :: dir='/work/maedarn/3DMHD/tel/tel-mesh128-cy-k20/'
-!character(43) :: dir='/work/maedarn/3DMHD/tel/ts-paformance-time/'
-character(43) :: dir='/data/group1/z40309n/telegraph/performance/'
+character(43) :: dir='/work/maedarn/3DMHD/tel/dyn-jeans-test-tmd/'
+!character(43) :: dir='/data/group1/z40309n/telegraph/performance/'
 character(17)  :: svdir
-integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts
+integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts,count_gr=1
 DOUBLE PRECISION, dimension(:,:), allocatable :: time_pfm
-integer :: i_flow_end=4000
+!integer :: i_flow_end=4000
+
+DOUBLE PRECISION :: nj=0.5d0,lambda1=1.d0/3.d0
+DOUBLE PRECISION :: G_n=1.11142d-4, G4pi!=12.56637d0*G
+DOUBLE PRECISION  :: nitr_min=10.d0
+integer :: nitr
 END MODULE comvar
 
 MODULE mpivar
@@ -51,7 +56,6 @@ DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOm
 END MODULE chmvar
 
 MODULE slfgrv
-DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=1
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi ! , Phiexa
 double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
@@ -158,7 +162,6 @@ ALLOCATE(time_pfm(0:NPE-1,1:12))
 
 !*********grvwave*********
 ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
-!ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
 ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
 
 ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))!,Phiwvpre(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
@@ -169,58 +172,10 @@ ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
 ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
 !*********grvwave*********
 
-!write(*,*) 'OK3'
-
+write(*,*) 'INIT'
 call INITIA
-!write(*,*) 'OK'
-!dt=dx(1)/cg*tratio
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-call SELFGRAVWAVE(0.0d0,0)
-!call SELFGRAVWAVE(0.0d0,4)
-!call SELFGRAVWAVE(0.0d0,4)
-!write(*,*)'dt',dx1/cg*tratio
-!call fapp_start("loop1",1,0)
-!time_pfm(:,:)=0.d0
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-time_pfm(NRANK,1)=MPI_WTIME()
-!write(*,*)
-!call fapp_start("loop1",1,0)
-!call fipp_start
-!do i_flow=1,i_flow_end
-!do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
-!Phiwv(i,j,k,1)=1.d0
-!Phigrdwv(i,j,k,1)=1.d0*dt
-!enddo; enddo; enddo
-dt=dx1/cg*tratio
-call slvmuscle(dt)
-!enddo
-
-!call SELFGRAVWAVE(0.0d0,4)
-time_pfm(NRANK,2)=MPI_WTIME()
-time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/dble(i_flow_end)
-
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!do Nroot=0,NPE-1
-!CALL MPI_BCAST(time_pfm(Nroot,1),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-!CALL MPI_BCAST(time_pfm(Nroot,2),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-!CALL MPI_BCAST(time_pfm(Nroot,3),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-!end do
-
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-WRITE(NPENUM,'(I5.5)') NRANK
- !if(NRANK==0) then
-open(521,file=dir//svdir//'/CPU_TIME'//NPENUM//'.DAT',access='stream',FORM='UNFORMATTED')
- !do Nroot=0,NPE-1
-write(521) time_pfm(NRANK,1),time_pfm(NRANK,2),time_pfm(NRANK,3)
- !end do
-close(521)
-!endif
-
-!call fipp_stop
-!call fapp_stop("loop1",1,0)
-
-!call EVOLVE
-
+write(*,*) 'EVLV'
+call EVOLVE
 !write(*,*) 'OK'
 
 DEALLOCATE(U)
@@ -230,9 +185,7 @@ DEALLOCATE(Phi)
 
 !********gravwave**********
 DEALLOCATE(Phiexa,Phigrd)
-!DEALLOCATE(Phiexab1,phiexab2)
 DEALLOCATE(Phiwv,Phigrdwv)
-!DEALLOCATE(Phiwvpre,Phigrdwvpre)
 DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
 DEALLOCATE(time_pfm)
 !********gravwave**********
@@ -267,7 +220,7 @@ character*3 :: NPENUM!,MPIname
 
 open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  svdir
-  read(8,*)  cg,Tdiff,rncn,ntdiv,svci,vmove
+  read(8,*)  cg,Tdiff!,rncn,ntdiv,svci,vmove
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
   read(8,*)  Np1z,Np2z
@@ -280,7 +233,7 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  binitx1,binitx2
   read(8,*)  binity1,binity2
   read(8,*)  binitz1,binitz2
-  read(8,*)  CFL,facdep,di_pos
+  read(8,*)  CFL,facdep!,di_pos
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2,BCy1,BCy2,BCz1,BCz2
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv
@@ -290,11 +243,6 @@ tratio=tratio*tratio1
 vmove=vmove*cg/rmove
 kappa=0.5d0/Tdiff
 !write(*,*)'INT',tratio,kappa
-
-
-!open(unit=49,file=dir//'/ntimeint.DAT',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
-!read(49,*) ntimeint
-!close(49)
 
 
 !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
@@ -349,6 +297,13 @@ BBRV(7,1,1) = binity1; BBRV(7,2,1) = binity1; BBRV(7,1,2) = binity2; BBRV(7,2,2)
 BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2) = binitz2
 
 !***** x-direction shock tube test *****!
+
+pinit1=1.d0; pinit2=pinit1
+Hini=1.d0; pini=0.d0; H2ini=0.d0; Heini=0.d0; Hepini=0.d0
+Cini=0.d0; COini=0.d0; Cpini=0.d0
+dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
 
 Ncellx = Ncellx/NSPLTx; Ncelly = Ncelly/NSPLTy; Ncellz = Ncellz/NSPLTz
 dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
@@ -422,7 +377,7 @@ dx1= dx_i(0)
 dy1= dy_i(0)
 dz1= dz_i(0)
 !dx=dy=dz
-dt=dx1/cg*tratio
+!dt=dx1/cg*tratio
 
 x_i(-1) = -dx_i(0)
 x_i(-2) = x_i(-1)-dx_i(0)
@@ -475,31 +430,9 @@ end do
 
 
 !goto 6701 
-dt=dx(1)/cg*tratio
-!call SELFGRAVWAVE(dt,52)
+!dt=dx(1)/cg*tratio
+!call SELFGRAVWAVE(0,0)
 !6701 continue
-
-
-!/work/maedarn/3DMHD/test/
-!***** Alfven wave propagation *****!
-!goto 111
-!do k = 1, Ncellz+1; do j = 1, Ncelly+1; do i = 1, Ncellx+1
-!  xpi = 0.5d0*( x(i)+x(i-1) ); amp = 1.d-3
-!  U(i,j,k,3) =  amp*dcos(2.d0*pi*xpi)
-!  U(i,j,k,4) =  amp*dcos(2.d0*pi*xpi)
-!  U(i,j,k,7) = -amp*dsqrt(dinit1)*dcos(2.d0*pi*xpi)
-!  U(i,j,k,8) =  amp*dsqrt(dinit1)*dcos(2.d0*pi*xpi)
-!end do; end do; end do
-!111 continue
-!***** Blast wave *****!
-!goto 112
-!do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
-!  xpi = 0.5d0*( x(i)+x(i-1) ); ypi = 0.5d0*( y(j)+y(j-1) )
-!  amp = dsqrt( (xpi-0.5d0)**2 + (ypi-0.5d0)**2 )
-!  if(amp.lt.0.125d0) U(i,j,k,5) =  1.d2
-!end do; end do; end do
-!112 continue
-
 
 
 !**** read inhomogeneous density field ****!
@@ -631,16 +564,15 @@ USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
 
-double precision  :: t(1000),dt, time_CPU(3)!, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_pfm(3)
-double precision  :: tsave,dtsave!,tsave2D!,dtsave2D
-integer :: nunit, st,Time_signal,count=0!, st_mpi(0:1024), st_gat(0:2047)!, Time_pfm_signal
+double precision  :: t(1000),dt, time_CPU(3), stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024),dt_mpi2(0:1024),dt_gat2(0:1024)
+double precision  :: tsave,dtsave,tsave2D!,dtsave2D
+integer :: nunit, st,Time_signal,count=0, st_mpi(0:1024), st_gat(0:2047)!, Time_pfm_signal
 character*7 stb(3)
 character*3 fnunit,fnpe!,cntctj
-double precision :: t_test=0.d0
+double precision :: t_test=0.d0,dt2,dtt2
 !character(3) NPENUM
 !character(6) countcha
 !integer :: isv,jsv,ksv
-!double precision  tLMT
 
 
 !write(*,*)'evol1'
@@ -687,415 +619,176 @@ time_pfm(:,:)=0.d0
 !time_pfm(3) = 0.d0
 !Time_pfm_signal = 0
 
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'evol2'
-!---------------debug-------------------
-!write(*,*) '-------------3-----------',NRANK
-!---------------debug-------------------
-if(ifgrv.eq.2) then
-!   call  SELFGRAVWAVE(0.0d0,0)
-!do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
-!    Phiwv(i,j,k,1)=0.d0
-!end do;end do;end do
-call  SELFGRAVWAVE(0.0d0,0)
 
-!WRITE(NPENUM,'(I3.3)') NRANK
-!WRITE(countcha,'(I6.6)') count
- !write(*,*)'SAVE_Phi_pre',count,dir,svdir
-!open(19,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-!do ksv = 1, Ncellz
-   !write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
-!   do jsv = 1, Ncelly
-!      do isv = 1, Ncellx
-      !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
-      !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-!      write(19) sngl(Phiwv(isv,jsv,ksv,1)),sngl(Phigrdwv(isv,jsv,ksv,1)),sngl(Phiexa(isv,jsv,ksv))&
-!               ,sngl(cg*Phigrd(isv,jsv,ksv,1)+kappa*Phiexa(isv,jsv,ksv)),sngl(U(isv,jsv,ksv,1))
-      !write(10) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
-!     enddo
-!   end do
-   !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
-!end do
-!close(19)
-!count=count+1
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'SAVE_Phi',count,dir,svdir
-!call  SELFGRAVWAVE(0.0d0,4)
-!call  SELFGRAVWAVE(0.0d0,4)
-end if
-
-!write(*,*)'evol3'
+write(*,*)'evol3'
 
 do in10 = 1, maxstp
-
+  write(*,*)'evol_in10'
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
   if(time.ge.tsave ) goto 7777
-  !call SAVEU(nunit,dt,stb,st,t)
+  !call SAVEU(nunit,dt,stb,st,0)
   !if(ifgrv.eq.2) then
-  !   call  SELFGRAVWAVE(0.0d0,4)
+  !call  SELFGRAVWAVE(0.0d0,4)
   !end if
 
   do in20 = 1, nitera
-     !write(*,*) '---top---'
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
+    write(*,*)'evol_in20'
     !tsave2D = dtsave2D * nunit2D
     !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
-    !if(time.ge.tfinal) goto 9000
-    !if(time.ge.tsave ) goto 7777
+    if(time.ge.tfinal) goto 9000
+    if(time.ge.tsave ) goto 7777
+    !if(in20==1) call SELFGRAVWAVE(0.d0,4)
+!call SELFGRAVWAVE(0.d0,4)
 !***** Determine time-step dt *****
-    !dt_mpi(NRANK) = tfinal
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
-    !call Couran(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
-    !dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
-    !st_mpi(NRANK) = 1
-    !stt= dt_mpi(NRANK)
+    write(*,*)'coutrant1'
+    dt_mpi(NRANK) = tfinal
+    call Couran(tLMT)
+    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
+    st_mpi(NRANK) = 1
+    stt= dt_mpi(NRANK)
  !     if(ifgrv.eq.2) then
  !     call  SELFGRAVWAVE(0.0d0,4)
  !     end if
-    !---------------debug-------------------
-    !write(*,*) '---------4-----------',NRANK,in20,in10
-    !---------------debug-------------------
-
 
     !if(ifgrv==2) then
     !call SELFGRAVWAVE(stt,5)
     !end if
 
-
-    !---------------debug-------------------
-    !write(*,*) '-------------5-----------',NRANK,in20,in10
-    !---------------debug-------------------
-
-
-
     !--------for INIT---------------
-    !call Stblty(tLMT)
+    call Stblty(tLMT)
     !--------for INIT---------------
 
-
-
-    !---------------debug-------------------
-    !write(*,*) '-------------6-----------',tLMT,NRANK,in20,in10
-    !---------------debug-------------------
-    dt=dx(1)/cg*tratio
     !dtdif= 2.d0 * Tdiff
     !if(dt/dtdif>0.1d0) then
     !dt = dtdif*0.1d0
     !endif
     !if(ifgrv==2) then
     !   call SELFGRAVWAVE(tLMT,7)
-
-       !---------------debug-------------------
-       !write(*,*) '-------------99-----------',NRANK,in20,in10
-       !---------------debug-------------------
-
-
      !  call SELFGRAVWAVE(tLMT,11)
-
-       !---------------debug-------------------
-       !write(*,*) '-------------88-----------',NRANK
-       !---------------debug-------------------
     !endif
 
- !---------------debug-------------------
- !write(*,*) '-------------1-----------',NRANK
- !---------------debug-------------------
 !goto 342
- !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
-!    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
-!    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
-!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
-!                    dt_gat       ,1,MPI_REAL8,   &
-!                    0            ,MPI_COMM_WORLD,IERR)
-!    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
-!                    st_gat       ,1,MPI_INTEGER, &
-!                    0            ,MPI_COMM_WORLD,IERR)
-!    IF(NRANK.EQ.0)  THEN
-!      dt  = tfinal
-!      dtt = tfinal
-!      do i_t = 0, NPE-1
-!         dt  = dmin1( dt, dt_gat(i_t) )
-         !write(*,*) '--------------dt--------------' , dt
-!        if(dt.lt.dtt) st = st_gat(i_t)
-!        dtt = dt
-!      end do
-!   END IF
-!    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!    CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    write(*,*)'coutrant2'
+    dt_mpi2(NRANK)= dt_mpi(NRANK)
+    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
+    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
+                    dt_gat       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(dt_mpi2(NRANK),1,MPI_REAL8,   &
+                    dt_gat2       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
+                    st_gat       ,1,MPI_INTEGER, &
+                    0            ,MPI_COMM_WORLD,IERR)
+    write(*,*)'coutrant3'
+    IF(NRANK.EQ.0)  THEN
+      dt  = tfinal
+      dtt = tfinal
+      dt2 = tfinal
+      dtt2= tfinal
+      do i_t = 0, NPE-1
+         dt  = dmin1( dt, dt_gat(i_t) )
+         dt2 = dmin1( dt2,dt_gat2(i_t) )
+        if(dt.lt.dtt) st = st_gat(i_t)
+        dtt = dt
+        dtt2= dt2
+      end do
+   END IF
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_BCAST(dt ,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+    CALL MPI_BCAST(dt2,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
  !    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
     !if(NRANK.eq.0) write(*,*) in20,time,dt
-!    if(time+dt.gt.tfinal) dt = tfinal - time
-!    if(time+dt.gt.tsave ) dt = tsave  - time
+    if(time+dt.gt.tfinal) dt = tfinal - time;dt2=dt
+    if(time+dt.gt.tsave ) dt = tsave  - time;dt2=dt
 
-    !write(*,*) '-------------dt--------------------cl-------------' , dt,NRANK
- !if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
+    !if(dt2/dt > nitr_min) then; nitr=nitr_min/int(dt2/dt);  endif
+    nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
+    write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
+
+call SELFGRAVWAVE(0.d0,4)
+write(*,*)'pre_gr_1',count_gr
  !***** Source parts 1*****
-    !if(ifgrv.eq.2) then
+    if(ifgrv.eq.2) then
        !call GRAVTY(dt,3)
        !call SELFGRAVWAVE(dt,3)
-       !call SELFGRAVWAVE(dt*0.5d0,3)
-    !end if
+       call SELFGRAVWAVE(dt,3)
+       call SELFGRAVWAVE(dt*0.5d0,2)
+    end if
     !call SOURCE(0.5d0*dt)
- !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
     !***** Godunov parts *****
 
 !342 continue
+call SELFGRAVWAVE(0.d0,4)
+write(*,*)'post_gr_1',count_gr
 
 
-    !---------------------------skip-----------------------------
-    !---------------------------skip-----------------------------
-!    goto 263
-    !---------------------------skip-----------------------------
-    !---------------------------skip-----------------------------
+write(*,*)'evolv4'
 
-!    if(ifEVO.eq.1) then
-!      iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
-!      ifEVO = 2; goto 1000
-!    end if
-!    if(ifEVO.eq.2) then
-!      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
-!      ifEVO = 3; goto 1000
-!    end if
-!    if(ifEVO.eq.3) then
-!      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
-!      ifEVO = 4; goto 1000
-!    end if
-!    if(ifEVO.eq.4) then
-!      iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
-!      ifEVO = 5; goto 1000
-!    end if
-!    if(ifEVO.eq.5) then
-!      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
-!      ifEVO = 6; goto 1000
-!    end if
-!    if(ifEVO.eq.6) then
-!      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
-!      ifEVO = 1; goto 1000
-!    end if
-!1000 continue
-!    DEALLOCATE(Bcc)
- !if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
+    if(ifEVO.eq.1) then
+      iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
+      ifEVO = 2; goto 1000
+    end if
+    if(ifEVO.eq.2) then
+      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
+      ifEVO = 3; goto 1000
+    end if
+    if(ifEVO.eq.3) then
+      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
+      ifEVO = 4; goto 1000
+    end if
+    if(ifEVO.eq.4) then
+      iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
+      ifEVO = 5; goto 1000
+    end if
+    if(ifEVO.eq.5) then
+      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
+      ifEVO = 6; goto 1000
+    end if
+    if(ifEVO.eq.6) then
+      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
+      ifEVO = 1; goto 1000
+    end if
+1000 continue
+    DEALLOCATE(Bcc)
  !***** CT part *****
-!    ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
-!    call CC(1,dt)
-!    ALLOCATE(dnc(-1:ndx,-1:ndy,-1:ndz)); ALLOCATE(EMF(-1:ndx,-1:ndy,-1:ndz,3))
-!    iwx=1; iwy=0; iwz=0; call CC(2,dt); call CCT(dx,dy,dt) !calculate Ez
-!    iwx=0; iwy=1; iwz=0; call CC(2,dt); call CCT(dy,dz,dt) !calculate Ex
-!    iwx=0; iwy=0; iwz=1; call CC(2,dt); call CCT(dz,dx,dt) !calculate Ey
-!    DEALLOCATE(Vfc); DEALLOCATE(dnc)
+    ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
+    call CC(1,dt)
+    ALLOCATE(dnc(-1:ndx,-1:ndy,-1:ndz)); ALLOCATE(EMF(-1:ndx,-1:ndy,-1:ndz,3))
+    iwx=1; iwy=0; iwz=0; call CC(2,dt); call CCT(dx,dy,dt) !calculate Ez
+    iwx=0; iwy=1; iwz=0; call CC(2,dt); call CCT(dy,dz,dt) !calculate Ex
+    iwx=0; iwy=0; iwz=1; call CC(2,dt); call CCT(dz,dx,dt) !calculate Ey
+    DEALLOCATE(Vfc); DEALLOCATE(dnc)
 
-!    call CC(3,dt)
-!    DEALLOCATE(EMF)
-!    call CC(4,dt)
+    call CC(3,dt)
+    DEALLOCATE(EMF)
+    call CC(4,dt)
 
-    !---------------------------skip-----------------------------
-    !---------------------------skip-----------------------------
-!    263 continue
-    !---------------------------skip-----------------------------
-    !---------------------------skip-----------------------------
+write(*,*)'evolv5'
+call SELFGRAVWAVE(0.d0,4)
+write(*,*)'post_MHD_1',count_gr
 
-    !---------------debug-------------------
-    !write(*,*) '-------------10-----------',NRANK
-    !---------------debug-------------------
-
-!write(*,*) 'OK7'
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
     !call SOURCE(0.5d0*dt)
     if(ifgrv.eq.2) then
-       !call GRAVTY(dt,2)
-       !call GRAVTY(dt,3)
-       !call GRAVTY(dt*0.5d0,3)
-       !write(*,*) dt,NRANK,'--dt--dt--'
-       !call SELFGRAVWAVE(dt,2)
-       !call mlt_expnd()
-       !---debug---
-       !call  SELFGRAVWAVE(0.0d0,4)
-       !call SELFGRAVWAVE(dt*0.5d0,3)
-       !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'evol4'
-       CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-       time_pfm(NRANK,1)=MPI_WTIME()
-       !call fipp_start
-       !call fapp_start("loop1",1,0)
-       !call SELFGRAVWAVE(dt,2)
-       !call fipp_stop
-       !call fapp_stop("loop1",1,0)
-
-
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-!call SELFGRAVWAVE(dt,2)
-
-!call fipp_stop
-
-!call SELFGRAVWAVE(dt,4)
-
-       time_pfm(NRANK,2)=MPI_WTIME()
-       time_pfm(NRANK,3)=(time_pfm(NRANK,2)-time_pfm(NRANK,1))/100.d0
-
-       !write(*,*) time_pfm(NRANK,1),time_pfm(NRANK,2),NRANK
-
-       !iwx=iwxts;iwy=iwyts;iwz=iwzts
-       !call BCgrv(100,1,1)
-       !call muslcslv1D(Phiwv(-1,-1,-1,1)   ,dt,1)
-       !call BCgrv(110,1,1)
-       !call muslcslv1D(Phigrdwv(-1,-1,-1,1),dt,2)
-       !t_test=t_test+dt
-       !if(dmod(t_test,Lbox*0.5d0)==0.d0) then
-       !call SELFGRAVWAVE(0.0d0,4)
-       !endif
-       !---------------debug-------------------
-       !write(*,*) '-------------13-----------',NRANK, nitera ,maxstp
-       !---------------debug-------------------
-
-
+    call SELFGRAVWAVE(dt*0.5d0,2)
+    call SELFGRAVWAVE(dt,3)
     end if
+call SELFGRAVWAVE(0.d0,4)
+write(*,*)'evolv6',time
+write(*,*)'post_gr_2',count_gr
 
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*) 'OK8'
-    !*********************************!収束判定
-    !call SELFGRAVWAVE(0.0d0,8) !収束判定
-    !if(shusoku1 > 1.0d0) then
-    !   !---------------debug-------------------
-    !   write(*,*) '-------------goto-----------',NRANK
-       !---------------debug-------------------
-    !   goto 2419
-    !end if
-    !*********************************!収束判定
-
-    !---------------debug-------------------
-    !write(*,*) '-------------12-----------',NRANK
-    !---------------debug-------------------
-    !call DISSIP()
-    !time = time + dt
+    call DISSIP()
+    time = time + dt
  end do
-  !itime = itime - 1
+  itime = itime - 1
   7777   continue
-  !itime = itime + 1
+  itime = itime + 1
 
-!----skip----
-  !if(ifgrv.eq.2) then
-  !   call  SELFGRAVWAVE(0.0d0,4)
-  !end if
-!----skip----
-
-  !*********************************!収束判定
-  !call SELFGRAVWAVE(0.0d0,8) !収束判定
-  !if(shusoku1 > 1.0d0) then
-     !---------------debug-------------------
-  !   write(*,*) '-------------goto-----------',NRANK
-     !---------------debug-------------------
-  !  goto 2419
-  !end if
-  !*********************************!収束判定
-
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
   IF(NRANK.EQ.0) THEN
     time_CPU(2) = MPI_WTIME()
     time_CPU(2) = ( time_CPU(2)-time_CPU(1) )/3.6d3
@@ -1105,27 +798,8 @@ do in10 = 1, maxstp
   CALL MPI_BCAST(Time_signal,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   IF(Time_signal.EQ.1) GOTO 9000
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end do
-
-!---------------debug-------------------i
-!write(*,*) '-------------22-----------',NRANK
-!---------------debug-------------------
-!**********************!収束判定
-!if(ifgrv.eq.2) then !if文中には飛べない
-2419 continue
-
-!----skip----
-!if(ifgrv.eq.2) then
-!   call  SELFGRAVWAVE(0.0d0,4)
-!end if
-!----skip----
-
-
-!**********************!収束判定
-!write(*,*) 'save',NRANK
-
 9000 continue
 
 
@@ -1796,7 +1470,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   U(i,j,k,2) = dsign(1.d0,U(i,j,k,2))*dmin1(dabs(U(i,j,k,2)),dabs(U(i,j,k,2))*30.d0/vel)
   U(i,j,k,3) = dsign(1.d0,U(i,j,k,3))*dmin1(dabs(U(i,j,k,3)),dabs(U(i,j,k,3))*30.d0/vel)
   U(i,j,k,4) = dsign(1.d0,U(i,j,k,4))*dmin1(dabs(U(i,j,k,4)),dabs(U(i,j,k,4))*30.d0/vel)
-
 end do; end do; end do
 
 DEALLOCATE(Blg)
@@ -2392,10 +2065,10 @@ SUBROUTINE Couran(tCFL)
 USE comvar
 USE mpivar
 USE chmvar
-
 double precision :: tCFL,c2
 
 tCFL = tfinal
+write(*,*) 'contrant',tCFL,tfinal
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
   gamma = ( 5.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+7.d0*ndH2(i,j,k) )/gamma
@@ -2404,10 +2077,12 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tCFL = dmin1(tCFL, dx(i)/(dsqrt(c2) + dabs(U(i,j,k,2))) )
   tCFL = dmin1(tCFL, dy(j)/(dsqrt(c2) + dabs(U(i,j,k,3))) )
   tCFL = dmin1(tCFL, dz(k)/(dsqrt(c2) + dabs(U(i,j,k,4))) )
-end if
+  !write(*,*)'cs',dsqrt(c2),U(i,j,k,2),U(i,j,k,3),U(i,j,k,4),dx(i),dy(j),dz(k),gamma,U(i,j,k,5)
+  end if
+  !if(U(i,j,k,1) == 0.0d0) write(*,*) gamma,ndH(i,j,k)
 end do; end do; end do
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
-
+write(*,*) 'contrant-n',tCFL
 END SUBROUTINE Couran
 
 
