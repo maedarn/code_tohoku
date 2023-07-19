@@ -34,7 +34,7 @@ integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts,count_gr=1
 DOUBLE PRECISION, dimension(:,:), allocatable :: time_pfm
 !integer :: i_flow_end=4000
 
-DOUBLE PRECISION :: nj=1.1d0,lambda1=1.d0/dsqrt(3.d0)
+DOUBLE PRECISION :: nj=0.5d0,lambda1=1.d0/3.d0
 DOUBLE PRECISION :: G_n=1.11142d-4, G4pi!=12.56637d0*G
 DOUBLE PRECISION  :: nitr_min=10.d0
 integer :: nitr
@@ -516,7 +516,7 @@ end do; end do; end do
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
 
    !write(*,*) 'pregrv1'
-!if(ifgrv.eq.2) then
+if(ifgrv.eq.2) then
   N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
   Lbox=ql1x+ql2x!; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
   Lboxx=ql1x+ql2x
@@ -525,7 +525,7 @@ if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
   !call SELFGRAVWAVE(0.0d0,1)
   call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
-!end if
+end if
 !if (ntimeint.ne.0) then
 !call SELFGRAVWAVE(0.0d0,140)
 !endif
@@ -631,7 +631,6 @@ do in10 = 1, maxstp
   !call SAVEU(nunit,dt,stb,st,0)
   !if(ifgrv.eq.2) then
   !call  SELFGRAVWAVE(0.0d0,4)
-  call SELFGRAVWAVE(dt,4)
   !end if
 
   do in20 = 1, nitera
@@ -640,7 +639,7 @@ do in10 = 1, maxstp
     !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
-    !if(in20==1) call SELFGRAVWAVE(0.d0,4)
+    if(in20==1) call SELFGRAVWAVE(0.d0,4)
 !call SELFGRAVWAVE(0.d0,4)
 !***** Determine time-step dt *****
     write(*,*)'coutrant1'
@@ -649,29 +648,13 @@ do in10 = 1, maxstp
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
- !     if(ifgrv.eq.2) then
- !     call  SELFGRAVWAVE(0.0d0,4)
- !     end if
-
-    !if(ifgrv==2) then
-    !call SELFGRAVWAVE(stt,5)
-    !end if
 
     !--------for INIT---------------
     call Stblty(tLMT)
     !--------for INIT---------------
 
-    !dtdif= 2.d0 * Tdiff
-    !if(dt/dtdif>0.1d0) then
-    !dt = dtdif*0.1d0
-    !endif
-    !if(ifgrv==2) then
-    !   call SELFGRAVWAVE(tLMT,7)
-     !  call SELFGRAVWAVE(tLMT,11)
-    !endif
 
-!goto 342
-    !write(*,*)'coutrant2'
+    write(*,*)'coutrant2'
     dt_mpi2(NRANK)= dt_mpi(NRANK)
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -685,7 +668,7 @@ do in10 = 1, maxstp
     CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
                     st_gat       ,1,MPI_INTEGER, &
                     0            ,MPI_COMM_WORLD,IERR)
-    !write(*,*)'coutrant3'
+    write(*,*)'coutrant3'
     IF(NRANK.EQ.0)  THEN
       dt  = tfinal
       dtt = tfinal
@@ -710,82 +693,7 @@ do in10 = 1, maxstp
     !if(dt2/dt > nitr_min) then; nitr=nitr_min/int(dt2/dt);  endif
     nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
     write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
-
-!call SELFGRAVWAVE(0.d0,4)
-!write(*,*)'pre_gr_1',count_gr
- !***** Source parts 1*****
-    if(ifgrv.eq.2) then
-       !call GRAVTY(dt,3)
-       !call SELFGRAVWAVE(dt,3)
-       call SELFGRAVWAVE(dt,3)
-       call SELFGRAVWAVE(dt*0.5d0,2)
-    end if
-    !call SOURCE(0.5d0*dt)
-    !***** Godunov parts *****
-
-!342 continue
-!call SELFGRAVWAVE(0.d0,4)
-!write(*,*)'post_gr_1',count_gr
-
-
-write(*,*)'evolv4',ifEVO
-
-    if(ifEVO.eq.1) then
-      !iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
-iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)!;call SELFGRAVWAVE(0.d0,4);write(*,*) 'post_MHDx_1',count_gr,dt
-iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)!;call SELFGRAVWAVE(0.d0,4);write(*,*) 'post_MHDy_1',count_gr,dt
-iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)!;call SELFGRAVWAVE(0.d0,4);write(*,*) 'post_MHDz_1',count_gr,dt
-      ifEVO = 2; goto 1000
-    end if
-    if(ifEVO.eq.2) then
-      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
-      ifEVO = 3; goto 1000
-    end if
-    if(ifEVO.eq.3) then
-      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
-      ifEVO = 4; goto 1000
-    end if
-    if(ifEVO.eq.4) then
-      iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt)
-      ifEVO = 5; goto 1000
-    end if
-    if(ifEVO.eq.5) then
-      iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
-      ifEVO = 6; goto 1000
-    end if
-    if(ifEVO.eq.6) then
-      iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt)
-      ifEVO = 1; goto 1000
-    end if
-1000 continue
-    DEALLOCATE(Bcc)
- !***** CT part *****
-    ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
-    call CC(1,dt)
-    ALLOCATE(dnc(-1:ndx,-1:ndy,-1:ndz)); ALLOCATE(EMF(-1:ndx,-1:ndy,-1:ndz,3))
-    iwx=1; iwy=0; iwz=0; call CC(2,dt); call CCT(dx,dy,dt) !calculate Ez
-    iwx=0; iwy=1; iwz=0; call CC(2,dt); call CCT(dy,dz,dt) !calculate Ex
-    iwx=0; iwy=0; iwz=1; call CC(2,dt); call CCT(dz,dx,dt) !calculate Ey
-    DEALLOCATE(Vfc); DEALLOCATE(dnc)
-
-    call CC(3,dt)
-    DEALLOCATE(EMF)
-    call CC(4,dt)
-
-!write(*,*)'evolv5'
-!call SELFGRAVWAVE(0.d0,4)
-!write(*,*)'post_MHD_1',count_gr
-
-!***** Source parts 2*****
-    !call SOURCE(0.5d0*dt)
-    if(ifgrv.eq.2) then
-    call SELFGRAVWAVE(dt*0.5d0,2)
-    call SELFGRAVWAVE(dt,3)
-    end if
-!call SELFGRAVWAVE(0.d0,4)
-!write(*,*)'evolv6',time
-!write(*,*)'post_gr_2',count_gr
-
+    call SELFGRAVWAVE(dt,2)
 
     call DISSIP()
     time = time + dt
@@ -803,8 +711,8 @@ iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)!;call SELFGRAVWAVE(0.d0,4);write(*,*) 'po
   CALL MPI_BCAST(Time_signal,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   IF(Time_signal.EQ.1) GOTO 9000
-
 end do
+
 9000 continue
 
 
@@ -1423,7 +1331,6 @@ SUBROUTINE MHD(xelr,dxelr,dt)
 USE comvar
 USE mpivar
 USE chmvar
-USE slfgrv
 
 integer :: ix
 double precision  :: dt,xelr(-1:ndmax),dxelr(-1:ndmax), ekin,emag, invd, vel
@@ -1436,11 +1343,9 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   xlag(i,j,k) = xelr(ix)
 end do; end do; end do
 
-!call SELFGRAVWAVE(0.d0,4)
 call RHS(dt,dxelr)
-!call SELFGRAVWAVE(0.d0,4)
 call MOC(dt,xelr)
-!call SELFGRAVWAVE(0.d0,4)
+
 !do k = 1, Ncellz; do j = 1, Ncelly;do i = 1, Ncellx
 !  U(i,j,k,2) = U(i,j,k,2) * U(i,j,k,1); U(i,j,k,3) = U(i,j,k,3) * U(i,j,k,1)
 !  U(i,j,k,4) = U(i,j,k,4) * U(i,j,k,1); U(i,j,k,5) = U(i,j,k,5) * U(i,j,k,1)
@@ -1501,7 +1406,7 @@ double precision  :: depend1,depend2,cm
 double precision  :: dm(-1:ndmax)
 double precision  :: ndHm,ndpm,ndHem,ndHepm,ndH2m
 
-itrn = 5
+itrn = 1
 
 if(iwx.eq.1) then; Ncell = Ncellx; Ncm = Ncelly; Ncl = Ncellz; BT1 = 2; BT2 = 3; VN = 2; end if
 if(iwy.eq.1) then; Ncell = Ncelly; Ncm = Ncellz; Ncl = Ncellx; BT1 = 3; BT2 = 1; VN = 3; end if
@@ -1536,13 +1441,11 @@ do i = 0, Ncell
 
   gamma =   3.d0*(ndH(ix ,jy ,kz )+ndp(ix ,jy ,kz )+ndHe(ix ,jy ,kz )+ndHep(ix ,jy ,kz ))+5.d0*ndH2(ix ,jy ,kz )
   gamma = ( 5.d0*(ndH(ix ,jy ,kz )+ndp(ix ,jy ,kz )+ndHe(ix ,jy ,kz )+ndHep(ix ,jy ,kz ))+7.d0*ndH2(ix ,jy ,kz ) )/gamma
-!gamma = 5.d0/3.d0
   cm = dsqrt(  (gamma * U(ix ,jy ,kz ,5) + Bcc(ix ,jy ,kz ,BT1)**2 + Bcc(ix ,jy ,kz ,BT2)**2) / U(ix ,jy ,kz,1 )  )
   depend1 = 0.5d0*(dxelr(i  ) - cm * dt)*facdep
   depend1 = dmax1(0.d0, depend1)
   gamma =   3.d0*(ndH(ixp,jyp,kzp)+ndp(ixp,jyp,kzp)+ndHe(ixp,jyp,kzp)+ndHep(ixp,jyp,kzp))+5.d0*ndH2(ixp,jyp,kzp)
   gamma = ( 5.d0*(ndH(ixp,jyp,kzp)+ndp(ixp,jyp,kzp)+ndHe(ixp,jyp,kzp)+ndHep(ixp,jyp,kzp))+7.d0*ndH2(ixp,jyp,kzp) )/gamma
-!gamma = 5.d0/3.d0
   cm = dsqrt(  (gamma * U(ixp,jyp,kzp,5) + Bcc(ixp,jyp,kzp,BT1)**2 + Bcc(ixp,jyp,kzp,BT2)**2) / U(ixp,jyp,kzp,1)  )
   depend2 = 0.5d0*(dxelr(i+1) - cm * dt)*facdep
   depend2 = dmax1(0.d0, depend2)
@@ -1564,7 +1467,6 @@ do i = 0, Ncell
   ndHem=0.5d0*(ndHe(ix,jy,kz)+ndHe(ixp,jyp,kzp));ndHepm=0.5d0*(ndHep(ix,jy,kz)+ndHep(ixp,jyp,kzp))
   ndH2m=0.5d0*(ndH2(ix,jy,kz)+ndH2(ixp,jyp,kzp))
   gamma = ( 5.d0*(ndHm+ndpm+ndHem+ndHepm)+7.d0*ndH2m )/( 3.d0*(ndHm+ndpm+ndHem+ndHepm)+5.d0*ndH2m )
-!gamma = 5.d0/3.d0
   gammi1 = gamma - 1.0d0
   gammi2 = gamma - 2.0d0
   gammi3 = gamma - 3.0d0
@@ -1597,7 +1499,6 @@ do i = 1, Ncell
 
   gammi1 =   3.d0*(ndH(ix,jy,kz)+ndp(ix,jy,kz)+ndHe(ix,jy,kz)+ndHep(ix,jy,kz))+5.d0*ndH2(ix,jy,kz)
   gammi1 = ( 2.d0*(ndH(ix,jy,kz)+ndp(ix,jy,kz)+ndHe(ix,jy,kz)+ndHep(ix,jy,kz))+2.d0*ndH2(ix,jy,kz) )/gammi1
-!gammi1 = 5.d0/3.d0-1.d0
   U(ix,jy,kz,5 )  = U(ix,jy,kz,5)/( U(ix,jy,kz,1)*gammi1 ) &
                   + 0.5d0*(   U(ix,jy,kz,2)**2.d0+  U(ix,jy,kz,3)**2.d0+  U(ix,jy,kz,4)**2.d0 ) &
                   + 0.5d0*( Bcc(ix,jy,kz,1)**2.d0+Bcc(ix,jy,kz,2)**2.d0+Bcc(ix,jy,kz,3)**2.d0 )/U(ix,jy,kz,1)
@@ -2942,7 +2843,7 @@ eps = dt*kCO*ndtot(i,j,k)
 end do; end do; end do
 
 end if
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
 
 
 END SUBROUTINE SOURCE
