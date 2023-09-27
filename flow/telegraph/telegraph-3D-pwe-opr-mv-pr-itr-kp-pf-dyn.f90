@@ -5,7 +5,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
   USE slfgrv
   INCLUDE 'mpif.h'
   integer :: mode,count=1,ndt1=0,svc1=0!,svci=50,rdnum
-  DOUBLE PRECISION  :: dt, eps=1.0d-3,rho0=1.d0,p0ini=1.d0,cs0ini,omega0,kini0,T0ini=1.d1
+  DOUBLE PRECISION  :: dt, eps=1.0d-3,rho0=1.d0,p0ini=1.d0,cs0ini,omega0,kini0,T0ini=1.d1,PHIini0,err1,err2,err3
   !INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
   !INTEGER :: MSTATUS(MPI_STATUS_SIZE)
   !DOUBLE PRECISION  :: VECU
@@ -16,7 +16,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
   !double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime!,sourcedt
   !double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1)
   integer nt
-  double precision :: tdm,pi=3.14159265358979323846d0,amp,wvpt,ampratio=1.d-6
+  double precision :: tdm,pi=3.14159265358979323846d0,amp,wvpt,ampratio=1.d0
   !double precision , dimension(:,:,:) , allocatable :: stbPhi
   !double precision , dimension(-1:Ncellx+2,-1:Ncelly,-1:Ncellz) :: Phipregrad,Phipregraddum
   !**************** INITIALIZEATION **************
@@ -34,44 +34,57 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      end do
 
      !test of wave propagation
-     cs0ini=dsqrt(5.d0*kb*1.d-3*T0ini/3.d0)
+    ! cs0ini=dsqrt(5.d0*kb*1.d-3*T0ini/3.d0/1.27d0)
+    ! cg=cs0ini!*nitr_min
+    ! kappa=2.5d0!/Lbox*cg
+     !kappa=2.5d0/dx1*cg
      !G_n=nj**2.d0*pi*cs0ini**2.d0/rho0/lambda1/lambda1
      G_n=1.11142d-4
      G4pi=12.56637d0*G_n
-     rho0=pi*cs0ini**2.d0*nj**2.d0/lambda1**2.d0/G_n
-     rmin=rho0*ampratio
-     Hini=rho0/mH
-     p0ini=rho0*kb*1.d-3*T0ini/1.27d0
-     pmin = p0ini*ampratio
+    ! rho0=pi*cs0ini**2.d0*nj**2.d0/lambda1**2.d0/G_n
+    ! ddd=rho0
+     rmin=rho0*ampratio*1.d-3
+    ! Hini=rho0/mH
+    ! p0ini=rho0*kb*1.d-3*T0ini/1.27d0
+    ! pmin = p0ini*ampratio
+     !PHIini0=lambda1*lambda1*G_n*rho0/pi/5.d0*3.d0 !1.d0/(G4pi*rho0*Lbox*Lbox*Lbox/Lbox)
+    ! PHIini0=1.d0/((2.d0*pi*2.d0*pi/Lboxx/Lboxx)+(2.d0*pi*2.d0*pi/Lboxy/Lboxy)+(2.d0*pi*2.d0*pi/Lboxz/Lboxz))
+     !PHIini0=1.d0/(G4pi)
+     !PHIini0=13357170.d0
      
-     ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
-     ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
+    ! ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
+    ! ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
 
      kini0=2.d0*pi/lambda1 !dsqrt((2.d0*pi/Lboxx)**2.d0+(2.d0*pi/Lboxy)**2.d0+(2.d0*pi/Lboxz)**2.d0)
      omega0=dsqrt(dabs(cs0ini**2.d0*kini0**2.d0-G4pi*rho0))
      do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
      !xpi = 0.5d0*( x(i)+x(i-1) )
      amp = ampratio*rho0
-     wvpt = 1.d0
-     U(i,j,k,1) = rho0 + amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz) !*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
-     ndH(i,j,k) = U(i,j,k,1)/1.27d0
+     wvpt = 2.d0
+     U(i,j,k,1) = rho0 + amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)&!amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
+     *dsin(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dsin(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
+    ! ndH(i,j,k) = U(i,j,k,1)/1.27d0
      !ndHe(i,j,k) = !dmax1( ndHemin ,ndHe(i,j,k)  )
-     U(i,j,k,2)=(2.d0*pi/Lboxx * omega0 /kini0**2.d0 * rho0 * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
-     U(i,j,k,3)=(2.d0*pi/Lboxy * omega0 /kini0**2.d0 * rho0 * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
-     U(i,j,k,4)=(2.d0*pi/Lboxz * omega0 /kini0**2.d0 * rho0 * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
+    ! U(i,j,k,2)=(2.d0*pi/Lboxx * omega0 /kini0**2.d0 * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
+    ! U(i,j,k,3)=(2.d0*pi/Lboxy * omega0 /kini0**2.d0  * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
+    ! U(i,j,k,4)=(2.d0*pi/Lboxz * omega0 /kini0**2.d0  * amp*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))/U(i,j,k,1)
      !U(i,j,k,5) = p0ini + cs0ini*cs0ini*amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
-     U(i,j,k,5) = U(i,j,k,1)*cs0ini**2.d0!p0ini + cs0ini*cs0ini*amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
+    ! U(i,j,k,5) = U(i,j,k,1)*cs0ini**2.d0!p0ini + cs0ini*cs0ini*amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
 
-
-     Phiexa(i,j,k) = -G4pi/wvpt/wvpt/(kini0**2.d0)*(amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))!*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy &
+     PHIini0=1.d0
+     !Phiexa(i,j,k) = -2.d0*pi/wvpt/wvpt/(kini0**2.d0)*(ampratio*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))
+     !Phiexa(i,j,k) = -PHIini0*G4pi/wvpt/wvpt*(amp*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy + dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz))
+                       !*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx + dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy &
                        !+ dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)!dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
-     Phiwv(i,j,k,1)   = Phiexa(i,j,k)
+    ! Phiwv(i,j,k,1)   = Phiexa(i,j,k)
+    ! Phiwv(i,j,k,1)   = 0.d0
 
 !U(i,j,k,2)=2.d0*pi/Lboxx / omega0 * (cs0ini**2.d0 * U(i,j,k,1)/rho0 + Phiexa(i,j,k))
 !U(i,j,k,3)=2.d0*pi/Lboxy / omega0 * (cs0ini**2.d0 * U(i,j,k,1)/rho0 + Phiexa(i,j,k))
 !U(i,j,k,4)=2.d0*pi/Lboxz / omega0 * (cs0ini**2.d0 * U(i,j,k,1)/rho0 + Phiexa(i,j,k))
      
-    !-amp*G4pi/wvpt/wvpt/((2.d0*pi/Lboxx)**2.d0+(2.d0*pi/Lboxy)**2.d0+(2.d0*pi/Lboxz)**2.d0)*dcos(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)*dcos(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dcos(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
+Phiexa(i,j,k) =-amp*G4pi/wvpt/wvpt/((2.d0*pi/Lboxx)**2.d0+(2.d0*pi/Lboxy)**2.d0+(2.d0*pi/Lboxz)**2.d0)*dsin(dble(iwxts)*wvpt*2.d0*pi*x(i)/Lboxx)&
+*dsin(dble(iwyts)*wvpt*2.d0*pi*y(j)/Lboxy)*dsin(dble(iwzts)*wvpt*2.d0*pi*z(k)/Lboxz)
      end do; end do; end do
 
 !sound wave
@@ -87,20 +100,23 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
 !end do; end do; end do
 
 
-
 !cg=0.5d0*dx1/1.02976897876606143d-2
+!cg=1.d0!cs0ini*1.d1!*CFL!10.d0!qsqrt()*CFL
+!kappa=2.5d0!*cg/Lbox
 do k = 0, Ncellz+1; do j = 0, Ncelly+1; do i = 0, Ncellx+1
 amp = ampratio*rho0
-wvpt = 1.d0
-!Phigrdwv(i,j,k,1)= cg*((-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1)+kappa*Phiexa(i,j,k)
-Phigrdwv(i,j,k,1)= ((-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1)/kappa+Phiexa(i,j,k)
+!wvpt = 1.d0
+!Phigrdwv(i,j,k,1)= cg*((-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1)/kappa+kappa*Phiexa(i,j,k)
+Phigrdwv(i,j,k,1)= ((-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1)/kappa*cg+Phiexa(i,j,k)
 end do; end do; end do
+
+!call movesph(0.d0)
 
 N_MPI(20)=5;N_MPI(1)=1;N_MPI(2)=2;N_MPI(3)=3;N_MPI(4)=4;N_MPI(5)=5
 iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(2,1)
      !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
      !write(*,*)'initial',Lbox
-call SELFGRAVWAVE(0.0d0,4)
+!call SELFGRAVWAVE(0.0d0,4)
 
   end if
 
@@ -137,22 +153,22 @@ call SELFGRAVWAVE(0.0d0,4)
     ! call BCgrv(100,1,8)
     ! if(mod(svc1,svci)==0) then
     ! call SELFGRAVWAVE(0.0d0,4)
-     !call movesph(dt)
+     call movesph(dt)
     ! endif
-     call collectrho()
-     write(*,*) 'rhomean',rhomean
+!     call collectrho()
+     !write(*,*) 'rhomean',rhomean
      !do k=0,Ncellz+1; do j=0,Ncelly+1; do i=0,Ncellx+1
-     do k=-1,Ncellz+2; do j=-1,Ncelly+2; do i=-1,Ncellx+2
-      U(i,j,k,1) = U(i,j,k,1)-rhomean
-     end do;end do;end do
+!     do k=-1,Ncellz+2; do j=-1,Ncelly+2; do i=-1,Ncellx+2
+!      U(i,j,k,1) = U(i,j,k,1)-rhomean
+!     end do;end do;end do
 
      call slvmuscle(tdm)
      !call slvmuscle(tdm)
 
      !do k=0,Ncellz+1; do j=0,Ncelly+1; do i=0,Ncellx+1
-     do k=-1,Ncellz+2; do j=-1,Ncelly+2; do i=-1,Ncellx+2
-       U(i,j,k,1) = U(i,j,k,1)+rhomean
-     end do;end do;end do
+!     do k=-1,Ncellz+2; do j=-1,Ncelly+2; do i=-1,Ncellx+2
+!       U(i,j,k,1) = U(i,j,k,1)+rhomean
+!     end do;end do;end do
     ! svc1=svc1+1
      !enddo
   end if
@@ -214,7 +230,44 @@ end if
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
- 
+N_ol=1
+idm=1
+
+CALL MPI_TYPE_VECTOR((ndy+2)*(Ncellz+4),N_ol,ndx+2,MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+LEFTt = LEFT!; IF(IST.eq.0       ) LEFT = MPI_PROC_NULL
+RIGTt = RIGT!; IF(IST.eq.NSPLTx-1) RIGT = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(Ncellx+1-N_ol,-1,-1,idm),1,VECU,RIGT,1, &
+Phiwv(       1-N_ol,-1,-1,idm),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(1            ,-1,-1,idm),1,VECU,LEFT,1, &
+Phiwv(Ncellx+1     ,-1,-1,idm),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+LEFT = LEFTt; RIGT = RIGTt
+
+CALL MPI_TYPE_VECTOR(Ncellz+4,N_ol*(ndx+2),(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+BOTMt = BOTM !; IF(JST.eq.0       ) BOTM = MPI_PROC_NULL
+TOPt  = TOP  !; IF(JST.eq.NSPLTy-1) TOP  = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,Ncelly+1-N_ol,-1,idm),1,VECU,TOP ,1, &
+      Phiwv(-1,       1-N_ol,-1,idm),1,VECU,BOTM,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,1            ,-1,idm),1,VECU,BOTM,1, &
+      Phiwv(-1,Ncelly+1     ,-1,idm),1,VECU,TOP ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+TOP = TOPt; BOTM = BOTMt
+
+CALL MPI_TYPE_VECTOR(1,N_ol*(ndx+2)*(ndy+2),N_ol*(ndx+2)*(ndy+2),MPI_REAL8,VECU,IERR)
+CALL MPI_TYPE_COMMIT(VECU,IERR)
+DOWNt = DOWN !; IF(KST.eq.0       ) DOWN = MPI_PROC_NULL
+UPt   = UP   !; IF(KST.eq.NSPLTz-1) UP   = MPI_PROC_NULL
+CALL MPI_SENDRECV(Phiwv(-1,-1,Ncellz+1-N_ol,idm),1,VECU,UP  ,1, &
+Phiwv(-1,-1,       1-N_ol,idm),1,VECU,DOWN,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_SENDRECV(Phiwv(-1,-1,1            ,idm),1,VECU,DOWN,1, &
+ Phiwv(-1,-1,Ncellz+1     ,idm),1,VECU,UP  ,1, MPI_COMM_WORLD,MSTATUS,IERR)
+CALL MPI_TYPE_FREE(VECU,IERR)
+UP = UPt; DOWN = DOWNt
+
+call collectrho()
+
      !-------------------TEST---------------------
      !iwx = 1; iwy = 1; iwz = 1
      !call BCgrv(101)
@@ -223,10 +276,17 @@ end if
         !write(*,*) 'write',NRANK,k,sngl(Phiwv(1,1,k,1)),sngl(Phigrdwv(1,1,k,1)),sngl(Phiexa(1,1,k)),sngl(cg*Phigrd(1,1,k,1)+kappa*Phiexa(1,1,k)),sngl(U(1,1,k,1))
         do j = 1, Ncelly
            do i = 1, Ncellx
+           err1=(Phiwv(i-1,j,k,1)+Phiwv(i+1,j,k,1)-2.d0*Phiwv(i,j,k,1))/dx1/dx1+(Phiwv(i,j-1,k,1)+Phiwv(i,j+1,k,1)-2.d0*Phiwv(i,j,k,1))/dy1/dy1 &
+               +(Phiwv(i,j,k-1,1)+Phiwv(i,j,k+1,1)-2.d0*Phiwv(i,j,k,1))/dz1/dz1-G4pi*(U(i,j,k,1)-rhomean)
+           err2=(Phiwv(i-1,j,k,1)+Phiwv(i+1,j,k,1)-2.d0*Phiwv(i,j,k,1))/dx1/dx1+(Phiwv(i,j-1,k,1)+Phiwv(i,j+1,k,1)-2.d0*Phiwv(i,j,k,1))/dy1/dy1 &
+               +(Phiwv(i,j,k-1,1)+Phiwv(i,j,k+1,1)-2.d0*Phiwv(i,j,k,1))/dz1/dz1!-G4pi*(U(i,j,k,1))
+           err3=(Phiexa(i-1,j,k)+Phiexa(i+1,j,k)-2.d0*Phiexa(i,j,k))/dx1/dx1+(Phiexa(i,j-1,k)+Phiexa(i,j+1,k)-2.d0*Phiexa(i,j,k))/dy1/dy1 &
+               +(Phiexa(i,j,k-1)+Phiexa(i,j,k+1)-2.d0*Phiexa(i,j,k))/dz1/dz1-G4pi*(U(i,j,k,1)-rhomean)
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
            !write(*,*) 'write',NRANK,i,j,k,sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
            !write(17) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-           write(17) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(U(i,j,k,1)),sngl(U(i,j,k,5)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4))
+           !write(17) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(U(i,j,k,1)),sngl(U(i,j,k,5)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4))
+           write(17) Phiwv(i,j,k,1),Phiexa(i,j,k),U(i,j,k,1),err1,err2,err3,G4pi*(U(i,j,k,1)-rhomean)!,sngl(U(i,j,k,5)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4))
            !write(28) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
           enddo
         end do
@@ -238,6 +298,35 @@ end if
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !write(*,*)'SAVE_Phi',count,dir,svdir
 end if
+
+
+if(mode==8) then
+   WRITE(NPENUM,'(I3.3)') NRANK
+   !write(*,*)'SAVE_Phi_pre',count,dir,svdir
+   open(17,file=dir//svdir//'/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   do k = 1, Ncellz
+      do j = 1, Ncelly
+         do i = 1, Ncellx
+         write(17) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
+        enddo
+      end do
+   end do
+   close(17)
+end if
+
+if(mode==18) then
+   WRITE(NPENUM,'(I3.3)') NRANK
+   !write(*,*)'SAVE_Phi_pre',count,dir,svdir
+   open(17,file=dir//svdir//'/INIPHI'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+   do k = 1, Ncellz
+      do j = 1, Ncelly
+         do i = 1, Ncellx
+         read(17) Phiwv(i,j,k,1),Phigrdwv(i,j,k,1)
+        enddo
+      end do
+   end do
+   close(17)
+end if
 end subroutine SELFGRAVWAVE
 
 
@@ -247,7 +336,7 @@ use comvar
 use slfgrv
 use mpivar
 INCLUDE 'mpif.h'
-double precision :: dt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
+double precision :: dt,ddt,dtratio=dsqrt(3.0d0),coeffx=0.d0,coeffy=0.d0,coeffz=0.d0!,rhomean
 integer :: i=0!,n,m,l!,countn
 double precision :: adiff2=0.5d0,dtration=0.5d0
 double precision :: nu2,w=6.0d0,eps=1.0d-10! , deltap,deltam,deltalen !kappa -> comver  better?
@@ -272,8 +361,13 @@ DOUBLE PRECISION  :: VECU
 INTEGER :: LEFTt,RIGTt,TOPt,BOTMt,UPt,DOWNt
 
 
-cg=0.5d0*dx1/dt
-!kappa=
+!cg=0.49d0*dx1/dt*dble(nitr)
+cg=CFL*dx1/dt
+kappa=2.5d0!/Lbox*cg
+ddt=dt
+!dt=0.49*dx1/cg
+!kappa=5.d0/Lbox*cg
+!kappa=5.d0/dx1*cg
 !do i_flow=1,i_flow_end
 !call fapp_start("loop1",1,0)
 !do i_flow=1,i_flow_end
@@ -331,8 +425,8 @@ CALL MPI_TYPE_FREE(VECU,IERR)
 UP = UPt; DOWN = DOWNt
 
 
-
 !call fapp_start("loop1",1,0)
+
 expand_dx=-2.d0*kappa * 0.5d0 * dt
 expand_exp=dexp(expand_dx)
 kp_i=1.0/(2.d0*kappa+1.d-10)
@@ -340,8 +434,6 @@ exp_m=(1.d0-expand_exp)
 exp_p=(1.d0+expand_exp)
 exp_k=exp_m*kp_i
 
-!OCL SCACHE_ISOLATE_WAY(L2=13)
-!OCL SCACHE_ISOLATE_ASSIGN(Phiwv)
 
 !call fapp_start("loop1",1,0)
 !do k=-1,ndz; do j=-1,ndy; do i=-1,ndx
@@ -590,6 +682,8 @@ Phiwv(i,j,k,1)    = 0.5d0*Phiwv(i,j,k,1)*exp_p+Phigrdwv(i,j,k,1)*exp_k
 Phigrdwv(i,j,k,1) = 0.5d0*kappa*phiwv_d*exp_m+0.5d0*Phigrdwv(i,j,k,1)*exp_p
 enddo; enddo; enddo
 enddo
+
+dt=ddt
 end subroutine slvmuscle
 
 subroutine slvPWE(dt)
@@ -1564,7 +1658,11 @@ USE mpivar
 USE chmvar
 USE slfgrv
 INCLUDE 'mpif.h'
-double precision :: rsph3,tint=0.d0,dt
+double precision :: rsph3,tint=0.d0,dt,G
+
+G=1.11142d-4
+G4pi=12.56637d0*G
+
 
   tint=tint+dt
   !rrsph3 = ql1x * rratio
@@ -1576,7 +1674,10 @@ double precision :: rsph3,tint=0.d0,dt
   rrsph3y=0.5d0+rmove*dcos(0.d0+vmove*tint)
   rrsph3z=0.5d0
 
-  write(*,*)'MOVE',rrsph3x,rrsph3y,rrsph3z,tint
+  write(*,*)'MOVE',rrsph3x,rrsph3y,rrsph3z,tint,ddd,x(1),G4pi,rrsph3
+  ddd=1.d4
+  rrsph3=0.2d0
+  
 
   do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
    i2 =  IST*Ncellx+i
@@ -1649,8 +1750,8 @@ do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
    !i2 = IST*Ncellx+i
    !i2y = JST*Ncelly+j
    !i2z = KST*Ncellz+k
-   rrsph3x=50.d0+rmove*dsin(0.d0+tint)
-   rrsph3y=50.d0+rmove*dcos(0.d0+tint)
+rrsph3x=0.5d0+rmove*dsin(0.d0+vmove*tint)
+rrsph3y=0.5d0+rmove*dcos(0.d0+vmove*tint)
    !rrsph3z=50.d0
    !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
    rsph3 =dsqrt((rrsph3x-x(i))**2+(rrsph3y-y(j))**2+(rrsph3z-z(k))**2)

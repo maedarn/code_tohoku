@@ -18,7 +18,7 @@ INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv
 
 !DOUBLE PRECISION :: cg=1.0d0,sourratio=0.5d0
-DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0!rmove=0.25d0!rmove=0.35d0!,adiff=0.375d0,cg=1.0d0,
+DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.3d0!rmove=0.25d0!rmove=0.35d0!,adiff=0.375d0,cg=1.0d0,
 double precision :: dx1,dy1,dz1,ddd,rrsph3,rrsph3x,rrsph3y,rrsph3z,tratio=0.5d0,cg=1.d0,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
 double precision :: kappa=1.d0/0.2d0,Msph1=0.d0,di_pos,tratio1
 INTEGER, parameter :: mvstp=2!cfratio=5
@@ -34,7 +34,7 @@ integer :: ntimeint=0,lsphmax=4,iwxts,iwyts,iwzts,count_gr=1
 DOUBLE PRECISION, dimension(:,:), allocatable :: time_pfm
 !integer :: i_flow_end=4000
 
-DOUBLE PRECISION :: nj=0.5d0,lambda1=1.d0/3.d0
+DOUBLE PRECISION :: nj=1.1d0,lambda1=1.d0/3.d0
 DOUBLE PRECISION :: G_n=1.11142d-4, G4pi!=12.56637d0*G
 DOUBLE PRECISION  :: nitr_min=10.d0
 integer :: nitr
@@ -434,6 +434,139 @@ end do
 !call SELFGRAVWAVE(0,0)
 !6701 continue
 
+!********************sphere***********************
+goto 6001
+DTF(:,:,:) = 0.0d0
+!dinit1=1.0d0/G4pi
+dinit1=1.d2
+cenx=dble(Np1x)+0.5d0
+ceny=dble(Np1y)+0.5d0
+cenz=dble(Np1z)+0.5d0
+!rsph = ql1x-ql1x/5.0d0
+!rsph2=int(dble(Np1x)*0.8d0)
+rrsph = dble(Np1x)*0.2d0
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+ i2 = IST*Ncellx+i
+ i2y = JST*Ncelly+j
+ i2z = KST*Ncellz+k
+ cenx=dble(Np1x)+0.5d0
+ ceny=dble(Np1y)+0.5d0
+ cenz=dble(Np1z)+0.5d0
+ !rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+ rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+ rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+ if(rsph3 .le. rrsph3 ) then
+    U(i,j,k,1) = dinit1
+    U(i,j,k,2) = 0.0d0
+    U(i,j,k,3) = 0.0d0
+    U(i,j,k,4) = 0.0d0
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = 0.0d0
+    U(i,j,k,7) = 0.0d0
+    U(i,j,k,8) = 0.0d0
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+ else
+    U(i,j,k,1) = 0.0d0
+    U(i,j,k,2) = 0.0d0
+    U(i,j,k,3) = 0.0d0
+    U(i,j,k,4) = 0.0d0
+    U(i,j,k,5) = 0.0d0
+    U(i,j,k,6) = 0.0d0
+    U(i,j,k,7) = 0.0d0
+    U(i,j,k,8) = 0.0d0
+    ndH(i,j,k)   = 0.0d0
+    ndp(i,j,k)   = 0.0d0
+    ndH2(i,j,k)  = 0.0d0
+    ndHe(i,j,k)  = 0.0d0
+    ndHep(i,j,k) = 0.0d0
+    ndC(i,j,k)   = 0.0d0
+    ndCO(i,j,k)  = 0.0d0
+    ndCp(i,j,k)  = 0.0d0
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+ end if
+end do
+end do
+end do
+
+!do i=1,Ncellx/2,-1
+!call PBini(i)
+!enddo
+
+do k = -1-1, Ncellz+2+1; do j = -1-1, Ncelly+2+1; do i = -1-1, Ncellx+2+1
+ i2 = IST*Ncellx+i
+ i2y = JST*Ncelly+j
+ i2z = KST*Ncellz+k
+ cenx=dble(Np1x)+0.5d0
+ ceny=dble(Np1y)+0.5d0
+ cenz=dble(Np1z)+0.5d0
+ rsph=dsqrt( (cenx-dble(i2))**2 + (ceny-dble(i2y))**2 + (cenz-dble(i2z))**2 )
+ rsph3 =dsqrt( (ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+ !rrsph3 = ql1x*0.2d0!+dx1*0.5d0
+
+ write(*,*)rsph3,rrsph3,x_i(i2),y_i(i2y),z_i(i2z)
+ if(rsph3 .le. rrsph3 ) then
+    !Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3*dx1)**2
+    Phiexa(i,j,k)=G4pi/6.d0*dinit1*(rsph3)**2
+    !U(i,j,k,1) = dinit1
+    !write(*,*) 'in'
+ else
+ !Phiexa(i,j,k)=-G4pi/rsph3/dx1/3.d0*dinit1*(rrsph3*dx1)**3+G4pi/2.d0*dinit1*(rrsph3*dx1)**2
+ Phiexa(i,j,k)=-G4pi/rsph3/3.d0*dinit1*(rrsph3)**3+G4pi/2.d0*dinit1*(rrsph3)**2
+    !U(i,j,k,1) = 0.d0
+ end if
+end do
+end do
+end do
+
+
+!call collect()
+
+!do i=0,-(Ncellx/2-1),-1
+!do pls=0,Ncellx*NSPLTx-1
+!  call PBini(pls)
+!enddo
+!write(*,*) Phiexa(1,1,1)
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+ Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+                  +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,2)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,3)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,4)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1+(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,5)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,6)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,7)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+ !                 -(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+ !Phigrd(i,j,k,8)=-(-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &
+!                 +(-Phiexa(i,j-1,k)+Phiexa(i,j+1,k))*0.5d0/dy1-(-Phiexa(i,j,k-1)+Phiexa(i,j,k+1))*0.5d0/dz1
+end do
+end do
+end do
+
+
+dinit1=0.0d0
+6001 continue
+!********************sphere***********************
+
 
 !**** read inhomogeneous density field ****!
   DTF(:,:,:) = dinit1
@@ -523,8 +656,9 @@ if(ifgrv.eq.2) then
   Lboxy=ql1y+ql2y
   Lboxz=ql1z+ql2z
   !call SELFGRAVWAVE(0.0d0,1)
-  call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
+  !call SELFGRAVWAVE(0.0d0,0) !密度場の生成の時
   !call SELFGRAVWAVE(0.0d0,6) !calculate cg
+  call movesph(0.d0)
 end if
 !if (ntimeint.ne.0) then
 !call SELFGRAVWAVE(0.0d0,140)
@@ -620,10 +754,10 @@ time_pfm(:,:)=0.d0
 !Time_pfm_signal = 0
 
 
-write(*,*)'evol3'
+!write(*,*)'evol3'
 
 do in10 = 1, maxstp
-  write(*,*)'evol_in10'
+  !write(*,*)'evol_in10'
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
@@ -632,9 +766,10 @@ do in10 = 1, maxstp
   !if(ifgrv.eq.2) then
   !call  SELFGRAVWAVE(0.0d0,4)
   !end if
+  !write(*,*)'cg',NRANK,cg,dsqrt(5.d0/3.d0*U(1,1,1,5)/U(1,1,1,1)/1.27d0),dsqrt(5.d0*kb*1.d-3*1.d1/3.d0),U(1,1,1,2),U(1,1,1,3),U(1,1,1,4),rhomean,nitr,nitera,dt,dt2
 
   do in20 = 1, nitera
-    write(*,*)'evol_in20'
+    !write(*,*)'evol_in20'
     !tsave2D = dtsave2D * nunit2D
     !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
@@ -642,7 +777,7 @@ do in10 = 1, maxstp
     if(in20==1) call SELFGRAVWAVE(0.d0,4)
 !call SELFGRAVWAVE(0.d0,4)
 !***** Determine time-step dt *****
-    write(*,*)'coutrant1'
+    !write(*,*)'coutrant1'
     dt_mpi(NRANK) = tfinal
     call Couran(tLMT)
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
@@ -654,7 +789,7 @@ do in10 = 1, maxstp
     !--------for INIT---------------
 
 
-    write(*,*)'coutrant2'
+    !write(*,*)'coutrant2'
     dt_mpi2(NRANK)= dt_mpi(NRANK)
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
@@ -668,7 +803,7 @@ do in10 = 1, maxstp
     CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
                     st_gat       ,1,MPI_INTEGER, &
                     0            ,MPI_COMM_WORLD,IERR)
-    write(*,*)'coutrant3'
+    !write(*,*)'coutrant3'
     IF(NRANK.EQ.0)  THEN
       dt  = tfinal
       dtt = tfinal
@@ -691,8 +826,11 @@ do in10 = 1, maxstp
     if(time+dt.gt.tsave ) dt = tsave  - time;dt2=dt
 
     !if(dt2/dt > nitr_min) then; nitr=nitr_min/int(dt2/dt);  endif
-    nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
-    write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
+    !nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
+    nitr=10
+    cg=1.d0
+    dt=CFL*dx1/cg
+    !write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
     call SELFGRAVWAVE(dt,2)
 
     call DISSIP()
@@ -1981,7 +2119,7 @@ USE chmvar
 double precision :: tCFL,c2
 
 tCFL = tfinal
-write(*,*) 'contrant',tCFL,tfinal
+!write(*,*) 'contrant',tCFL,tfinal
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
   gamma = ( 5.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+7.d0*ndH2(i,j,k) )/gamma
@@ -1995,7 +2133,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   !if(U(i,j,k,1) == 0.0d0) write(*,*) gamma,ndH(i,j,k)
 end do; end do; end do
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
-write(*,*) 'contrant-n',tCFL
+!write(*,*) 'contrant-n',tCFL
 END SUBROUTINE Couran
 
 

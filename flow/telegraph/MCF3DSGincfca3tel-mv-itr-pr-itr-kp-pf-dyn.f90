@@ -37,7 +37,7 @@ DOUBLE PRECISION, dimension(:,:), allocatable :: time_pfm
 DOUBLE PRECISION :: nj=1.1d0,lambda1=1.d0/dsqrt(3.d0)
 DOUBLE PRECISION :: G_n=1.11142d-4, G4pi!=12.56637d0*G
 DOUBLE PRECISION  :: nitr_min=10.d0
-integer :: nitr
+integer :: nitr,stpini=10000
 END MODULE comvar
 
 MODULE mpivar
@@ -619,11 +619,11 @@ time_pfm(:,:)=0.d0
 !time_pfm(3) = 0.d0
 !Time_pfm_signal = 0
 
-
-write(*,*)'evol3'
+call EVOLVEPHI
+!write(*,*)'evol3'
 
 do in10 = 1, maxstp
-  write(*,*)'evol_in10'
+  !write(*,*)'evol_in10'
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
@@ -635,7 +635,7 @@ do in10 = 1, maxstp
   !end if
 
   do in20 = 1, nitera
-    write(*,*)'evol_in20'
+    !write(*,*)'evol_in20'
     !tsave2D = dtsave2D * nunit2D
     !if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
@@ -643,7 +643,7 @@ do in10 = 1, maxstp
     !if(in20==1) call SELFGRAVWAVE(0.d0,4)
 !call SELFGRAVWAVE(0.d0,4)
 !***** Determine time-step dt *****
-    write(*,*)'coutrant1'
+    !write(*,*)'coutrant1'
     dt_mpi(NRANK) = tfinal
     call Couran(tLMT)
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
@@ -709,7 +709,7 @@ do in10 = 1, maxstp
 
     !if(dt2/dt > nitr_min) then; nitr=nitr_min/int(dt2/dt);  endif
     nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
-    write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
+    !write(*,*)'nitr',NRANK,nitr,in10,maxstp,in20,nitera,dt,dt2
 
 !call SELFGRAVWAVE(0.d0,4)
 !write(*,*)'pre_gr_1',count_gr
@@ -728,7 +728,7 @@ do in10 = 1, maxstp
 !write(*,*)'post_gr_1',count_gr
 
 
-write(*,*)'evolv4',ifEVO
+!write(*,*)'evolv4',ifEVO
 
     if(ifEVO.eq.1) then
       !iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
@@ -787,7 +787,7 @@ iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)!;call SELFGRAVWAVE(0.d0,4);write(*,*) 'po
 !write(*,*)'post_gr_2',count_gr
 
 
-    call DISSIP()
+    !call DISSIP()
     time = time + dt
  end do
   itime = itime - 1
@@ -834,6 +834,83 @@ IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
 !call  SELFGRAVWAVE(0.0d0,40)
 
 END SUBROUTINE EVOLVE
+
+
+SUBROUTINE EVOLVEPHI
+USE comvar
+USE mpivar
+USE chmvar
+USE slfgrv
+INCLUDE 'mpif.h'
+
+double precision  :: t(1000),dt, time_CPU(3), stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024),dt_mpi2(0:1024),dt_gat2(0:1024)
+double precision  :: tsave,dtsave,tsave2D!,dtsave2D
+integer :: nunit, st,Time_signal,count=0, st_mpi(0:1024), st_gat(0:2047)!, Time_pfm_signal
+character*7 stb(3)
+character*3 fnunit,fnpe!,cntctj
+double precision :: t_test=0.d0,dt2,dtt2
+
+
+st    = 1
+ifEVO = 1
+dt    = 0.d0
+dtsave = 0.25d0
+dtsave2D = 0.025d0
+itime  = 1 + int( (time + 1.d-8)/dtsave )
+
+stb(1)='FastSpd'
+stb(2)='Conduct'
+time_CPU(1) = 0.d0
+time_CPU(2) = 0.d0
+time_CPU(3) = 0.d0
+Time_signal = 0
+
+do in10 = 1, stpini
+dt_mpi(NRANK) = tfinal
+    call Couran(tLMT)
+
+    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
+    st_mpi(NRANK) = 1
+    stt= dt_mpi(NRANK)
+
+    call Stblty(tLMT)
+
+    dt_mpi2(NRANK)= dt_mpi(NRANK)
+    dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
+    if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
+                    dt_gat       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(dt_mpi2(NRANK),1,MPI_REAL8,   &
+                    dt_gat2       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+    CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
+                    st_gat       ,1,MPI_INTEGER, &
+                    0            ,MPI_COMM_WORLD,IERR)
+    !write(*,*)'coutrant3'
+    IF(NRANK.EQ.0)  THEN
+      dt  = tfinal
+      dtt = tfinal
+      dt2 = tfinal
+      dtt2= tfinal
+      do i_t = 0, NPE-1
+         dt  = dmin1( dt, dt_gat(i_t) )
+         dt2 = dmin1( dt2,dt_gat2(i_t) )
+        if(dt.lt.dtt) st = st_gat(i_t)
+        dtt = dt
+        dtt2= dt2
+      end do
+   END IF
+    CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+    CALL MPI_BCAST(dt ,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+    CALL MPI_BCAST(dt2,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
+
+    nitr=int(nitr_min/(dt2/dt+0.1d-6))+1
+    call SELFGRAVWAVE(dt,2)
+
+end do
+END SUBROUTINE EVOLVEPHI
 
 
 !----------------------------------------------------------- SAVE VARIABLES ---!
@@ -2080,7 +2157,7 @@ USE chmvar
 double precision :: tCFL,c2
 
 tCFL = tfinal
-write(*,*) 'contrant',tCFL,tfinal
+!write(*,*) 'contrant',tCFL,tfinal
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   gamma =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
   gamma = ( 5.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+7.d0*ndH2(i,j,k) )/gamma
@@ -2094,7 +2171,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   !if(U(i,j,k,1) == 0.0d0) write(*,*) gamma,ndH(i,j,k)
 end do; end do; end do
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
-write(*,*) 'contrant-n',tCFL
+!write(*,*) 'contrant-n',tCFL
 END SUBROUTINE Couran
 
 
