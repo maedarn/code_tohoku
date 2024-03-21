@@ -20,7 +20,7 @@ integer :: ISTini,JSTini,KSTini,idenref1,idenref2,nummsv
 integer :: ist1,jst1,kst1,ist2,jst2,kst2,ist3,jst3,kst3,Iist1,Jjst1,Kkst1,Iist2,Jjst2,Kkst2,Iist3,Jjst3,Kkst3,nist1,njst1,nkst1
 integer :: i,j,k,itrrst=10,rixmn,rjymn,rkzmn,rixmx,rjymx,rkzmx,nrixmn,nrjymn,nrkzmn,nrixmx,nrjymx,nrkzmx
 integer :: rsix,rsjy,rskz,nstloop,NRANKdm,nstdm,lran1=0,lran2=0,idenref,nidck
-integer :: nlpnm1,nlpnm6,nlpnm4,nmIST,nmJST,nmKST,nlpnm7,nlpnm3,nlpnm,nmIST1,nmJST1,nmKST1
+integer :: nlpnm1,nlpnm6,nlpnm4,nmIST,nmJST,nmKST,nlpnm7,nlpnm3,nlpnm,nmIST1,nmJST1,nmKST1,Frank
 DOUBLE PRECISION :: nlpnm2,nlpnm5,nlpnm8,nlpnm9,nlpnm10,nlpnm11,nwnid2,nlpnm21,nlpnm22,nlpnm23,nlpnm25,nlpnm26,nlpnm27,nlpnm88,nlpnm888
 DOUBLE PRECISION  :: rsixc,rsjyc,rskzc,ndcore,nlpnmpre14,nlpnmpre16
 double precision :: div(-1:ndx,-1:ndy,-1:ndz,1:4)
@@ -35,7 +35,7 @@ double precision :: dnMPI(0:NPE-1,3),rdnumMPI(0:NPE-1,3),rdcellMPI(0:NPE-1,3),nr
 !double precision :: Ustar(1:10,1:nstar)
 double precision :: dmsiv(0:NPE-1),dmsiv_gt(0:NPE-1),submas1(0:NPE,2)
 !DOUBLE PRECISION, dimension(:,:), allocatable :: submas1
-double precision :: vv1,vv2,vv3,xx1,xx2,xx3,ffgas=1.d0,clsmass=10.d0,Rstdmy,masstoflux,SFE2
+double precision :: vv1,vv2,vv3,xx1,xx2,xx3,ffgas=1.d0,clsmass=10.d0,Rstdmy,masstoflux,SFE2,Mtotdt,SFE2pre,Fstarnum,Fran,Frandmy,Frandmyi
 DOUBLE PRECISION, dimension(:,:)  , allocatable :: STF1
 DOUBLE PRECISION, dimension(:,:,:)  , allocatable :: STF2
 
@@ -52,20 +52,143 @@ intt=intt+dt
 !N_MPI(20)=5; N_MPI(1)=1; N_MPI(2)=2; N_MPI(3)=3; N_MPI(4)=4; N_MPI(5)=5; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(2,1)
 N_MPI(20)=2; N_MPI(1)=1; N_MPI(2)=5; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(2,1)
 
-!do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-!div(i,j,k,1)=(U(i+1,j,k,2)-U(i-1,j,k,2))*0.5d0/dx1+(U(i,j+1,k,3)-U(i,j-1,k,3))*0.5d0/dy1+(U(i,j,k+1,4)-U(i,j,k-1,4))*0.5d0/dz1
-!div(i,j,k,2)=(U(i+1,j,k,2)-U(i-1,j,k,2))*0.5d0/dx1
-!div(i,j,k,3)=(U(i,j+1,k,3)-U(i,j-1,k,3))*0.5d0/dy1
-!div(i,j,k,4)=(U(i,j,k+1,4)-U(i,j,k-1,4))*0.5d0/dz1
-!end do; end do; end do
-MGtoS(NRANK)=0.d0
-Fstar(NRANK)=0.d0
-do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-!nlpnm2=(0.5d0-dsign(0.5d0,div(i,j,k,1)))*(0.5d0-dsign(0.5d0,div(i,j,k,2)))*(0.5d0-dsign(0.5d0,div(i,j,k,3)))*(0.5d0-dsign(0.5d0,div(i,j,k,4)))&
-!*(0.5d0-dsign(0.5d0,-U(i,j,k,1)+rhoth))
-!nlpnm2=(0.5d0-dsign(0.5d0,div(i,j,k,1)))*(0.5d0-dsign(0.5d0,div(i,j,k,2)))*(0.5d0-dsign(0.5d0,div(i,j,k,3)))*(0.5d0-dsign(0.5d0,div(i,j,k,4)))&
-!*(0.5d0-dsign(0.5d0,-ndH2(i,j,k)+rhoth))
+MGtoS(:)=0.d0
+Fstar(:)=0.d0
 
+SFE2pre=1.d0
+do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
+SFE2=LSFE*dsqrt(U(i,j,k,1)/(4.04d0*1.d3)) * dt * 2.d0 * ndH2(i,j,k) / (2.d0 * ndH2(i,j,k)+ndH(i,j,k)+ndp(i,j,k))
+SFE2=dmin1(SFE2,0.8d0)
+nlpnm2=(0.5d0-dsign(0.5d0,-ndH2(i,j,k)+rhoth))
+SFE2pre=dmin1(SFE2,SFE2pre)*nlpnm2+SFE2pre*(1.d0-nlpnm2)
+
+U(i,j,k,1)   = U(i,j,k,1)*(1.d0-SFE2)
+ndH(i,j,k)   = ndH(i,j,k)*(1.d0-SFE2)
+ndp(i,j,k)   = ndp(i,j,k)*(1.d0-SFE2)
+ndH2(i,j,k)  = ndH2(i,j,k)*(1.d0-SFE2)
+ndHe(i,j,k)  = ndHe(i,j,k)*(1.d0-SFE2)
+ndHep(i,j,k) = ndHep(i,j,k)*(1.d0-SFE2)
+ndC(i,j,k)   = ndC(i,j,k)*(1.d0-SFE2)
+ndCO(i,j,k)  = ndCO(i,j,k)*(1.d0-SFE2)
+ndCp(i,j,k)  = ndCp(i,j,k)*(1.d0-SFE2)
+nde(i,j,k)   = nde(i,j,k)*(1.d0-SFE2)
+ndtot(i,j,k) = ndtot(i,j,k)*(1.d0-SFE2)
+MGtoS(NRANK) = MGtoS(NRANK)+U(i,j,k,1)*(SFE2)
+Fstar(NRANK) = Fstar(NRANK)+nlpnm2!*SFE2
+Phistar(i,j,k,1) = Phistar(i,j,k,1)+U(i,j,k,1)*(SFE2)
+end do; end do; end do
+
+CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+do Nroot=0,NPE-1
+  CALL MPI_BCAST(MGtoS(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+  CALL MPI_BCAST(Fstar(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
+end do
+
+
+Mtotdt=0.d0
+Fstarnum=0.d0
+do Nroot=0,NPE-1
+Mtotdt=Mtotdt+MGtoS(Nroot)
+Fstarnum=Fstarnum+Fstar(Nroot)
+enddo
+
+call ran0(Fran,idum1)
+Fran=Fran*Fstarnum
+
+Frandmy=0.d0
+Frank=0
+do Nroot=0,NPE-1
+Frandmy=Frandmy+Fstar(Nroot)
+Frandmyi=(0.5d0-dsign(0.5d0,Frandmy-Fran))
+Frank=Nroot*idint(1.d0-Frandmyi)+Frank*idint(Frandmyi)
+enddo
+
+Mstar1=Mtotdt*dx1*dy1*dz1*Msun !U(i,j,k,1)*Msun*dx1*dy1*dz1*rmvratio
+Mtotint=Mtotint+Mstar1
+Mstarlp=1.d-15
+Mmassivetot=0.d0
+
+!call ran0(ransfe,idum1)
+nlpnm3=idint(0.5d0+dsign(0.5d0,Mtotint-Mtotint2)) 
+nlpnm4=1
+nmsv1=0.d0
+rdenst1=0.d0
+denst1=0.d0
+nummsv=0
+
+do nstdm=1,nlpmass*nlpnm3
+nlpnm4=idint(0.5d0-dsign(0.5d0,Mstarlp-Mstar1))
+call ran0(raninp,idum1)
+call IMF(raninp,ranout)
+Mstarlp=Mstarlp+ranout
+Mtotrc1=Mtotrc1+ranout
+
+nlpnm1=idint(0.5d0-dsign(0.5d0,Mmassive-ranout))
+nummsv=int(nlpnm1)+nummsv !*int(nlpnm1)
+nlpnm=nlpnm1*nlpnm3*nlpnm4
+
+Mmassivetot=Mmassivetot+ranout * dble(nlpnm)
+!nid=nid+1
+!nidnw=nidnw + 1 * nlpnm
+nwnid1 = nwnid1 + 1.d0 * dble(nlpnm)
+
+nidnw=idint(nwnid1)
+Ustar(1,(nid+nidnw)*nlpnm)=dble(IST*Ncellx + i)*dx1!+dx1*0.5d0
+Ustar(2,(nid+nidnw)*nlpnm)=dble(JST*Ncelly + j)*dy1!+dy1*0.5d0
+Ustar(3,(nid+nidnw)*nlpnm)=dble(KST*Ncellz + k)*dz1!+dz1*0.5d0
+Ustar(4,(nid+nidnw)*nlpnm)=U(i,j,k,2)
+Ustar(5,(nid+nidnw)*nlpnm)=U(i,j,k,3)
+Ustar(6,(nid+nidnw)*nlpnm)=U(i,j,k,4)
+Ustar(7,(nid+nidnw)*nlpnm)=ranout !U(i,j,k,1)*dx1*dy1*dz1*SFratio
+Ustar(8,(nid+nidnw)*nlpnm)=intt
+Ustar(9,(nid+nidnw)*nlpnm)=dble(nid)
+lQ=aq+bq*dlog10(ranout)+cq*dlog10(ranout)**2+dq*dlog10(ranout)**3+eq*dlog10(ranout)**4+fq*dlog10(ranout)**5
+Ustar(10,(nid+nidnw)*nlpnm)=lQ
+Ustar(11,(nid+nidnw)*nlpnm)=dble(IST*Ncellx + i)
+Ustar(12,(nid+nidnw)*nlpnm)=dble(JST*Ncelly + j)
+Ustar(13,(nid+nidnw)*nlpnm)=dble(KST*Ncellz + k)
+Rst=10.d0*(10**(Ustar(10,(nid+nidnw)*nlpnm)-49.d0))**(1.d0/3.d0)*(U(i,j,k,1)/1.27d0/10.d0)**(-2.d0/3.d0) !loop
+Ustar(14,(nid+nidnw)*nlpnm)=Rst
+!Ustar(14,0)=1.d0
+nstdmy=(nid+nidnw)*nlpnm
+Ustar(15,(nid+nidnw)*nlpnm)=U(i,j,k,1)
+Ustar(16,(nid+nidnw)*nlpnm)=2.2d0*(U(i,j,k,1)*ffgas)**(-1.d0/3.d0)*(ranout*clsmass)**(1.d0/3.d0) !10 -> cluster mass
+!Ustar(16,(nid+nidnw)*nlpnm)=2.1d0*(U(i,j,k,1)*ffgas)**(-1.d0/3.d0)*(Ustar(7,(nid+nidnw)*nlpnm)*10.d0)**(1.d0/3.d0)
+Ustar(14,(nid+nidnw)*nlpnm)=Rst+Ustar(16,(nid+nidnw)*nlpnm)
+Ustar(17,(nid+nidnw)*nlpnm)=(U(i+1,j+1,k+1,1)+U(i+1,j+1,k  ,1)+U(i+1,j+1,k-1,1)&
+                            +U(i+1,j  ,k+1,1)+U(i+1,j  ,k  ,1)+U(i+1,j  ,k-1,1)&
+                            +U(i+1,j-1,k+1,1)+U(i+1,j-1,k  ,1)+U(i+1,j-1,k-1,1)&
+                            +U(i  ,j+1,k+1,1)+U(i  ,j+1,k  ,1)+U(i  ,j+1,k-1,1)&
+                            +U(i  ,j  ,k+1,1)+U(i  ,j  ,k  ,1)+U(i  ,j  ,k-1,1)&
+                            +U(i  ,j-1,k+1,1)+U(i  ,j-1,k  ,1)+U(i  ,j-1,k-1,1)&
+                            +U(i-1,j+1,k+1,1)+U(i-1,j+1,k  ,1)+U(i-1,j+1,k-1,1)&
+                            +U(i-1,j  ,k+1,1)+U(i-1,j  ,k  ,1)+U(i-1,j  ,k-1,1)&
+                            +U(i-1,j-1,k+1,1)+U(i-1,j-1,k  ,1)+U(i-1,j-1,k-1,1))*dx1*dy1*dz1*Msun
+Ustar(18,(nid+nidnw)*nlpnm)=SFE
+Ustar(19,(nid+nidnw)*nlpnm)=Mstarlp
+Ustar(20,(nid+nidnw)*nlpnm)=dble(nummsv)
+
+
+!nwnid2 = nwnid1*nlpnm
+!Ustar(9,0)=dble(nidnw)
+!--------check---------------
+!nwnid(NRANK)=nwnid1*nlpnm
+!call BC_ST_rad(nwnid1,nwnid,nlpnm)
+!nidnw=idint(nwnid1)
+!Ustar(9,0)=dble(nidnw)
+Nstinp(NRANK)=dble(nidnw)
+!write(*,*)NRANK,(nid+nidnw)*nlpnm,nid,nidnw,nwnid1,'N'
+!--------check---------------
+!U(i,j,k,1)=rhopre1*(1.d0-SFE)
+!MGtoS(NRANK)=rhopre1*(SFE2)
+Fstar(NRANK)=Mstarlp
+enddo
+
+
+
+
+
+do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 gammi1 =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
 gammi1 = ( 2.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+2.d0*ndH2(i,j,k) )/gammi1
 

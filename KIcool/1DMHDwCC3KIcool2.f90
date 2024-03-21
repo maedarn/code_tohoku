@@ -4,7 +4,7 @@
 !*******************************************************!
 
 MODULE comvar
-INTEGER, parameter :: nd=1024+2
+INTEGER, parameter :: nd=6+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
 
@@ -22,7 +22,7 @@ double precision, dimension(-1:nd) :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,
 double precision, dimension(-1:nd,2) :: Ntot,NH2,NnC,NCO,tCII
 double precision  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-CHARACTER(33) :: dir='/Users/maeda/Desktop/code/KIcool/'
+CHARACTER(37) :: dir='/Users/maedarn/Dropbox/code/KIcool/'
 character(4) :: title
 END MODULE comvar
 
@@ -86,12 +86,18 @@ open(8,file='INPUT.DAT')
   !read(8,*) title
   close(8)
 
+dratio=12.92903d0/1.024d0
+!pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
+pinit1=12.92903d0/1.27d0*kb*1.d-3*157.8862d0; pinit2=pinit1
+!pinit1=3.979d3*kb*1.d-3*0.456d0; pinit2=pinit1
+Hini=0.9219098d0*dratio; pini=0.9503446d-2*dratio; H2ini=0.9465513d-8*dratio; Heini=0.9155226d-1*dratio; Hepini=0.5655353d-3*dratio
+Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
 
   !rho0=1.0d0
   !v0=48.89d0
   !B0=1.57734d0
-  pinit1=8.810807d3*kb*1.d-3
-  pinit2=8.810807d3*kb*1.d-3
+ ! pinit1=8.810807d3*kb*1.d-3
+ ! pinit2=8.810807d3*kb*1.d-3
   !gamma=5.0d0/3.d0
   !nu=1.27d0
   !PtoPkb= 1.52d0/1.38d0 * 1.d2
@@ -288,14 +294,15 @@ do in10 = 1, maxstp
     if(time+dt.gt.tfinal) dt = tfinal - time
 
 !***** Source parts *****
-    call SOURCE(dt*0.5d0)
+!    call SOURCE(dt*0.5d0)
 !***** Godunov parts *****
-    call MHD(dt)
+!    call MHD(dt)
 !***** Source parts *****
-    call SOURCE(dt*0.5d0)
+!    call SOURCE(dt*0.5d0)
 !************************
+    call SOURCE(dt*0.5d0)
     time = time + dt
-    write(100,*) time,U(512,1)/1.27d0,U(512,5)*1.52d0/1.38d0 * 1.d2,U(510,7)
+    write(100,*) time,U(512,1)/1.27d0,U(1,5)*1.52d0/1.38d0 * 1.d2,U(1,7)
  end do
  !write(100,*) time,U(512,1)/1.27d0,U(512,5)*1.52d0/1.38d0 * 1.d2,U(512,6)
 end do

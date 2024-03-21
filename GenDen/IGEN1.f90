@@ -100,16 +100,20 @@ END IF
   pi = 3.14159265358979323846d0
   U(:,:,:) = 0.d0
   idum = 1; kmax = 64
-  do l =-kmax,kmax; if(NRANK.eq.0) write(*,*) l; do ll= -kmax,kmax; do lll=-kmax,kmax
+  do l  =-kmax,kmax; if(NRANK.eq.0) write(*,*) l
+  do ll =-kmax,kmax
+  do lll=-kmax,kmax
     kw  = dsqrt( dble(l**2+ll**2+lll**2) )
     if((l.ne.0).or.(ll.ne.0).or.(lll.ne.0)) then; if(kw.le.dble(kmax)) then
       amp = dsqrt( kw**(-11.d0/3.d0) )
       kx=2.d0*pi*dble(l); ky=2.d0*pi*dble(ll); kzz=2.d0*pi*dble(lll)
       call ran0(phase1,idum); phase1=2.d0*pi*phase1
+
       do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
         xpi=0.5d0*(x(i-1)+x(i))/(ql1x+ql2x);ypi=0.5d0*(y(j-1)+y(j))/(ql1y+ql2y);zpi=0.5d0*(z(k-1)+z(k))/(ql1z+ql2z)
         U(i,j,k) = U(i,j,k)+amp*dcos(kx*xpi+ky*ypi+kzz*zpi+phase1)
       end do;end do;end do
+
     end if; end if
   end do;end do;end do
 
