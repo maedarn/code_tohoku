@@ -47,15 +47,27 @@ DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 END MODULE chmvar
 
+
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
-INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi,Rhost
+INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=4
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi,Rhost ! , Phiexa
+double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
 DOUBLE PRECISION :: Lbox
+!double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
+double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
+
+!DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
+DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
+DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa,Phiexab1,Phiexab2
+DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2,bphi3,bphi4,bphi5,bphi6
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
+integer , parameter :: bnd=3,loopbc=3
 END MODULE slfgrv
+
 
 MODULE fedvar
 DOUBLE PRECISION  :: LSFE,rhoth!=5.d0*1.d5*1.27d0,LSFE=0.02d0
@@ -141,6 +153,20 @@ ALLOCATE(Nstinp(0:NPE-1),MGtoS(0:NPE-1),Fstar(0:NPE-1))
 ALLOCATE(Mtotrc(0:NPE-1))
 ALLOCATE(rd49(-1:ndx,-1:ndy,-1:ndz,1:17))
 
+!*********grvwave*********
+ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
+ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
+ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
+
+ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
+ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
+ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
+ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
+ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
+ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
+!*********grvwave*********
+
+
 idum1=NRANK+1
 idum2=NRANK+1+NPE+1
 
@@ -170,6 +196,13 @@ DEALLOCATE(idumraninp,idumransfe,radintst)
 DEALLOCATE(Nstinp,MGtoS,Fstar)
 DEALLOCATE(Mtotrc)
 DEALLOCATE(rd49)
+
+!********gravwave**********
+DEALLOCATE(Phiexa,Phigrd)
+DEALLOCATE(Phiexab1,phiexab2)
+DEALLOCATE(Phiwv,Phigrdwv)
+DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
+!********gravwave**********
 
 CALL MPI_FINALIZE(IERR)
 
