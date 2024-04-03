@@ -2,6 +2,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
   USE comvar
   USE mpivar
   USE slfgrv
+  USE fedvar
   INCLUDE 'mpif.h'
   integer :: mode,MRANK,count=0,rdnum,rddmy,ndt1=0,svc1=0!,svci=50
   DOUBLE PRECISION  :: dt,dxi
@@ -115,6 +116,32 @@ U(i,j,k,1) = dble(dmy(28))
      !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
      !write(*,*) '------pb1-------' ,Nrank
 
+
+
+Rhost(:,:,:)=0.d0
+do nstloop=1,nid
+rixcn=idint((Ustar(1,nstloop)-0.5d0*dx1)/(dble(Ncellx)*dx1))
+rjycn=idint((Ustar(2,nstloop)-0.5d0*dy1)/(dble(Ncelly)*dy1))
+rkzcn=idint((Ustar(3,nstloop)-0.5d0*dz1)/(dble(Ncellz)*dz1))
+
+if(rixcn.eq.-1 ) rixcn = NSPLTx-1
+if(rjycn.eq.-1 ) rjycn = NSPLTy-1
+if(rkzcn.eq.-1 ) rkzcn = NSPLTz-1
+if(rixcn.eq.NSPLTx) rixcn = 0
+if(rjycn.eq.NSPLTy) rjycn = 0
+if(rkzcn.eq.NSPLTz) rkzcn = 0
+
+ndcore=0.d0
+if((IST==rixcn).and.(JST==rjycn).and.(KST==rkzcn)) then
+ndcore=1.d0
+endif
+
+ist1=idint((dmod(Ustar(1,nstloop)-0.5d0*dx1,dble(Ncellx)*dx1)/dx1))+1
+jst1=idint((dmod(Ustar(2,nstloop)-0.5d0*dy1,dble(Ncelly)*dy1)/dy1))+1
+kst1=idint((dmod(Ustar(3,nstloop)-0.5d0*dz1,dble(Ncellz)*dz1)/dz1))+1
+Rhost(ist1,jst1,kst1)=(Ustar(19,nstloop)+Ustar(7,nstloop))/Msun/dx1/dy1/dz1*ndcore
+enddo
+
      !****calcurate bc****
      !call collect()
      !Call PB( 0)
@@ -131,10 +158,11 @@ U(i,j,k,1) = dble(dmy(28))
      !ndt1=0
      !endif
  !    call movesph(dt)
-     tdm=dx(1)/cg*tratio
+     tdm=dx1/cg*CFL
+     call mlt_expnd()
      do nt=1,ntdiv
-     iwx=1;iwy=1;iwz=1
-     call BCgrv(100,1,8)
+     !iwx=1;iwy=1;iwz=1
+     !call BCgrv(100,1,8)
      !if(mod(svc1,svci)==0) then
      !call SELFGRAVWAVE(0.0d0,4)
      !call movesph(dt)
@@ -151,15 +179,15 @@ U(i,j,k,1) = dble(dmy(28))
      iwx = 1; iwy = 1; iwz = 1
      !call BCgrv(101)
      !call BCgrv(102)
+     call BCgrv(100,1,1)
      dxi = 1.d0/(12.d0*dx(0))
      do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
         !U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
         !U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
         !U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
-
-        !U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phi(i+2,j,k)+8.d0*Phi(i+1,j,k)-8.d0*Phi(i-1,j,k)+Phi(i-2,j,k) ) * dxi *0.5d0
-        !U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phi(i,j+2,k)+8.d0*Phi(i,j+1,k)-8.d0*Phi(i,j-1,k)+Phi(i,j-2,k) ) * dxi *0.5d0
-        !U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phi(i,j,k+2)+8.d0*Phi(i,j,k+1)-8.d0*Phi(i,j,k-1)+Phi(i,j,k-2) ) * dxi *0.5d0
+        U(i,j,k,2) = U(i,j,k,2) - dt * ( -Phiwv(i+2,j,k,1)+8.d0*Phiwv(i+1,j,k,1)-8.d0*Phiwv(i-1,j,k,1)+Phiwv(i-2,j,k,1) ) * dxi *0.5d0
+        U(i,j,k,3) = U(i,j,k,3) - dt * ( -Phiwv(i,j+2,k,1)+8.d0*Phiwv(i,j+1,k,1)-8.d0*Phiwv(i,j-1,k,1)+Phiwv(i,j-2,k,1) ) * dxi *0.5d0
+        U(i,j,k,4) = U(i,j,k,4) - dt * ( -Phiwv(i,j,k+2,1)+8.d0*Phiwv(i,j,k+1,1)-8.d0*Phiwv(i,j,k-1,1)+Phiwv(i,j,k-2,1) ) * dxi *0.5d0
      end do;end do;end do
   end if
   !**********acceraration because of gravity******
@@ -327,7 +355,7 @@ subroutine slvmuscle(dt)
   do m=1,ndy-2
   do n=1,ndx-2
      !rho(n,m,l) = U(n,m,l,1)
-     rho(n,m,l) = U(n,m,l,1)!-rhomean
+     rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)!-rhomean
   !   rhomean=rhomean+rho(i,j,k)
   end do;end do;end do
   
@@ -1099,6 +1127,7 @@ SUBROUTINE collectrho()
 USE comvar
 USE mpivar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision :: meanrho(0:NPE-1)
@@ -1108,7 +1137,7 @@ CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 meanrho(:)=0.d0
 rhomean=0.d0
 do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
-  meanrho(NRANK)=U(i,j,k,1)+meanrho(NRANK)
+  meanrho(NRANK)=U(i,j,k,1)+meanrho(NRANK)+Rhost(i,j,k)
 end do;end do;end do
 meanrho(NRANK)=meanrho(NRANK)/(dble(Ncellx*Ncelly*Ncellz))
 do Nroot=0,NPE-1
@@ -1193,9 +1222,11 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 INTEGER :: lsph,msph,factorial
 double precision :: xg_mpi(0:NPE-1),yg_mpi(0:NPE-1),zg_mpi(0:NPE-1)
+double precision :: rho(-1:ndx,-1:ndy,-1:ndz)
 double precision :: mass1,pi=3.14159265358979d0
 double precision :: xg,yg,zg,rg,xr,yr,zr,thetag,phig,plgndr,Ylm_coeff,Ylm1,Ylm0_coeff,Ylm_xyz,Jacob
 COMPLEX(16) :: Ylm,Ylmcnj,Ylmm,Ylmreal,Ylmreal0,Ylmrealb,Ylmreals,i_cmplx,sgn_pm,zero0,Ylm0_coeffc,one1
@@ -1211,12 +1242,21 @@ one1=(1.d0,0.d0)
 ALLOCATE( Qlm(0:lsphmax,-lsphmax:lsphmax,0:NPE-1))!,Qlmtst(0:lsphmax,-lsphmax:lsphmax,0:NPE-1) )
 ALLOCATE( Qlmall(0:lsphmax,-lsphmax:lsphmax) )
 
+do l=1,ndz-2
+do m=1,ndy-2
+do n=1,ndx-2
+   !rho(n,m,l) = U(n,m,l,1)
+   rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)!-rhomean
+!   rhomean=rhomean+rho(i,j,k)
+end do;end do;end do
+
+
 !centroid
 xg_mpi(:)=0.d0; yg_mpi(:)=0.d0; zg_mpi(:)=0.d0
 do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
-xg_mpi(NRANK)=U(i,j,k,1)*x(i)+xg_mpi(NRANK)
-yg_mpi(NRANK)=U(i,j,k,1)*y(j)+yg_mpi(NRANK)
-zg_mpi(NRANK)=U(i,j,k,1)*z(k)+zg_mpi(NRANK)
+xg_mpi(NRANK)=rho(i,j,k)*x(i)+xg_mpi(NRANK)
+yg_mpi(NRANK)=rho(i,j,k)*y(j)+yg_mpi(NRANK)
+zg_mpi(NRANK)=rho(i,j,k)*z(k)+zg_mpi(NRANK)
 enddo; enddo; enddo
 
 do Nroot=0,NPE-1
@@ -1278,7 +1318,7 @@ do lsph = 0, lsphmax
     !Ylmm=Ylm_coeff*Ylmcnj
     !Qlm(lsph,msph)=U(i,j,k,1)*dx1*dy1*dz1*rg**dble(lsph)*dble(Ylmreal)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
-    Qlm(lsph,msph,NRANK)   =U(i,j,k,1)*dx1*dy1*dz1*(rg**dble(lsph))*dble(Ylmreal)                             *dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
+    Qlm(lsph,msph,NRANK)   =rho(i,j,k)*dx1*dy1*dz1*(rg**dble(lsph))*dble(Ylmreal)                             *dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
     !Qlmtst(lsph,msph,NRANK)=U(i,j,k,1)*dx1*dy1*dz1*(rg**dble(lsph))*Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))+Qlm(lsph,msph,NRANK)
     !write(*,*)'Qlm',lsph,msph,NRANK,Ylmreal,Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg),sgn_pm,Ylmreals,Ylmrealb
     enddo; enddo; enddo
@@ -1298,7 +1338,7 @@ do lsph = 0, lsphmax
   do Nroot=0,NPE-1
   Qlmall(lsph,msph)=Qlm(lsph,msph,Nroot)+Qlmall(lsph,msph)
   end do
-  if(NRANK==0) then; write(*,*)'Qlm-Nroot',lsph,msph,Qlmall(lsph,msph); endif
+  !if(NRANK==0) then; write(*,*)'Qlm-Nroot',lsph,msph,Qlmall(lsph,msph); endif
   !write(*,*)'Qlm',NRANK,lsph,msph,Qlmall(lsph,msph)
   end do
 end do
@@ -1311,7 +1351,8 @@ do lsph = 0, lsphmax
     Ylm0_coeffc=(0.d0,0.d0)
     if(msph==0) then; Ylm0_coeffc=(1.d0,0.d0); endif
     sgn_pm=cmplx(0.5d0+dsign(0.5d0,dble(msph)+0.1d0),0.d0)
-    do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
+    !do k=1,ndz-2; do j=1,ndy-2; do i=1,ndx-2
+    do k=-2,ndz+1; do j=-2,ndy+1; do i=-2,ndx+1
     !spherical polar coordinate
     rg=dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0+(z(k)-zg)**2.d0)
     !thetag=datan((dsqrt((x(i)-xg)**2.d0+(y(j)-yg)**2.d0))/(z(k)-zg))

@@ -4,9 +4,9 @@ INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 INTEGER, parameter :: ndxtot=514, ndytot=514, ndztot=514
 !INTEGER, parameter :: ndxtot=130, ndytot=130, ndztot=130
-DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
-DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
-DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
+DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
+DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
+DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF, Bug
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
@@ -17,18 +17,24 @@ DOUBLE PRECISION  :: pmin,pmax,rmin,rmax,vinitdef
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
 
-DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
+DOUBLE PRECISION  :: prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
 !character(35)::dir='/work/maedarn/3DMHD/samplecnv10Myr/'
 character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphh4/'
 character(5) ::dir1
+character(5) ::svdir
 !character(36)::dir='/work/maedarn/3DMHD/samplecnvturbc3/'
 
 integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 integer :: time_end_c6,time_end_c7,time_end_c8
 
 DOUBLE PRECISION  :: Tth=1.d10,dinitdef
+
+DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0
+double precision :: dx1,dy1,dz1,ddd,tratio=0.5d0,cg=1.d3,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
+double precision :: kappa=0.5d0/0.2d0,Msph1=0.d0,di_pos
+integer :: lsphmax=4
 END MODULE comvar
 
 MODULE mpivar
@@ -65,7 +71,8 @@ DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
-integer , parameter :: bnd=3,loopbc=3
+integer , parameter :: bnd=3,loopbc=3,ngrvmx=10
+integer :: ntdiv
 END MODULE slfgrv
 
 
@@ -78,7 +85,7 @@ double precision :: Msun=2.4d-2 !3*3*3*1.7*10^(18+18+18-24)/2*10^33=3*3*3*1.7/2 
 double precision, dimension(:,:)  , allocatable :: Ustar!(1:10,1:nstar)
 double precision, dimension(:)  , allocatable :: rsphBE,rhosphBE,idumraninp,idumransfe,radintst
 double precision :: aq=-39.3178d0,bq=221.997d0,cq=-227.456d0,dq=117.410d0,eq=-30.1511d0,fq=3.06810d0
-DOUBLE PRECISION  :: mass1,rhomean,rrsph3x,rrsph3y,rrsph3z,alpharcm=3.d0*1.d-13, Mtotint, Mtotint2
+DOUBLE PRECISION  :: rrsph3x,rrsph3y,rrsph3z,alpharcm=3.d0*1.d-13, Mtotint, Mtotint2
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable  :: rdrgn,denrgn,radint,Phistar
 DOUBLE PRECISION, dimension(:,:,:), allocatable  :: preP!,radint
 !DOUBLE PRECISION, dimension(:), allocatable  :: Nstinp
@@ -180,7 +187,6 @@ call INITIA
 write(*,*) 'OK-INIT'
 call EVOLVE
 
-!write(*,*) 'OK'
 
 DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
@@ -426,49 +432,59 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   end if
 end do; end do; end do
 write(*,*) NRANK,'INIT'
-ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
-ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
+ALLOCATE(dx_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE(dy_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE(dz_i(-1-1:Ncellz*NSPLTz+2+1))
+ALLOCATE( x_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE( y_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE( z_i(-1-1:Ncellz*NSPLTz+2+1))
 
-do i = -1, Np1x
+
+do i = -1-1, Np1x
   dx_i(i) = ql1x/dble(Np1x)
 end do
-do i = Np1x+1, Ncellx*NSPLTx+2
+do i = Np1x+1, Ncellx*NSPLTx+2+1
   dx_i(i) = ql2x/dble(Np2x)
 end do
-do j = -1, Ncelly*NSPLTy+2
+do j = -1-1, Ncelly*NSPLTy+2+1
   dy_i(j) = ql1y/dble(Np1y)
 end do
-do k = -1, Ncellz*NSPLTz+2
+do k = -1-1, Ncellz*NSPLTz+2+1
   dz_i(k) = ql1z/dble(Np1z)
 end do
 
+!dx=dy=dz
+dx1= dx_i(0)
+dy1= dy_i(0)
+dz1= dz_i(0)
+!dx=dy=dz
+
 x_i(-1) = -dx_i(0)
-dx1=dx_i(0)
-do i = 0, Ncellx*NSPLTx+2
+x_i(-2) = x_i(-1)-dx_i(0)
+do i = 0, Ncellx*NSPLTx+2+1
    x_i(i) = x_i(i-1) + dx_i(i)
+   !write(*,*) 'x', x_i(i)
 end do
 y_i(-1) = -dy_i(0)
-dy1=dy_i(0)
-do j = 0, Ncelly*NSPLTy+2
+y_i(-2) = y_i(-1)-dy_i(0)
+do j = 0, Ncelly*NSPLTy+2+1
    y_i(j) = y_i(j-1) + dy_i(j)
+   !write(*,*) 'y', y_i(j)
 end do
 z_i(-1) = -dz_i(0)
-dz1=dz_i(0)
-do k = 0, Ncellz*NSPLTz+2
+z_i(-2) = z_i(-1)-dz_i(0)
+do k = 0, Ncellz*NSPLTz+2+1
    z_i(k) = z_i(k-1) + dz_i(k)
+   !write(*,*) 'z', z_i(k)
 end do
 
-do i = -1, Ncellx+2
+do i = -1-1, Ncellx+2+1
   ix    =  IST*Ncellx + i
   x(i)  =  x_i(ix)
   dx(i) =  dx_i(ix)
 end do
-do j = -1, Ncelly+2
+do j = -1-1, Ncelly+2+1
   jy    =  JST*Ncelly + j
   y(j)  =  y_i(jy)
   dy(j) =  dy_i(jy)
 end do
-do k = -1, Ncellz+2
+do k = -1-1, Ncellz+2+1
   kz    =  KST*Ncellz + k
   z(k)  =  z_i(kz)
   dz(k) =  dz_i(kz)
@@ -676,12 +692,12 @@ if(ifgrv.eq.2) then
   !write(*,*)'gr-pst-BC-rho'
 
   Lbox=ql1x+ql2x
-  modegrv=1
-  call GRAVTY(0.d0,modegrv)
+  !modegrv=1
+  !call GRAVTY(0.d0,modegrv)
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !write(*,*)'gr-mid'
-  modegrv=2
-  call GRAVTY(0.d0,modegrv)
+  !modegrv=2
+  !call GRAVTY(0.d0,modegrv)
 
 
 end if
@@ -718,13 +734,15 @@ USE comvar
 USE mpivar
 USE chmvar
 USE fedvar
+USE slfgrv
 use,intrinsic :: iso_fortran_env
 INCLUDE 'mpif.h'
 
 !integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 
-double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3)
-double precision  :: tsave,dtsave,tsave2D,dtsave2D
+double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3), dt_mpi_grv(0:1024),dt_mpi_fld(0:1024)
+double precision  :: dt_gat_grv(0:1024),dt_grv,dt_gat_fld(0:1024),dt_fld,l_cg,l_cs,n_cg
+double precision  :: tsave,dtsave,tsave2D,dtsave2D,dtmin,v_fld
 integer :: nunit, st, st_mpi(0:1024), st_gat(0:2047), Time_signal
 character*7 stb(3)
 character*3 fnunit,fnpe
@@ -772,7 +790,6 @@ Time_signal = 0
 !call system_clock(time_begin_c, CountPerSec, CountMax)
 
 do in10 = 1, maxstp
-  if((mod(in10,10).eq.1).and.(NRANK.eq.0)) write(*,*) in10,time!,dt
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
@@ -780,25 +797,21 @@ do in10 = 1, maxstp
   call SAVEU(nunit,dt,stb,st,t,0)
  
   do in20 = 1, nitera
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
     if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
     dt_mpi(NRANK) = tfinal
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
     call Couran(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
+    dt_mpi_fld(NRANK) = dt_mpi(NRANK)
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
 
     call Stblty(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
                     dt_gat       ,1,MPI_REAL8,   &
@@ -806,23 +819,44 @@ do in10 = 1, maxstp
     CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
                     st_gat       ,1,MPI_INTEGER, &
                     0            ,MPI_COMM_WORLD,IERR)
+
+    CALL MPI_GATHER(dt_mpi_fld(NRANK),1,MPI_REAL8,   &
+                    dt_gat_fld       ,1,MPI_REAL8,   &
+                    0            ,MPI_COMM_WORLD,IERR)
+
     IF(NRANK.EQ.0)  THEN
       dt  = tfinal
       dtt = tfinal
+      dt_fld  = tfinal
       do i_t = 0, NPE-1
         dt  = dmin1( dt, dt_gat(i_t) )
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
+        dt_fld  = dmin1( dt_fld, dt_gat_fld(i_t) )
       end do
+      !dmin1(dt_grv,dt_fld/ngrvmx)
+      v_fld=dx1/dt_fld*CFL
+      dt_grv=dx1/cg*CFL
+      !dtmin=dmin1(dt,dt_grv)
+      !ntdiv=cg*dt_grv/(v_fld*dt)
+  
+      !ntdiv=ngrvmx
+      !if(dtmin==dt_grv) then
+      !l_cg=cg*dtmin/dx1*CFL
+      !l_cs=dt/dt_fld
+      ntdiv=ngrvmx+1-int(cg*dt_grv/(v_fld*dt))
+      ntdiv=max0(ntdiv,1)
+      !endif
+
+      !if(dt_fld/dt_grv > dble(ngrvmx)) write(*,*) 'cg_err'
+      if(in20==1) write(*,*)'dt', ntdiv, dt_fld, dt, dt_grv !,dtmin
+
     END IF
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
-    !if(NRANK.eq.0) write(*,*) in20,time,dt
+    CALL MPI_BCAST(ntdiv,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
-!if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 
     !call system_clock(time_begin_c, CountPerSec, CountMax)
   !  call system_clock(time_end_c7)
@@ -844,12 +878,13 @@ do in10 = 1, maxstp
 
   !  call system_clock(time_end_c1)
 
-    if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
+    !if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
+    if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); end if
     call SOURCE(0.5d0*dt)
 
+    if(iffed.eq.2) then; call feedback(dt,1); call feedback(dt,2); call feedback(dt,3); end if
     
     !if(iffed.eq.2) then; call feedback(dt,1); end if
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
 !***** Godunov parts *****
 !goto 3711
     if(ifEVO.eq.1) then
@@ -879,7 +914,6 @@ do in10 = 1, maxstp
 1000 continue
 !3711 continue
     DEALLOCATE(Bcc)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
 !***** CT part *****
     ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
     call CC(1,dt)
@@ -895,17 +929,11 @@ do in10 = 1, maxstp
 !***** Source parts 2*****
     call SOURCE(0.5d0*dt)
 
- !   call system_clock(time_end_c2)
-
-    if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
+   if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); call SELFGRAVWAVE(dt,3); end if
+   !if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,2); end if
     !if(iffed.eq.2) then; call feedback(dt*0.5d0,1); end if
-
-
- !   call system_clock(time_end_c3)
-
- !   tim3=real(time_end_c2 - time_end_c1)/CountPerSec+tim3
 
 
     call DISSIP()
@@ -931,12 +959,6 @@ end do
 9000 continue
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
 call SAVEU(nunit,dt,stb,st,t,1)
-
-!write(*,*) time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5, CountPerSec,CountMax
-!write(*,*) real(time_end_c1 - time_begin_c)/CountPerSec,real(time_end_c2 - time_begin_c)/CountPerSec,real(time_end_c3 - time_begin_c)/CountPerSec,real(time_end_c4 - time_begin_c)/CountPerSec,&
-!real(time_end_c5 - time_begin_c)/CountPerSec,real(time_end_c6 - time_begin_c)/CountPerSec,real(time_end_c7 - time_begin_c)/CountPerSec,real(time_end_c8 - time_begin_c)/CountPerSec,"sec"
-
-!write(*,*)'tim',tim1,tim2,tim3
 END SUBROUTINE EVOLVE
 
 
