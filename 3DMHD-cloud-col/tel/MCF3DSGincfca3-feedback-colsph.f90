@@ -185,7 +185,11 @@ Mtotint2=0.d0
 
 call INITIA
 write(*,*) 'OK-INIT'
-call EVOLVE
+call SELFGRAVWAVE(0.0,1)
+ntdiv=512000
+call SELFGRAVWAVE(0.0,2)
+call SELFGRAVWAVE(0.0,40)
+!call EVOLVE
 
 
 DEALLOCATE(U)
@@ -1004,7 +1008,7 @@ open(10,FILE=dir//''//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITT
    sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
    !sngl(denrgn(i,j,k,1)),i=-1,Ncellx+2 )
    !sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
-   sngl(denrgn(i,j,k,1)), sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
+   sngl(denrgn(i,j,k,1)), sngl(Phiwv(i,j,k,1)), sngl(Phigrdwv(i,j,k,1)),i=-1,Ncellx+2 )
   end do
   end do
 

@@ -244,7 +244,7 @@ enddo
      !write(*,*) 'save???'
      WRITE(NPENUM,'(I3.3)') NRANK
      !WRITE(countcha,'(I6.6)') count
-     open(unit=28,file=dir//svdir//'/PHIF'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHI/PHIF'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
