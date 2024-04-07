@@ -10,7 +10,8 @@ INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 DOUBLE PRECISION  :: VECU
 character(3) Nfinal,itime
 !DOUBLE PRECISION :: Rhost(-1:ndx,-1:ndy,-1:ndz)
-integer :: ist1,jst1,kst1,rixcn,riycn,rizcn,ndcore
+integer :: ist1,jst1,kst1,rixcn,riycn,rizcn
+DOUBLE PRECISION  :: ndcore
 
 if(mode.eq.1) then
   call pinter(Nmem1,Nmem2,Ncellx,Ncelly,Ncellz)

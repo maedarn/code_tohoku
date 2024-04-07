@@ -12,7 +12,7 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
   real(4) :: dmy(1:28)
   character(3) NPENUM
   character(6) countcha
-  double precision tfluid , cs
+  double precision tfluid , cs, ndcore
   double precision dt_mpi_gr(0:NPE-1),dt_gat_gr(0:NPE-1),maxcs,tcool,cgtime!,sourcedt
   double precision :: ave1,ave1pre,ave2(0:NPE-1),ave,avepre,ave2_gather(0:NPE-1) , eps=1.0d-3
   integer nt
@@ -25,13 +25,13 @@ RECURSIVE subroutine SELFGRAVWAVE(dt,mode)
      Phiwv(:,:,:,:)=0.d0
      Phigrdwv(:,:,:,:)=0.d0
 
-     do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
-         Phiwv(i,j,k,1)=Phiexa(i,j,k)
+     !do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+     !    Phiwv(i,j,k,1)=Phiexa(i,j,k)
          !Phigrdwv(i,j,k,1)=cg*Phigrd(i,j,k,1)*2.d0/2.d0/kappa+Phiwv(i,j,k,1)
-         Phigrdwv(i,j,k,1)=cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)
-     end do
-     end do
-     end do
+     !    Phigrdwv(i,j,k,1)=cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)
+     !end do
+     !end do
+     !end do
   end if
   !**************** INITIALIZEATION **************
 
@@ -117,7 +117,6 @@ U(i,j,k,1) = dble(dmy(28))
      !write(*,*) '------pb1-------' ,Nrank
 
 
-
 Rhost(:,:,:)=0.d0
 do nstloop=1,nid
 rixcn=idint((Ustar(1,nstloop)-0.5d0*dx1)/(dble(Ncellx)*dx1))
@@ -170,6 +169,7 @@ enddo
      call slvmuscle(tdm)
      !svc1=svc1+1
      enddo
+  Phi(:,:,:)=Phiwv(:,:,:,1)
   end if
 
   !****************GRAVITY SOLVER*****************
@@ -287,7 +287,8 @@ enddo
      !write(*,*) 'save???'
      WRITE(NPENUM,'(I3.3)') NRANK
      !WRITE(countcha,'(I6.6)') count
-     open(unit=28,file=dir//svdir//'/PHIF'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     !open(unit=28,file=dir//svdir//'/PHIF'//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//'PHI/PHIF'//NPENUM//'.DAT',FORM='UNFORMATTED')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
   
@@ -1326,7 +1327,6 @@ do lsph = 0, lsphmax
 end do
 
 
-
 CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
 do Nroot=0,NPE-1
 CALL MPI_BCAST(Qlm(0,-lsphmax,Nroot),(lsphmax+1)*(2*lsphmax+1),MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
@@ -1343,8 +1343,8 @@ do lsph = 0, lsphmax
   end do
 end do
 
-Phiwv(:,:,:,1)=0.d0
-Phiwv(:,:,:,4)=0.d0
+Phiexa(:,:,:)=0.d0
+!Phiwv(:,:,:,4)=0.d0
 do lsph = 0, lsphmax
   do msph = -lsph, lsph
     Ylm0_coeff=0.d0
@@ -1372,13 +1372,12 @@ do lsph = 0, lsphmax
     !Ylmreal=(Ylmrealb*sgn_pm+Ylmrealb*(1.d0-sgn_pm))*(1.d0-Ylm0_coeff)+Ylmreal0*Ylm0_coeff
     Ylmreal=(Ylmrealb*sgn_pm+Ylmreals*(one1-sgn_pm))*(one1-Ylm0_coeffc)+Ylmreal0*Ylm0_coeffc
     !Ylmreal=Ylm_xyz(lsph,msph,x(i)-xg,y(j)-yg,z(k)-zg)
-    Phiwv(i,j,k,1)=-G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,1)
-    Phiwv(i,j,k,4)= G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,4)
+    Phiexa(i,j,k)=-G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiexa(i,j,k)
+    !Phiwv(i,j,k,4)= G*Qlmall(lsph,msph)*dsqrt(4.d0*pi/(2.d0*dble(lsph)+1.d0))*Ylmreal/((rg+eps_Q)**dble(lsph+1))+Phiwv(i,j,k,4)
     !Phiwv(i,j,k,5)=Ylmreal/(rg**dble(lsph+1))
     enddo; enddo; enddo
   end do
 end do
-
 
 DO k = -1, Ncellz+2; DO j = -1, Ncelly+2; DO i = -1, Ncellx+2
 Phigrd(i,j,k,1)= (-Phiexa(i-1,j,k)+Phiexa(i+1,j,k))*0.5d0/dx1 &

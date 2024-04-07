@@ -15,13 +15,13 @@ DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax,vinitdef
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
-INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
+INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed!,loopbc=2
 
 DOUBLE PRECISION  :: prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
 !character(35)::dir='/work/maedarn/3DMHD/samplecnv10Myr/'
-character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphh4/'
+character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphh5/'
 character(5) ::dir1
 character(5) ::svdir
 !character(36)::dir='/work/maedarn/3DMHD/samplecnvturbc3/'
@@ -33,7 +33,7 @@ DOUBLE PRECISION  :: Tth=1.d10,dinitdef
 
 DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0
 double precision :: dx1,dy1,dz1,ddd,tratio=0.5d0,cg=1.d3,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
-double precision :: kappa=0.5d0/0.2d0,Msph1=0.d0,di_pos
+double precision :: kappa=0.5d0/0.2d0,Msph1=0.d0,di_pos,rcld=0.4d0
 integer :: lsphmax=4
 END MODULE comvar
 
@@ -67,6 +67,7 @@ double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
 DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa,Phiexab1,Phiexab2
 DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
+DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2,bphi3,bphi4,bphi5,bphi6
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
@@ -184,12 +185,11 @@ Mtotint2=0.d0
 !write(*,*) 'OK3'
 
 call INITIA
-write(*,*) 'OK-INIT'
-call SELFGRAVWAVE(0.0,1)
-ntdiv=512000
-call SELFGRAVWAVE(0.0,2)
-call SELFGRAVWAVE(0.0,40)
-!call EVOLVE
+!call SELFGRAVWAVE(0.0d0,0)
+!ntdiv=51200
+!call SELFGRAVWAVE(0.0d0,2)
+!call SELFGRAVWAVE(0.0d0,40)
+call EVOLVE
 
 
 DEALLOCATE(U)
@@ -551,8 +551,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 i2  = IST*Ncellx+i
 i2y = JST*Ncelly+j
 i2z = KST*Ncellz+k
-rsph3 =dsqrt( (1.5d0*ql1x+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
-rrsph3 = ql1x*0.4d0
+rrsph3 = ql1x*rcld
+rsph3 =dsqrt( (ql1x+rrsph3+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+!rrsph3 = ql1x*0.2d0
 !rrsph3x=ql1x
 !rrsph3y=ql1y
 !rrsph3z=ql1z
@@ -696,12 +697,12 @@ if(ifgrv.eq.2) then
   !write(*,*)'gr-pst-BC-rho'
 
   Lbox=ql1x+ql2x
-  !modegrv=1
-  !call GRAVTY(0.d0,modegrv)
+  modegrv=1
+  call GRAVTY(0.d0,modegrv)
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !write(*,*)'gr-mid'
-  !modegrv=2
-  !call GRAVTY(0.d0,modegrv)
+  modegrv=2
+  call GRAVTY(0.d0,modegrv)
 
 
 end if
@@ -882,8 +883,9 @@ do in10 = 1, maxstp
 
   !  call system_clock(time_end_c1)
 
-    !if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
-    if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); end if
+    if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
+    !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); end if
+
     call SOURCE(0.5d0*dt)
 
     if(iffed.eq.2) then; call feedback(dt,1); call feedback(dt,2); call feedback(dt,3); end if
@@ -933,8 +935,8 @@ do in10 = 1, maxstp
 !***** Source parts 2*****
     call SOURCE(0.5d0*dt)
 
-   if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); call SELFGRAVWAVE(dt,3); end if
-   !if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
+   !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); call SELFGRAVWAVE(dt,3); end if
+   if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,2); end if
     !if(iffed.eq.2) then; call feedback(dt*0.5d0,1); end if
@@ -1008,7 +1010,8 @@ open(10,FILE=dir//''//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITT
    sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
    !sngl(denrgn(i,j,k,1)),i=-1,Ncellx+2 )
    !sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
-   sngl(denrgn(i,j,k,1)), sngl(Phiwv(i,j,k,1)), sngl(Phigrdwv(i,j,k,1)),i=-1,Ncellx+2 )
+   !sngl(denrgn(i,j,k,1)), sngl(Phiwv(i,j,k,1)), sngl(Phigrdwv(i,j,k,1)),i=-1,Ncellx+2 )
+   sngl(denrgn(i,j,k,1)), sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
   end do
   end do
 
