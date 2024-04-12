@@ -4,6 +4,7 @@ INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
 INTEGER, parameter :: ndxtot=514, ndytot=514, ndztot=514
 !INTEGER, parameter :: ndxtot=130, ndytot=130, ndztot=130
+INTEGER, parameter :: nslid=192
 DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
 DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
 DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
@@ -21,7 +22,7 @@ DOUBLE PRECISION  :: prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
 !character(35)::dir='/work/maedarn/3DMHD/samplecnv10Myr/'
-character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphh5/'
+character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphhB/'
 character(5) ::dir1
 character(5) ::svdir
 !character(36)::dir='/work/maedarn/3DMHD/samplecnvturbc3/'
@@ -241,7 +242,7 @@ character*3 :: NPENUM
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4,i2,i2y,i2z
-double precision :: rrsph,rrsph3,rsph3,T0=1.d3,vrto,dratio,dratio1=1.d-3
+double precision :: rrsph,rrsph3,rsph3,T0=1.d3,vrto,dratio,dratio1=5.d-4
 integer :: modegrv
 
 write(*,*)'START'!,NARANK
@@ -281,14 +282,12 @@ write(*,*)'READ',NRANK
  Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
  dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
 
- BBRV_cm(1,1)=Hini; BBRV_cm(2,1)=pini; BBRV_cm(3,1)=H2ini; BBRV_cm(4,1)=Heini
- BBRV_cm(5,1)=Hepini; BBRV_cm(6,1)=Cini; BBRV_cm(7,1)=COini; BBRV_cm(8,1)=Cpini
+ BBRV_cm(1,1)=Hini/dinit1; BBRV_cm(2,1)=pini/dinit1; BBRV_cm(3,1)=H2ini/dinit1; BBRV_cm(4,1)=Heini/dinit1
+ BBRV_cm(5,1)=Hepini/dinit1; BBRV_cm(6,1)=Cini/dinit1; BBRV_cm(7,1)=COini/dinit1; BBRV_cm(8,1)=Cpini/dinit1
 
- BBRV_cm(1,2)=Hini; BBRV_cm(2,2)=pini; BBRV_cm(3,2)=H2ini; BBRV_cm(4,2)=Heini
- BBRV_cm(5,2)=Hepini; BBRV_cm(6,2)=0.d0; BBRV_cm(7,2)=0.d0; BBRV_cm(8,2)=0.d0
-!10000 continue
-!molcld ntot = 1.d2
-!goto 10001
+ BBRV_cm(1,2)=0.d0/dinit1; BBRV_cm(2,2)=(pini+Hini+H2ini*2.d0)/dinit1; BBRV_cm(3,2)=0.d0/dinit1; BBRV_cm(4,2)=Heini/dinit1
+ BBRV_cm(5,2)=Hepini/dinit1; BBRV_cm(6,2)=0.d0/dinit1; BBRV_cm(7,2)=0.d0/dinit1; BBRV_cm(8,2)=0.d0/dinit1
+
  
  !pinit1=4.17696334d3*kb*1.d-3; pinit2=pinit1
  !Hini=0.1356810471d0; pini=0.4242275481d-2; H2ini=0.4580164736d2; Heini=0.8256654083d1; Hepini=0.2365978957d-3
@@ -313,7 +312,7 @@ write(*,*)'READ',NRANK
 !10001 continue
 
 !WNM ntot = 1.024
-goto 10000
+!goto 10000
  !dratio=1.018d0/1.024d0
  dratio=12.92903d0/1.024d0*12.929028928399248d0/16.412348980467353d0
  !pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
@@ -330,16 +329,16 @@ goto 10000
  Cpini=1.4256795925395164d-3
  !Hini=0.9219098d0*dratio; pini=0.9503446d-2*dratio; H2ini=0.9465513d-8*dratio; Heini=0.9155226d-1*dratio; Hepini=0.5655353d-3*dratio
  !Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
- dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+ dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1*dratio
  write(*,*)'INI_cem',dinit1,pinit1
  BBRV_cm(1,1)=Hini/dinit1; BBRV_cm(2,1)=pini/dinit1; BBRV_cm(3,1)=H2ini/dinit1; BBRV_cm(4,1)=Heini/dinit1
  BBRV_cm(5,1)=Hepini/dinit1; BBRV_cm(6,1)=Cini/dinit1; BBRV_cm(7,1)=COini/dinit1; BBRV_cm(8,1)=Cpini/dinit1
-10000 continue
-!molcld ntot = 1.d2
-!goto 10001
 
-
- 
+ BBRV_cm(1,2)=Hini/dinit1; BBRV_cm(2,2)=pini/dinit1; BBRV_cm(3,2)=H2ini/dinit1; BBRV_cm(4,2)=Heini/dinit1
+ BBRV_cm(5,2)=Hepini/dinit1; BBRV_cm(6,2)=0.d0/dinit1; BBRV_cm(7,2)=0.d0/dinit1; BBRV_cm(8,2)=0.d0/dinit1
+!10000 continue
+ !molcld ntot = 1.d2
+ !goto 10001
 
 prss1= pinit1
 IF(BCx1.eq.4) THEN; IF(IST.EQ.0)        LEFT = MPI_PROC_NULL; END IF
@@ -355,6 +354,8 @@ pi     = 3.14159265358979323846d0
 pmin = 1.829797d0 * 8.6336d0   !p/kb=1.d3
 pmax = 1.d10  !604.5288d0 !p/kb =7.d4
 rmin = 0.1949628d0
+!rmin = 0.01949628d0
+rmin = 0.0001d0
 rmax = 1.d10  !4168.669d0*1.27d0
 
 ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
@@ -370,14 +371,14 @@ ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
 !BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
 !BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
 
-dBC = mH*BBRV_cm(1,1) + mH*BBRV_cm(2,1) + mH2*BBRV_cm(3,1) + mHe*BBRV_cm(4,1) + mHe*BBRV_cm(5,1)
+dBC = (mH*BBRV_cm(1,1) + mH*BBRV_cm(2,1) + mH2*BBRV_cm(3,1) + mHe*BBRV_cm(4,1) + mHe*BBRV_cm(5,1))*dinit1
 dBC2=dBC*dratio1
 BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC2;     BBRV(1,2,2) =  dBC2
 BBRV(2,1,1) = vinitx1; BBRV(2,2,1) = dBC*vinitx1; BBRV(2,1,2) =  vinitx2; BBRV(2,2,2) =  dBC2*vinitx2
 BBRV(3,1,1) = vinity1; BBRV(3,2,1) = dBC*vinity1; BBRV(3,1,2) =  vinity1; BBRV(3,2,2) =  dBC2*vinity1
 BBRV(4,1,1) = vinitz1; BBRV(4,2,1) = dBC*vinitz1; BBRV(4,1,2) =  vinitz1; BBRV(4,2,2) =  dBC2*vinitz1
-BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
-BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC*vinitx2**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC *vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC2*vinitx2**2+binitx1**2+binity1**2+binitz1**2)
 BBRV(6,1,1) = binitx1; BBRV(6,2,1) = binitx1; BBRV(6,1,2) = binitx2; BBRV(6,2,2) = binitx2
 BBRV(7,1,1) = binity1; BBRV(7,2,1) = binity1; BBRV(7,1,2) = binity2; BBRV(7,2,2) = binity2
 BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2) = binitz2
@@ -385,12 +386,12 @@ BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2)
 !***** x-direction shock tube test *****!
 
 Ncellx = Ncellx/NSPLTx; Ncelly = Ncelly/NSPLTy; Ncellz = Ncellz/NSPLTz
-dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
-dinit2 = (mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini) * dratio1
+!dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
+dinit2 = dinit1 * dratio1
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   i2 = IST*Ncellx+i
-  if(i2.le.Np1x) then
+  if(i2.le.(Np1x-nslid)) then
     U(i,j,k,1) = dinit1
     U(i,j,k,2) = vinitx1
     U(i,j,k,3) = vinity1
@@ -399,20 +400,20 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     U(i,j,k,6) = binitx1
     U(i,j,k,7) = binity1
     U(i,j,k,8) = binitz1
-    ndH(i,j,k)   = Hini
-    ndp(i,j,k)   = pini
-    ndH2(i,j,k)  = H2ini
-    ndHe(i,j,k)  = Heini
-    ndHep(i,j,k) = Hepini
-    ndC(i,j,k)   = Cini
-    ndCO(i,j,k)  = COini
-    ndCp(i,j,k)  = Cpini
+    ndH(i,j,k)   = BBRV_cm(1,1)
+    ndp(i,j,k)   = BBRV_cm(2,1)
+    ndH2(i,j,k)  = BBRV_cm(3,1)
+    ndHe(i,j,k)  = BBRV_cm(4,1)
+    ndHep(i,j,k) = BBRV_cm(5,1)
+    ndC(i,j,k)   = BBRV_cm(6,1)
+    ndCO(i,j,k)  = BBRV_cm(7,1)
+    ndCp(i,j,k)  = BBRV_cm(8,1)
     nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
     ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
     Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
   end if
-  if(i2.gt.Np1x) then
+  if(i2.gt.(Np1x-nslid)) then
     U(i,j,k,1) = dinit2
     U(i,j,k,2) = vinitx2
     U(i,j,k,3) = vinity2
@@ -421,14 +422,14 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     U(i,j,k,6) = binitx2
     U(i,j,k,7) = binity2
     U(i,j,k,8) = binitz2
-    ndH(i,j,k)   = Hini * dratio1
-    ndp(i,j,k)   = pini * dratio1
-    ndH2(i,j,k)  = H2ini * dratio1
-    ndHe(i,j,k)  = Heini * dratio1
-    ndHep(i,j,k) = Hepini * dratio1
-    ndC(i,j,k)   = Cini * dratio1
-    ndCO(i,j,k)  = COini * dratio1
-    ndCp(i,j,k)  = Cpini * dratio1
+    ndH(i,j,k)   = BBRV_cm(1,2) * dratio1
+    ndp(i,j,k)   = BBRV_cm(2,2) * dratio1
+    ndH2(i,j,k)  = BBRV_cm(3,2) * dratio1
+    ndHe(i,j,k)  = BBRV_cm(4,2) * dratio1
+    ndHep(i,j,k) = BBRV_cm(5,2) * dratio1
+    ndC(i,j,k)   = BBRV_cm(6,2) * dratio1
+    ndCO(i,j,k)  = BBRV_cm(7,2) * dratio1
+    ndCp(i,j,k)  = BBRV_cm(8,2) * dratio1
     nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
     ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
     Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
@@ -552,7 +553,7 @@ i2  = IST*Ncellx+i
 i2y = JST*Ncelly+j
 i2z = KST*Ncellz+k
 rrsph3 = ql1x*rcld
-rsph3 =dsqrt( (ql1x+rrsph3+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
+rsph3 =dsqrt( (ql1x-dble(nslid)*dx1+rrsph3+5.d0+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
 !rrsph3 = ql1x*0.2d0
 !rrsph3x=ql1x
 !rrsph3y=ql1y
@@ -564,33 +565,35 @@ if(rsph3 .le. rrsph3 ) then
   !do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     ix = Ncellx*IST+i
     U(i,j,k,1)   = dble(DTF(ix,j,k)) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
-    if(IST.lt.NSPLTx/2) then
+    if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
     U(i,j,k,2)   = vinitx1
+    ncm=1
     endif
-    if(IST.ge.NSPLTx/2) then
+    if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
     U(i,j,k,2)   = vinitx2
+    ncm=2
     endif
     !U(i,j,k,2)   = vinitx2!*(1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
-    ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,1)
-    ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2,1)
-    ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3,1)
-    ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4,1)
-    ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5,1)
-    ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6,1)
-    ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7,1)
-    ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8,1)
+    ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,ncm)
+    ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2,ncm)
+    ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3,ncm)
+    ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4,ncm)
+    ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5,ncm)
+    ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6,ncm)
+    ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7,ncm)
+    ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8,ncm)
   !end do;end do;end do
 
 !-------sph-cloud------
 
 else
 
-if(IST.lt.NSPLTx/2) then
+if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
 dinitdef=dinit1
 vinitdef=vinitx1!0.d0
 ncm=1
 endif
-if(IST.ge.NSPLTx/2) then
+if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
 dinitdef=dinit2
 vinitdef=vinitx2
 ncm=2
@@ -624,10 +627,10 @@ end do
 end do
 end do
 
-if(IST.lt.NSPLTx/2) then
+if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
 DTF(:,:,:)=dinit1
 endif
-if(IST.ge.NSPLTx/2) then
+if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
 DTF(:,:,:)=dinit2
 endif
 !-------sph-cloud------
@@ -1392,10 +1395,16 @@ IF(iwx.eq.1) THEN
 !ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
 !ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
 !ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
-ndH(IX,JY,KZ)   = BBRV_cm(1,1)*BBRV(5,1,1); ndp(IX,JY,KZ)  = BBRV_cm(2,1)*BBRV(5,1,1)
-ndH2(IX,JY,KZ)  = BBRV_cm(3,1)*BBRV(5,1,1); ndHe(IX,JY,KZ) = BBRV_cm(4,1)*BBRV(5,1,1)
-ndHep(IX,JY,KZ) = BBRV_cm(5,1)*BBRV(5,1,1); ndC(IX,JY,KZ)  = BBRV_cm(6,1)*BBRV(5,1,1)
-ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*BBRV(5,1,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*BBRV(5,1,1)
+!ndH(IX,JY,KZ)   = BBRV_cm(1,1)*BBRV(5,1,1); ndp(IX,JY,KZ)  = BBRV_cm(2,1)*BBRV(5,1,1)
+!ndH2(IX,JY,KZ)  = BBRV_cm(3,1)*BBRV(5,1,1); ndHe(IX,JY,KZ) = BBRV_cm(4,1)*BBRV(5,1,1)
+!ndHep(IX,JY,KZ) = BBRV_cm(5,1)*BBRV(5,1,1); ndC(IX,JY,KZ)  = BBRV_cm(6,1)*BBRV(5,1,1)
+!ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*BBRV(5,1,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*BBRV(5,1,1)
+
+ndH(IX,JY,KZ)   = BBRV_cm(1,1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2,1)*U(IX,JY,KZ,1)
+ndH2(IX,JY,KZ)  = BBRV_cm(3,1)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4,1)*U(IX,JY,KZ,1)
+ndHep(IX,JY,KZ) = BBRV_cm(5,1)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6,1)*U(IX,JY,KZ,1)
+ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*U(IX,JY,KZ,1)
+
       END DO;END DO;END DO
     END IF
 
@@ -1423,10 +1432,15 @@ ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*BBRV(5,1,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*BBRV(5
   !      ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
   !      ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
   !      ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
-ndH(IX,JY,KZ)   = BBRV_cm(1,2)*BBRV(5,1,2); ndp(IX,JY,KZ)  = BBRV_cm(2,2)*BBRV(5,1,2)
-ndH2(IX,JY,KZ)  = BBRV_cm(3,2)*BBRV(5,1,2); ndHe(IX,JY,KZ) = BBRV_cm(4,2)*BBRV(5,1,2)
-ndHep(IX,JY,KZ) = BBRV_cm(5,2)*BBRV(5,1,2); ndC(IX,JY,KZ)  = BBRV_cm(6,2)*BBRV(5,1,2)
-ndCO(IX,JY,KZ)  = BBRV_cm(7,2)*BBRV(5,1,2); ndCp(IX,JY,KZ) = BBRV_cm(8,2)*BBRV(5,1,2)
+!ndH(IX,JY,KZ)   = BBRV_cm(1,2)*BBRV(5,1,2); ndp(IX,JY,KZ)  = BBRV_cm(2,2)*BBRV(5,1,2)
+!ndH2(IX,JY,KZ)  = BBRV_cm(3,2)*BBRV(5,1,2); ndHe(IX,JY,KZ) = BBRV_cm(4,2)*BBRV(5,1,2)
+!ndHep(IX,JY,KZ) = BBRV_cm(5,2)*BBRV(5,1,2); ndC(IX,JY,KZ)  = BBRV_cm(6,2)*BBRV(5,1,2)
+!ndCO(IX,JY,KZ)  = BBRV_cm(7,2)*BBRV(5,1,2); ndCp(IX,JY,KZ) = BBRV_cm(8,2)*BBRV(5,1,2)
+
+ndH(IX,JY,KZ)   = BBRV_cm(1,2)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2,2)*U(IX,JY,KZ,1)
+ndH2(IX,JY,KZ)  = BBRV_cm(3,2)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4,2)*U(IX,JY,KZ,1)
+ndHep(IX,JY,KZ) = BBRV_cm(5,2)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6,2)*U(IX,JY,KZ,1)
+ndCO(IX,JY,KZ)  = BBRV_cm(7,2)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8,2)*U(IX,JY,KZ,1)
       END DO; END DO; END DO
     END IF
   END IF
