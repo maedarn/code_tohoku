@@ -197,7 +197,7 @@ enddo
      !write(*,*) 'save???'
      WRITE(NPENUM,'(I3.3)') NRANK
      WRITE(countcha,'(I6.6)') count
-     open(unit=128,file=dir//'PHI/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+     open(unit=28,file=dir//svdir//'/PHI'//countcha//NPENUM//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !open(unit=38,file='/work/maedarn/3DMHD/test/PHIINI/INIPHI2step'//NPENUM//countcha//'.DAT',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
      !write(*,*) 'save?????'
 
@@ -229,14 +229,14 @@ enddo
            do i = -1, Ncellx+2
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(cg*Phigrd(i,j,k,1)+kappa*Phiexa(i,j,k)),sngl(U(i,j,k,1))
-           write(128) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phigrd(i,j,k,1)),sngl(U(i,j,k,1))
+           write(28) sngl(Phiwv(i,j,k,1)),sngl(Phigrdwv(i,j,k,1)),sngl(Phiexa(i,j,k)),sngl(Phiwv(i,j,k,2)),sngl(U(i,j,k,1))
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiwv(i,j,k,3)),sngl(Phiwv(i,j,k,4)),sngl(Phiexa(i,j,k))
            !write(28) sngl(Phiwv(i,j,k,1)),sngl(Phiwv(i,j,k,2)),sngl(Phiexa(i,j,k)),sngl(Phiwv(i,j,k,4)),sngl(U(i,j,k,1))
           enddo
         end do
         !write(*,*) sngl(Phiwv(8,8,k,1)),sngl(Phigrdwv(8,8,k,1))
      end do
-     close(128)
+     close(28)
      count=count+1
   end if
 

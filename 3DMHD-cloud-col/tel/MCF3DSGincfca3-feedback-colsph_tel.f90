@@ -186,11 +186,11 @@ Mtotint2=0.d0
 !write(*,*) 'OK3'
 
 call INITIA
-!call SELFGRAVWAVE(0.0d0,0)
-!ntdiv=51200
-!call SELFGRAVWAVE(0.0d0,2)
-!call SELFGRAVWAVE(0.0d0,40)
-call EVOLVE
+call SELFGRAVWAVE(0.0d0,0)
+ntdiv=51200
+call SELFGRAVWAVE(0.0d0,2)
+call SELFGRAVWAVE(0.0d0,40)
+!call EVOLVE
 
 
 DEALLOCATE(U)
@@ -701,11 +701,11 @@ if(ifgrv.eq.2) then
 
   Lbox=ql1x+ql2x
   modegrv=1
-  call GRAVTY(0.d0,modegrv)
+  !call GRAVTY(0.d0,modegrv)
   !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   !write(*,*)'gr-mid'
   modegrv=2
-  call GRAVTY(0.d0,modegrv)
+  !call GRAVTY(0.d0,modegrv)
 
 
 end if
@@ -886,7 +886,7 @@ do in10 = 1, maxstp
 
   !  call system_clock(time_end_c1)
 
-    if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
+    !if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
     !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); end if
 
     call SOURCE(0.5d0*dt)
@@ -939,7 +939,7 @@ do in10 = 1, maxstp
     call SOURCE(0.5d0*dt)
 
    !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); call SELFGRAVWAVE(dt,3); end if
-   if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
+   !if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,3); end if
    ! if(iffed.eq.2) then; call feedback(dt*0.5d0,2); end if
     !if(iffed.eq.2) then; call feedback(dt*0.5d0,1); end if

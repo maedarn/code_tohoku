@@ -1,104 +1,57 @@
 MODULE comvar
-!INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
+  !INTEGER, parameter :: ndx=130, ndy=130, ndz=130, ndmax=130, Dim=3 !1024^3
 INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 !INTEGER, parameter :: ndx=34, ndy=34, ndz=34, ndmax=34, Dim=3
-INTEGER, parameter :: ndxtot=514, ndytot=514, ndztot=514
-!INTEGER, parameter :: ndxtot=130, ndytot=130, ndztot=130
-INTEGER, parameter :: nslid=192
-DOUBLE PRECISION, dimension(-1-1:ndx+1) :: x,dx
-DOUBLE PRECISION, dimension(-1-1:ndy+1) :: y,dy
-DOUBLE PRECISION, dimension(-1-1:ndz+1) :: z,dz
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF, Bug
+DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
+DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
+DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
 DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
-DOUBLE PRECISION  :: pmin,pmax,rmin,rmax,vinitdef
+DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
-INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed!,loopbc=2
-
-DOUBLE PRECISION  :: prss1,Rst1
-INTEGER :: idum1,idum2
-DOUBLE PRECISION  :: nad
-!character(35)::dir='/work/maedarn/3DMHD/samplecnv10Myr/'
-character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphhD/'
-character(5) ::dir1
-character(5) ::svdir
-!character(36)::dir='/work/maedarn/3DMHD/samplecnvturbc3/'
-
-integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
-integer :: time_end_c6,time_end_c7,time_end_c8
-
-DOUBLE PRECISION  :: Tth=1.d10,dinitdef
-
-DOUBLE PRECISION, parameter :: sourratio=0.5d0,adiff=0.25d0,rratio=0.20d0,rmove=0.d0
-double precision :: dx1,dy1,dz1,ddd,tratio=0.5d0,cg=1.d3,Tdiff=0.2d0,rncn=0.d0,vmove=0.1d0!*cg/rmove
-double precision :: kappa=0.5d0/0.2d0,Msph1=0.d0,di_pos,rcld=0.4d0
-integer :: lsphmax=4
+INTEGER :: ifchem,ifthrm,ifrad,ifgrv,loopbc=2
+character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m2/' !samplecnv2
 END MODULE comvar
 
 MODULE mpivar
 INTEGER :: NPE,NRANK, NSPLTx,NSPLTy,NSPLTz, IST,JST,KST, LEFT,RIGT,BOTM,TOP,UP,DOWN
 INTEGER :: BCx1,BCx2,BCy1,BCy2,BCz1,BCz2, N_MPI(20)
-DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(8,2)
+DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(8)
 REAL*4, dimension(:,:,:), allocatable :: DTF
-REAL*4, dimension(:,:,:,:), allocatable :: VTF,rd49
 END MODULE mpivar
 
 MODULE chmvar
-DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
+DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0!, TCMB=5.d-2
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2 !1/100 solar metal
+!POP0
+!REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
+!REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
+!REAL*8, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POP3
+!REAL*8, parameter :: G0=1.d0, xc=1.4d-8, xo=3.2d-8, dv=3.d0, Tgr=5.d-3, fgr=1.d-4, Pen=1.d5 !POP4
+!REAL*8, parameter :: G0=1.d-4, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPA
+!REAL*8, parameter :: G0=1.d-3, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPB
+!REAL*8, parameter :: G0=1.d-2, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPC
+
 DOUBLE PRECISION, dimension(:,:,:)  , allocatable :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 END MODULE chmvar
 
-
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
-INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2,wvnum=4
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi,Rhost ! , Phiexa
-double precision, dimension(:,:,:), allocatable :: Phidt! , Phicgp , Phicgm
+INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
 DOUBLE PRECISION :: Lbox
-!double precision :: deltalength , cgcsratio= 1.0d0,cgratio1=0.2d0 !, shusoku1=0.0d0
-double precision ::  cgcsratio= 1.0d0,cgratio1=0.2d0,rhomean !, shusoku1=0.0d0
-
-!DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phicgm , Phi1step , Phi2step , Phicgp
-DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phigrd
-DOUBLE PRECISION , dimension(:,:,:), allocatable ::  Phiexa,Phiexab1,Phiexab2
-DOUBLE PRECISION , dimension(:,:,:,:), allocatable ::  Phiwv, Phigrdwv
-DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2,bphi3,bphi4,bphi5,bphi6
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: bphil,bphir
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: bphigrdxl,bphigrdxr
-integer , parameter :: bnd=3,loopbc=3,ngrvmx=10
-integer :: ntdiv
+DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
 END MODULE slfgrv
-
-
-MODULE fedvar
-DOUBLE PRECISION  :: LSFE,rhoth!=5.d0*1.d5*1.27d0,LSFE=0.02d0
-DOUBLE PRECISION  :: Mmassive=10.d0,cs0=0.19d0/0.953d0,rsphBE1,rdmod,rdpcnt=1.d-2,Rnbnratio=2.d0,rmvratio=0.5d0
-INTEGER, parameter :: numstar=5000,valstar=16,nlpmass=1000,nran1=1000000
-integer :: idum=1,nid=0,nidnw=0,isphloop=100,iradloop=10
-double precision :: Msun=2.4d-2 !3*3*3*1.7*10^(18+18+18-24)/2*10^33=3*3*3*1.7/2 *10^(-3)
-double precision, dimension(:,:)  , allocatable :: Ustar!(1:10,1:nstar)
-double precision, dimension(:)  , allocatable :: rsphBE,rhosphBE,idumraninp,idumransfe,radintst
-double precision :: aq=-39.3178d0,bq=221.997d0,cq=-227.456d0,dq=117.410d0,eq=-30.1511d0,fq=3.06810d0
-DOUBLE PRECISION  :: rrsph3x,rrsph3y,rrsph3z,alpharcm=3.d0*1.d-13, Mtotint, Mtotint2
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable  :: rdrgn,denrgn,radint,Phistar
-DOUBLE PRECISION, dimension(:,:,:), allocatable  :: preP!,radint
-!DOUBLE PRECISION, dimension(:), allocatable  :: Nstinp
-DOUBLE PRECISION, dimension(:), allocatable  :: Mtotrc
-DOUBLE PRECISION, dimension(:), allocatable  :: Nstinp,MGtoS,Fstar
-DOUBLE PRECISION :: Mtotrc1=0.d0
-integer :: imtotrc=0
-!DOUBLE PRECISION  :: dnMPI(0:numstar,0:NPE-1),rdnumMPI(0:numstar,0:NPE-1)
-!double precision, dimension(:,:,:,:) :: phibc
-END MODULE fedvar
-
 
 !======================================================================*
 !                                 MAIN                                 *
@@ -109,7 +62,6 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
-USE fedvar
 INCLUDE 'mpif.h'
 
 CALL MPI_INIT(IERR)
@@ -148,72 +100,21 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
        ndHep(-1:ndx,-1:ndy,-1:ndz),ndC(-1:ndx,-1:ndy,-1:ndz),ndCp(-1:ndx,-1:ndy,-1:ndz),ndCO(-1:ndx,-1:ndy,-1:ndz), &
          nde(-1:ndx,-1:ndy,-1:ndz),ndtot(-1:ndx,-1:ndy,-1:ndz),Ntot(-1:ndx,-1:ndy,-1:ndz,2),                        &
          NH2(-1:ndx,-1:ndy,-1:ndz,2),NnC(-1:ndx,-1:ndy,-1:ndz,2),NCO(-1:ndx,-1:ndy,-1:ndz,2),tCII(-1:ndx,-1:ndy,-1:ndz,2) )
-ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz),VTF(-1:ndx,-1:ndy,-1:ndz,3))
-ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz),Rhost(-1:ndx,-1:ndy,-1:ndz))
-ALLOCATE(Ustar(1:valstar,0:numstar),radintst(0:numstar),Phistar(-1:ndx,-1:ndy,-1:ndz,8))
-ALLOCATE(rsphBE(1:isphloop),rhosphBE(1:isphloop))
-ALLOCATE( Bug(-1:ndx,-1:ndy,-1:ndz,4) )
-ALLOCATE( rdrgn(-1:ndx,-1:ndy,-1:ndz,2) )
-ALLOCATE( denrgn(-1:ndx,-1:ndy,-1:ndz,2) )
-ALLOCATE( preP(-1:ndx,-1:ndy,-1:ndz),radint(-1:ndx,-1:ndy,-1:ndz,2) )
-ALLOCATE(idumraninp(0:nran1),idumransfe(0:nran1))
-!ALLOCATE(Nstinp(0:NPE-1))
-ALLOCATE(Nstinp(0:NPE-1),MGtoS(0:NPE-1),Fstar(0:NPE-1))
-ALLOCATE(Mtotrc(0:NPE-1))
-ALLOCATE(rd49(-1:ndx,-1:ndy,-1:ndz,1:17))
+ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
+ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
 
-!*********grvwave*********
-ALLOCATE(Phiexa(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
-ALLOCATE(Phiexab1(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1),Phiexab2(-1-1:ndx+1,-1-1:ndy+1,-1-1:ndz+1))
-ALLOCATE(Phigrd(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-
-ALLOCATE(Phiwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-ALLOCATE(Phigrdwv(-1:ndx,-1:ndy,-1:ndz,1:wvnum))
-ALLOCATE(bphil(-3:ndy+2,-3:ndz+2,-1:1     ))
-ALLOCATE(bphir(-3:ndy+2,-3:ndz+2,ndx-2:ndx))
-ALLOCATE(bphigrdxl(-1:ndy,-1:ndz,-1:1     ,1:wvnum))
-ALLOCATE(bphigrdxr(-1:ndy,-1:ndz,ndx-2:ndx,1:wvnum))
-!*********grvwave*********
-
-
-idum1=NRANK+1
-idum2=NRANK+1+NPE+1
-
-Ustar(:,:)=0.d0
-Phistar(:,:,:,:)=0.d0
-Mtotint=0.d0
-Mtotint2=0.d0
 !write(*,*) 'OK3'
 
 call INITIA
-!call SELFGRAVWAVE(0.0d0,0)
-!ntdiv=51200
-!call SELFGRAVWAVE(0.0d0,2)
-!call SELFGRAVWAVE(0.0d0,40)
+!write(*,*) 'OK'
 call EVOLVE
 
+!write(*,*) 'OK'
 
 DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
-DEALLOCATE(DTF,VTF)
-DEALLOCATE(Phi,Rhost)
-DEALLOCATE(Ustar,Phistar)
-DEALLOCATE(rsphBE,rhosphBE)
-DEALLOCATE(Bug)
-DEALLOCATE(rdrgn,denrgn)
-DEALLOCATE( preP ,radint)
-DEALLOCATE(idumraninp,idumransfe,radintst)
-!DEALLOCATE(Nstinp)
-DEALLOCATE(Nstinp,MGtoS,Fstar)
-DEALLOCATE(Mtotrc)
-DEALLOCATE(rd49)
-
-!********gravwave**********
-DEALLOCATE(Phiexa,Phigrd)
-DEALLOCATE(Phiexab1,phiexab2)
-DEALLOCATE(Phiwv,Phigrdwv)
-DEALLOCATE(bphil,bphir,bphigrdxl,bphigrdxr)
-!********gravwave**********
+DEALLOCATE(DTF)
+DEALLOCATE(Phi)
 
 CALL MPI_FINALIZE(IERR)
 
@@ -227,7 +128,6 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
-USE fedvar
 INCLUDE 'mpif.h'
 
 integer :: Np1x, Np2x, Np1y, Np2y, Np1z, Np2z, nunit, ix, jy, kz,b,c
@@ -236,20 +136,12 @@ double precision ::  ql1x,ql2x,ql1y,ql2y,ql1z,ql2z,dinit1,dinit2,pinit1,pinit2, 
            binitx1,binitx2,binity1,binity2,binitz1,binitz2
 double precision, dimension(:), allocatable :: x_i,y_i,z_i,dx_i,dy_i,dz_i
 double precision :: theta,pi,amp,xpi,ypi,zpi,phase1,phase2,phase3,kx,ky,kzz,kw
-double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC,dBC2
+double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC
 double precision :: ampn(2048),ampn0(2048)
 character*3 :: NPENUM
 INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
-integer i3,i4,i2,i2y,i2z
-double precision :: rrsph,rrsph3,rsph3,T0=1.d3,vrto,dratio,dratio1=0.2d0
-integer :: modegrv
-
-write(*,*)'START'!,NARANK
-!open(28,file=dir//'dir.DAT')
-!  read(28,*)  dir1
-!close(28)
-
+integer i3,i4
 
 open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
@@ -267,80 +159,48 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  CFL,facdep
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2,BCy1,BCy2,BCz1,BCz2
-  read(8,*)  ifchem,ifthrm,ifrad,ifgrv,iffed
-  read(8,*)  rhoth,LSFE
-  read(8,*)  nad
+  read(8,*)  ifchem,ifthrm,ifrad,ifgrv
 close(8)
-write(*,*)'READ',NRANK
 
 !WNM ntot = 1.024
 !goto 10000
- dratio=1.018d0/1.024
+!n=2.d0,p=2896.6d0 * 1.38d0/1.52d0 * 1.d-2 ! kb->p0
  pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
- !pinit1=86.d0*kb*1.d-3*20.d0; pinit2=pinit1
- Hini=0.9219098d0*dratio; pini=0.9503446d-2*dratio; H2ini=0.9465513d-8*dratio; Heini=0.9155226d-1*dratio; Hepini=0.5655353d-3*dratio
- Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
+ Hini=0.9219098d0; pini=0.9503446d-2; H2ini=0.9465513d-8; Heini=0.9155226d-1; Hepini=0.5655353d-3
+ Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
  dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+ BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+ BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
+!10000 continue
 
- BBRV_cm(1,1)=Hini/dinit1; BBRV_cm(2,1)=pini/dinit1; BBRV_cm(3,1)=H2ini/dinit1; BBRV_cm(4,1)=Heini/dinit1
- BBRV_cm(5,1)=Hepini/dinit1; BBRV_cm(6,1)=Cini/dinit1; BBRV_cm(7,1)=COini/dinit1; BBRV_cm(8,1)=Cpini/dinit1
+ !thermal inst
+ !dmean=1.027 , dsp=0.21
+ !pinit1=2896.6d0 * 1.38d0/1.52d0 * 1.d-2 ; pinit2=pinit1
+! pinit1=14483.d0 * 1.38d0/1.52d0 * 1.d-2 ; pinit2=pinit1
+! Hini=0.9219098d0*10.d0; pini=0.9503446d-2*10.d0; H2ini=0.9465513d-8*10.d0; Heini=0.9155226d-1*10.d0; Hepini=0.5655353d-3*10.d0
+! Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3
+! dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
 
- BBRV_cm(1,2)=0.d0/dinit1; BBRV_cm(2,2)=(pini+Hini+H2ini*2.d0)/dinit1; BBRV_cm(3,2)=0.d0/dinit1; BBRV_cm(4,2)=Heini/dinit1
- BBRV_cm(5,2)=Hepini/dinit1; BBRV_cm(6,2)=0.d0/dinit1; BBRV_cm(7,2)=0.d0/dinit1; BBRV_cm(8,2)=0.d0/dinit1
+ !low metal code
+ !goto 10029
+ !Hini=2.5d0*0.92d0;pini=Hini*3.d-4;H2ini=Hini*1.d-50;Hmini=Hini*1.d-50
+ !Heini=2.5d0*0.08d0;Hepini=Heini*3.d-4;Cpini=2.5d0*xc;COini=Cpini*1.d-50; Cini=Cpini*1.d-50
 
- 
- !pinit1=4.17696334d3*kb*1.d-3; pinit2=pinit1
- !Hini=0.1356810471d0; pini=0.4242275481d-2; H2ini=0.4580164736d2; Heini=0.8256654083d1; Hepini=0.2365978957d-3
- !Cini=0.1393336637d-1; COini=0.6620099874d-5; Cpini=0.6002829627d-4
- !dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+ !pinit1=1.d3*kb*1.d-3*(Hini+pini+H2ini+Hmini+Heini+Hepini); pinit2=pinit1
+ !dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini; dinit2=dinit1
  !BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
- !BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
+ !BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini; BBRV_cm(9)=Hmini
+ !BBRV_cm(:)=BBRV_cm(:)/dinit1
 
-!----------molecular-sphere----------
-!pinit1=86.d0*kb*20.d0*1.d-3; pinit2=pinit1
-  !Hini=0.9219098d0*86.d0/1.024d0; pini=0.d0; H2ini=1.d-3; Heini=0.9155226d-1*86.d0/1.024d0; Hepini=0.d0
-  !Cini=0.1393336637d-1*86.d0/1.024d0; COini=0.d0; Cpini=0.d0
-!Hini=1.d-1; pini=0.d0; H2ini=0.d0; Heini=0.d0; Hepini=0.d0
-!Cini=0.d0; COini=0.d0; Cpini=0.d0
+ !*** Pen = pinit1+dinit1*vinit1**2
+ !vinitx1 = dsqrt( (Pen*kb*1.d-3-pinit1)/dinit1 ); if(NRANK.eq.0) write(*,*) 'vcnv=',vinitx1
+ !vinitx2 = -vinitx1; vinity1=0.d0; vinity2=0.d0; vinitz1=0.d0; vinitz2=0.d0
+ !ql1x=2.d0/(fgr*Pen/1.d5);ql2x=ql1x;ql1y=ql1x;ql2y=ql1x;ql1z=ql1x;ql2z=ql1x
+ !binitx1=0.d0;binitx2=0.d0;binity1=0.d0;binity2=0.d0;binitz1=0.d0;binitz2=0.d0
+ !10029 continue
+ !low metal code
 
-!Hini=0.9219098d0*1.d-1/1.024d0; pini=0.9503446d-2*1.d-1/1.024d0; H2ini=0.9465513d-8*1.d-1/1.024d0; Heini=0.9155226d-1*1.d-1/1.024d0; Hepini=0.5655353d-3*1.d-1/1.024d0
-!Cini=0.1565848d-8*1.d-1/1.024d0; COini=0.2202631d-20*1.d-1/1.024d0; Cpini=0.1433520d-3*1.d-1/1.024d0
-!dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
-!BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
-!BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini
-!----------molecular-sphere----------
-!10001 continue
 
-!WNM ntot = 1.024
-goto 10000
- !dratio=1.018d0/1.024d0
- dratio=12.92903d0/1.024d0*12.929028928399248d0/16.412348980467353d0
- !pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
- !pinit1=12.92903d0/1.27d0*kb*1.d-3*157.8862d0; pinit2=pinit1
- pinit1=13.876967891692315; pinit2=pinit1
- !pinit1=3.979d3*kb*1.d-3*0.456d0; pinit2=pinit1
- Hini=9.2574490841480728d0
- pini=6.4957771724511717d-3
- H2ini=8.1242429856845979d-5
- Heini=0.91576165518805863d0
- Hepini=4.6874036669393004d-4
- Cini=1.5668495006787334d-7
- COini=9.9999999999999995d-21
- Cpini=1.4256795925395164d-3
- !Hini=0.9219098d0*dratio; pini=0.9503446d-2*dratio; H2ini=0.9465513d-8*dratio; Heini=0.9155226d-1*dratio; Hepini=0.5655353d-3*dratio
- !Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
- dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1*dratio
- write(*,*)'INI_cem',dinit1,pinit1
- BBRV_cm(1,1)=Hini/dinit1; BBRV_cm(2,1)=pini/dinit1; BBRV_cm(3,1)=H2ini/dinit1; BBRV_cm(4,1)=Heini/dinit1
- BBRV_cm(5,1)=Hepini/dinit1; BBRV_cm(6,1)=Cini/dinit1; BBRV_cm(7,1)=COini/dinit1; BBRV_cm(8,1)=Cpini/dinit1
-
- BBRV_cm(1,2)=Hini/dinit1; BBRV_cm(2,2)=pini/dinit1; BBRV_cm(3,2)=H2ini/dinit1; BBRV_cm(4,2)=Heini/dinit1
- BBRV_cm(5,2)=Hepini/dinit1; BBRV_cm(6,2)=0.d0/dinit1; BBRV_cm(7,2)=0.d0/dinit1; BBRV_cm(8,2)=0.d0/dinit1
-10000 continue
- !molcld ntot = 1.d2
- !goto 10001
-
-prss1= pinit1
 IF(BCx1.eq.4) THEN; IF(IST.EQ.0)        LEFT = MPI_PROC_NULL; END IF
 IF(BCx2.eq.4) THEN; IF(IST.EQ.NSPLTx-1) RIGT = MPI_PROC_NULL; END IF
 
@@ -354,31 +214,28 @@ pi     = 3.14159265358979323846d0
 pmin = 1.829797d0 * 8.6336d0   !p/kb=1.d3
 pmax = 1.d10  !604.5288d0 !p/kb =7.d4
 rmin = 0.1949628d0
-!rmin = 0.01949628d0
-!rmin = 0.0001d0
 rmax = 1.d10  !4168.669d0*1.27d0
 
 ndHmin  = rmin*0.91d0; ndpmin  = 1.d-20; ndH2min = 1.d-20; ndHemin = rmin*0.09d0
 ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
 
 !***** for constrained boundary *****!
-!BBRV_cm(1)=0.91d0/1.27d0 !H
-!BBRV_cm(2)=0.91d0*pini/Hini/1.27d0 !p
-!BBRV_cm(3)=0.91d0*H2ini/Hini/1.27d0 !H2
-!BBRV_cm(4)=0.09d0/1.27d0 !He
-!BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
-!BBRV_cm(8)=xc/1.27d0 !Cp
-!BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
-!BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
+BBRV_cm(1)=0.91d0/1.27d0 !H
+BBRV_cm(2)=0.91d0*pini/Hini/1.27d0 !p
+BBRV_cm(3)=0.91d0*H2ini/Hini/1.27d0 !H2
+BBRV_cm(4)=0.09d0/1.27d0 !He
+BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
+BBRV_cm(8)=xc/1.27d0 !Cp
+BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
+BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
 
-dBC = (mH*BBRV_cm(1,1) + mH*BBRV_cm(2,1) + mH2*BBRV_cm(3,1) + mHe*BBRV_cm(4,1) + mHe*BBRV_cm(5,1))*dinit1
-dBC2=dBC*dratio1
-BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC2;     BBRV(1,2,2) =  dBC2
-BBRV(2,1,1) = vinitx1; BBRV(2,2,1) = dBC*vinitx1; BBRV(2,1,2) =  vinitx2; BBRV(2,2,2) =  dBC2*vinitx2
-BBRV(3,1,1) = vinity1; BBRV(3,2,1) = dBC*vinity1; BBRV(3,1,2) =  vinity1; BBRV(3,2,2) =  dBC2*vinity1
-BBRV(4,1,1) = vinitz1; BBRV(4,2,1) = dBC*vinitz1; BBRV(4,1,2) =  vinitz1; BBRV(4,2,2) =  dBC2*vinitz1
-BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC *vinitx1**2+binitx1**2+binity1**2+binitz1**2)
-BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC2*vinitx2**2+binitx1**2+binity1**2+binitz1**2)
+dBC = mH*BBRV_cm(1) + mH*BBRV_cm(2) + mH2*BBRV_cm(3) + mHe*BBRV_cm(4) + mHe*BBRV_cm(5)
+BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC;     BBRV(1,2,2) =  dBC
+BBRV(2,1,1) = vinitx1; BBRV(2,2,1) = dBC*vinitx1; BBRV(2,1,2) = -vinitx1; BBRV(2,2,2) = -dBC*vinitx1
+BBRV(3,1,1) = vinity1; BBRV(3,2,1) = dBC*vinity1; BBRV(3,1,2) =  vinity1; BBRV(3,2,2) =  dBC*vinity1
+BBRV(4,1,1) = vinitz1; BBRV(4,2,1) = dBC*vinitz1; BBRV(4,1,2) =  vinitz1; BBRV(4,2,2) =  dBC*vinitz1
+BBRV(5,1,1) = pinit1;  BBRV(5,2,1) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
+BBRV(5,1,2) = pinit1;  BBRV(5,2,2) = pinit1/gammi1 + 0.5d0*(dBC*vinitx1**2+binitx1**2+binity1**2+binitz1**2)
 BBRV(6,1,1) = binitx1; BBRV(6,2,1) = binitx1; BBRV(6,1,2) = binitx2; BBRV(6,2,2) = binitx2
 BBRV(7,1,1) = binity1; BBRV(7,2,1) = binity1; BBRV(7,1,2) = binity2; BBRV(7,2,2) = binity2
 BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2) = binitz2
@@ -386,12 +243,11 @@ BBRV(8,1,1) = binitz1; BBRV(8,2,1) = binitz1; BBRV(8,1,2) = binitz2; BBRV(8,2,2)
 !***** x-direction shock tube test *****!
 
 Ncellx = Ncellx/NSPLTx; Ncelly = Ncelly/NSPLTy; Ncellz = Ncellz/NSPLTz
-!dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
-dinit2 = dinit1 * dratio1
+dinit1 = mH*Hini + mH*pini + mH2*H2ini + mHe*Heini + mHe*Hepini
 
 do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   i2 = IST*Ncellx+i
-  if(i2.le.(Np1x-nslid)) then
+  if(i2.le.Np1x) then
     U(i,j,k,1) = dinit1
     U(i,j,k,2) = vinitx1
     U(i,j,k,3) = vinity1
@@ -400,36 +256,36 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
     U(i,j,k,6) = binitx1
     U(i,j,k,7) = binity1
     U(i,j,k,8) = binitz1
-    ndH(i,j,k)   = BBRV_cm(1,1)
-    ndp(i,j,k)   = BBRV_cm(2,1)
-    ndH2(i,j,k)  = BBRV_cm(3,1)
-    ndHe(i,j,k)  = BBRV_cm(4,1)
-    ndHep(i,j,k) = BBRV_cm(5,1)
-    ndC(i,j,k)   = BBRV_cm(6,1)
-    ndCO(i,j,k)  = BBRV_cm(7,1)
-    ndCp(i,j,k)  = BBRV_cm(8,1)
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
     nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
     ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
     Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
     Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
   end if
-  if(i2.gt.(Np1x-nslid)) then
-    U(i,j,k,1) = dinit2
+  if(i2.gt.Np1x) then
+    U(i,j,k,1) = dinit1
     U(i,j,k,2) = vinitx2
-    U(i,j,k,3) = vinity2
-    U(i,j,k,4) = vinitz2
-    U(i,j,k,5) = pinit2
-    U(i,j,k,6) = binitx2
+    U(i,j,k,3) = vinity1
+    U(i,j,k,4) = vinitz1
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = binitx1
     U(i,j,k,7) = binity2
-    U(i,j,k,8) = binitz2
-    ndH(i,j,k)   = BBRV_cm(1,2) * dratio1
-    ndp(i,j,k)   = BBRV_cm(2,2) * dratio1
-    ndH2(i,j,k)  = BBRV_cm(3,2) * dratio1
-    ndHe(i,j,k)  = BBRV_cm(4,2) * dratio1
-    ndHep(i,j,k) = BBRV_cm(5,2) * dratio1
-    ndC(i,j,k)   = BBRV_cm(6,2) * dratio1
-    ndCO(i,j,k)  = BBRV_cm(7,2) * dratio1
-    ndCp(i,j,k)  = BBRV_cm(8,2) * dratio1
+    U(i,j,k,8) = binitz1
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
     nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
     ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
     Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
@@ -437,59 +293,46 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   end if
 end do; end do; end do
 write(*,*) NRANK,'INIT'
-ALLOCATE(dx_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE(dy_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE(dz_i(-1-1:Ncellz*NSPLTz+2+1))
-ALLOCATE( x_i(-1-1:Ncellx*NSPLTx+2+1)); ALLOCATE( y_i(-1-1:Ncelly*NSPLTy+2+1)); ALLOCATE( z_i(-1-1:Ncellz*NSPLTz+2+1))
+ALLOCATE(dx_i(-1:Ncellx*NSPLTx+2)); ALLOCATE(dy_i(-1:Ncelly*NSPLTy+2)); ALLOCATE(dz_i(-1:Ncellz*NSPLTz+2))
+ALLOCATE( x_i(-1:Ncellx*NSPLTx+2)); ALLOCATE( y_i(-1:Ncelly*NSPLTy+2)); ALLOCATE( z_i(-1:Ncellz*NSPLTz+2))
 
-
-do i = -1-1, Np1x
+do i = -1, Np1x
   dx_i(i) = ql1x/dble(Np1x)
 end do
-do i = Np1x+1, Ncellx*NSPLTx+2+1
+do i = Np1x+1, Ncellx*NSPLTx+2
   dx_i(i) = ql2x/dble(Np2x)
 end do
-do j = -1-1, Ncelly*NSPLTy+2+1
+do j = -1, Ncelly*NSPLTy+2
   dy_i(j) = ql1y/dble(Np1y)
 end do
-do k = -1-1, Ncellz*NSPLTz+2+1
+do k = -1, Ncellz*NSPLTz+2
   dz_i(k) = ql1z/dble(Np1z)
 end do
 
-!dx=dy=dz
-dx1= dx_i(0)
-dy1= dy_i(0)
-dz1= dz_i(0)
-!dx=dy=dz
-
 x_i(-1) = -dx_i(0)
-x_i(-2) = x_i(-1)-dx_i(0)
-do i = 0, Ncellx*NSPLTx+2+1
+do i = 0, Ncellx*NSPLTx+2
    x_i(i) = x_i(i-1) + dx_i(i)
-   !write(*,*) 'x', x_i(i)
 end do
 y_i(-1) = -dy_i(0)
-y_i(-2) = y_i(-1)-dy_i(0)
-do j = 0, Ncelly*NSPLTy+2+1
+do j = 0, Ncelly*NSPLTy+2
    y_i(j) = y_i(j-1) + dy_i(j)
-   !write(*,*) 'y', y_i(j)
 end do
 z_i(-1) = -dz_i(0)
-z_i(-2) = z_i(-1)-dz_i(0)
-do k = 0, Ncellz*NSPLTz+2+1
+do k = 0, Ncellz*NSPLTz+2
    z_i(k) = z_i(k-1) + dz_i(k)
-   !write(*,*) 'z', z_i(k)
 end do
 
-do i = -1-1, Ncellx+2+1
+do i = -1, Ncellx+2
   ix    =  IST*Ncellx + i
   x(i)  =  x_i(ix)
   dx(i) =  dx_i(ix)
 end do
-do j = -1-1, Ncelly+2+1
+do j = -1, Ncelly+2
   jy    =  JST*Ncelly + j
   y(j)  =  y_i(jy)
   dy(j) =  dy_i(jy)
 end do
-do k = -1-1, Ncellz+2+1
+do k = -1, Ncellz+2
   kz    =  KST*Ncellz + k
   z(k)  =  z_i(kz)
   dz(k) =  dz_i(kz)
@@ -510,11 +353,96 @@ open(2,file=dir//'tsave.DAT')
   close(2)
 
 
+  !********purtube yz plane***********!
+  goto 1333
+  ALLOCATE (plane(-1:Ncelly*NSPLTy+2,-1:Ncellz*NSPLTz+2))
+  open(unit=28,file=dir//'delta2.dat',FORM='UNFORMATTED')
+  do c=-1,Ncellz*NSPLTz+2
+     do b=-1,Ncelly*NSPLTy+2
+        read(28) plane(b,c)
+     end do
+  end do
+  close(28)
+
+
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+   i2 = IST*Ncellx+i
+   i3 = JST*Ncelly+j
+   i4 = KST*Ncellz+k
+  if(x_i(i2).le.plane(i3,i4)) then
+    U(i,j,k,1) = dinit1
+    U(i,j,k,2) = vinitx1
+    U(i,j,k,3) = vinity1
+    U(i,j,k,4) = vinitz1
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = binitx1
+    U(i,j,k,7) = binity1
+    U(i,j,k,8) = binitz1
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+  end if
+  if(x_i(i2).gt.plane(i3,i4)) then
+    U(i,j,k,1) = dinit1
+    U(i,j,k,2) = vinitx2
+    U(i,j,k,3) = vinity1
+    U(i,j,k,4) = vinitz1
+    U(i,j,k,5) = pinit1
+    U(i,j,k,6) = binitx1
+    U(i,j,k,7) = binity2
+    U(i,j,k,8) = binitz1
+    ndH(i,j,k)   = Hini
+    ndp(i,j,k)   = pini
+    ndH2(i,j,k)  = H2ini
+    ndHe(i,j,k)  = Heini
+    ndHep(i,j,k) = Hepini
+    ndC(i,j,k)   = Cini
+    ndCO(i,j,k)  = COini
+    ndCp(i,j,k)  = Cpini
+    nde(i,j,k)   = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
+    ndtot(i,j,k) = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
+    Ntot(i,j,k,1)=0.d0; NH2(i,j,k,1)=0.d0; NnC(i,j,k,1)=0.d0; tCII(i,j,k,1)=0.d0
+    Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
+  end if
+end do; end do; end do
+
+
+1333 continue
+  !********purtube yz plane***********!
+
+
+!/work/maedarn/3DMHD/samplecnv2/
+!***** Alfven wave propagation *****!
+goto 111
+do k = 1, Ncellz+1; do j = 1, Ncelly+1; do i = 1, Ncellx+1
+  xpi = 0.5d0*( x(i)+x(i-1) ); amp = 1.d-3
+  U(i,j,k,3) =  amp*dcos(2.d0*pi*xpi)
+  U(i,j,k,4) =  amp*dcos(2.d0*pi*xpi)
+  U(i,j,k,7) = -amp*dsqrt(dinit1)*dcos(2.d0*pi*xpi)
+  U(i,j,k,8) =  amp*dsqrt(dinit1)*dcos(2.d0*pi*xpi)
+end do; end do; end do
+111 continue
+!***** Blast wave *****!
+goto 112
+do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
+  xpi = 0.5d0*( x(i)+x(i-1) ); ypi = 0.5d0*( y(j)+y(j-1) )
+  amp = dsqrt( (xpi-0.5d0)**2 + (ypi-0.5d0)**2 )
+  if(amp.lt.0.125d0) U(i,j,k,5) =  1.d2
+end do; end do; end do
+112 continue
 
 !**** read inhomogeneous density field ****!
-  write(*,*)'DTF-pr'
   DTF(:,:,:) = dinit1
-  !goto 119
+!  goto 119
   do MRANK = 0, NPE-1
     IS = mod(MRANK,NSPLTx); KS = MRANK/(NSPLTx*NSPLTy); JS = MRANK/NSPLTx-NSPLTy*KS
     if((JS.eq.JST).and.(KS.eq.KST)) then
@@ -527,8 +455,12 @@ open(2,file=dir//'tsave.DAT')
       end do
       close(8)
     end if
-  end do
-  write(*,*)'DTF-pst'
+ end do
+
+ write(*,*) 'dnt',dinit1
+ !-----thermal inst-----
+ !DTF(:,:,:)=DTF(:,:,:)*10.e0/0.809e0
+ !-----thermal inst-----
 
   CALL MPI_TYPE_VECTOR(Ncellz+4,2*(Ncellx*NSPLTx+4),(Ncellx*NSPLTx+4)*(Ncelly+4),MPI_REAL4,VECU,IERR)
   CALL MPI_TYPE_COMMIT(VECU,IERR)
@@ -546,100 +478,24 @@ open(2,file=dir//'tsave.DAT')
   CALL MPI_TYPE_FREE(VECU,IERR)
 
   if(nunit.ne.1) goto 119
-
-!-------sph-cloud------
-do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-i2  = IST*Ncellx+i
-i2y = JST*Ncelly+j
-i2z = KST*Ncellz+k
-rrsph3 = ql1x*rcld
-rsph3 =dsqrt( (ql1x-dble(nslid)*dx1+rrsph3+5.d0+0.5d0*dx1-x_i(i2))**2 + (ql1y+0.5d0*dy1-y_i(i2y))**2 + (ql1z+0.5d0*dz1-z_i(i2z))**2 )
-!rrsph3 = ql1x*0.2d0
-!rrsph3x=ql1x
-!rrsph3y=ql1y
-!rrsph3z=ql1z
-!U(i,j,k,2)   = -vinitx1*dtanh(0.5d0*(x(i)-ql1x))
-if(rsph3 .le. rrsph3 ) then
-!-------sph-cloud------
-
-  !do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
+  do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     ix = Ncellx*IST+i
-    U(i,j,k,1)   = dble(DTF(ix,j,k)) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
-    if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
-    U(i,j,k,2)   = vinitx1
-    ncm=1
-    endif
-    if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
-    U(i,j,k,2)   = vinitx2
-    ncm=2
-    endif
-    !U(i,j,k,2)   = vinitx2!*(1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
-    ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,ncm)
-    ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2,ncm)
-    ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3,ncm)
-    ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4,ncm)
-    ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5,ncm)
-    ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6,ncm)
-    ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7,ncm)
-    ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8,ncm)
-  !end do;end do;end do
-
-!-------sph-cloud------
-
-else
-
-if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
-dinitdef=dinit1
-vinitdef=vinitx1!0.d0
-ncm=1
-endif
-if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
-dinitdef=dinit2
-vinitdef=vinitx2
-ncm=2
-endif
-
-    !do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
-    ix = Ncellx*IST+i
-    U(i,j,k,1)   = dble(DTF(ix,j,k)) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
-    U(i,j,k,1)   = dmax1(U(i,j,k,1),dinitdef)
-    U(i,j,k,2)   = vinitdef!-vinitx1*dtanh(0.5d0*(x(i)-ql1x))
-    ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,ncm)
-    ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2,ncm)
-    ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3,ncm)
-    ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4,ncm)
-    ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5,ncm)
-    ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6,ncm)
-    ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7,ncm)
-    ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8,ncm)
-!ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,1)
-!ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2,1)
-!ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3,1)
-!ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4,1)
-!ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5,1)
-!ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6,1)
-!ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7,1)
-!ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8,1)
-  !end do;end do;end do
-
-end if
-end do
-end do
-end do
-
-if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
-DTF(:,:,:)=dinit1
-endif
-if(IST.ge.(NSPLTx/2-nslid/(ndx-2))) then
-DTF(:,:,:)=dinit2
-endif
-!-------sph-cloud------
-
+    U(i,j,k,1)   = dble(DTF(ix,j,k))
+    U(i,j,k,2)   = -vinitx1*dtanh(0.5d0*(x(i)-ql1x))
+    ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1)
+    ndp(i,j,k)   = U(i,j,k,1)*BBRV_cm(2)
+    ndH2(i,j,k)  = U(i,j,k,1)*BBRV_cm(3)
+    ndHe(i,j,k)  = U(i,j,k,1)*BBRV_cm(4)
+    ndHep(i,j,k) = U(i,j,k,1)*BBRV_cm(5)
+    ndC(i,j,k)   = U(i,j,k,1)*BBRV_cm(6)
+    ndCO(i,j,k)  = U(i,j,k,1)*BBRV_cm(7)
+    ndCp(i,j,k)  = U(i,j,k,1)*BBRV_cm(8)
+    !ndHm(i,j,k)  = U(i,j,k,1)*BBRV_cm(9)  !Hmのreadとwrite
+  end do;end do;end do
   119 continue
-
-  
 !--------------------------------
 
+  write(*,*) 'DTF'
 DEALLOCATE(dx_i); DEALLOCATE(dy_i); DEALLOCATE(dz_i); DEALLOCATE(x_i); DEALLOCATE(y_i); DEALLOCATE(z_i)
 
 !***** Read Initial Conditions *****!
@@ -654,25 +510,10 @@ if(nunit.eq.1) goto 120
   end do
   end do
   close(8)
-
-  open(12,file=dir//'000ST'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-    do j=1,numstar
-    read(12) (Ustar(i,j),i=1,valstar ),Mtotrc1
-    end do
-  close(12)
-  nid=0
-  do j=1,numstar
-  if(Ustar(9,j).ne.0.d0) then
-  nid=int(Ustar(9,j))
-  endif
-  enddo
 120  continue
 
 IF(BCx1.eq.4) THEN; IF(IST.EQ.0)        LEFT = MPI_PROC_NULL; END IF
 IF(BCx2.eq.4) THEN; IF(IST.EQ.NSPLTx-1) RIGT = MPI_PROC_NULL; END IF
-
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'CC-pre'
 
 call CC(4,0.d0)
 
@@ -683,39 +524,13 @@ do k=1,Ncellz+1; do j=1,Ncelly+1; do i=1,Ncellx+1
   Ntot(i,j,k,2)=0.d0; NH2(i,j,k,2)=0.d0; NnC(i,j,k,2)=0.d0; NCO(i,j,k,2)=0.d0; tCII(i,j,k,2)=0.d0
 end do; end do; end do
 
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'rad-pre'
-
 if(ifrad.eq.2) then; do l=1,20; call SHIELD(); end do; end if
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'gr-pre'
 
 if(ifgrv.eq.2) then
-  N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1
-
-  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-  !write(*,*)'gr-pre-BC-rho'
-  CALL BC_MPI(1,1)
-  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-  !write(*,*)'gr-pst-BC-rho'
-
-  Lbox=ql1x+ql2x
-  modegrv=1
-  call GRAVTY(0.d0,modegrv)
-  !CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-  !write(*,*)'gr-mid'
-  modegrv=2
-  call GRAVTY(0.d0,modegrv)
-
-
+  N_MPI(20)=1; N_MPI(1)=1; iwx = 1; iwy = 1; iwz = 1; CALL BC_MPI(1,1)
+  Lbox=ql1x+ql2x; call GRAVTY(0.d0,1); call GRAVTY(0.d0,2)
 end if
 
-!CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'gr-pst'
-!if(iffed.eq.2) then; call feedback(0.d0,11); end if
-!write(*,*) 'END INIT'
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-write(*,*)'END-INT'
 END SUBROUTINE INITIA
 
 
@@ -741,23 +556,15 @@ SUBROUTINE EVOLVE
 USE comvar
 USE mpivar
 USE chmvar
-USE fedvar
-USE slfgrv
-use,intrinsic :: iso_fortran_env
 INCLUDE 'mpif.h'
 
-!integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
-
-double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3), dt_mpi_grv(0:1024),dt_mpi_fld(0:1024)
-double precision  :: dt_gat_grv(0:1024),dt_grv,dt_gat_fld(0:1024),dt_fld,l_cg,l_cs,n_cg
-double precision  :: tsave,dtsave,tsave2D,dtsave2D,dtmin,v_fld
+double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3)
+double precision  :: tsave,dtsave,tsave2D,dtsave2D
 integer :: nunit, st, st_mpi(0:1024), st_gat(0:2047), Time_signal
 character*7 stb(3)
 character*3 fnunit,fnpe
 
-real(4) :: tim1, tim2, tim3
-
-
+write(*,*) 'evolv'
 open(2,file=dir//'tsave.DAT')
   read(2,*) time
   read(2,*) nunit
@@ -771,12 +578,12 @@ do i = 1, nunit
 end do
 close(3)
 !IF(NRANK.EQ.0) THEN
-!  open(2,file=dir//'test.DAT')
+!  open(2,file='/work/maedarn/3DMHD/samplecnv2/test.DAT')
 !END IF
 
 write(fnunit,'(I3.3)') nunit;  write(fnpe,'(I3.3)') NRANK
 open(5,file=dir//'info'//fnunit//'.DAT')
-!open(5,file=dir//'info'//fnunit//fnpe//'.DAT')
+!open(5,file='/work/maedarn/3DMHD/samplecnv2/info'//fnunit//fnpe//'.DAT')
 
 st    = 1
 ifEVO = 1
@@ -791,13 +598,9 @@ time_CPU(1) = 0.d0
 time_CPU(2) = 0.d0
 time_CPU(3) = 0.d0
 Time_signal = 0
-
-!tim1=0.e0
-!tim2=0.e0
-!tim3=0.e0
-!call system_clock(time_begin_c, CountPerSec, CountMax)
-
+write(*,*) 'DTF1'
 do in10 = 1, maxstp
+  
   time_CPU(1) = MPI_WTIME()
   tsave = dtsave * dble(itime)
   if(time.ge.tfinal) goto 9000
@@ -805,21 +608,25 @@ do in10 = 1, maxstp
   call SAVEU(nunit,dt,stb,st,t,0)
  
   do in20 = 1, nitera
+if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
     if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
     dt_mpi(NRANK) = tfinal
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
     call Couran(tLMT)
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
-    dt_mpi_fld(NRANK) = dt_mpi(NRANK)
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
 
     call Stblty(tLMT)
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
                     dt_gat       ,1,MPI_REAL8,   &
@@ -827,75 +634,28 @@ do in10 = 1, maxstp
     CALL MPI_GATHER(st_mpi(NRANK),1,MPI_INTEGER, &
                     st_gat       ,1,MPI_INTEGER, &
                     0            ,MPI_COMM_WORLD,IERR)
-
-    CALL MPI_GATHER(dt_mpi_fld(NRANK),1,MPI_REAL8,   &
-                    dt_gat_fld       ,1,MPI_REAL8,   &
-                    0            ,MPI_COMM_WORLD,IERR)
-
     IF(NRANK.EQ.0)  THEN
       dt  = tfinal
       dtt = tfinal
-      dt_fld  = tfinal
       do i_t = 0, NPE-1
         dt  = dmin1( dt, dt_gat(i_t) )
         if(dt.lt.dtt) st = st_gat(i_t)
         dtt = dt
-        dt_fld  = dmin1( dt_fld, dt_gat_fld(i_t) )
       end do
-      !dmin1(dt_grv,dt_fld/ngrvmx)
-      v_fld=dx1/dt_fld*CFL
-      dt_grv=dx1/cg*CFL
-      !dtmin=dmin1(dt,dt_grv)
-      !ntdiv=cg*dt_grv/(v_fld*dt)
-  
-      !ntdiv=ngrvmx
-      !if(dtmin==dt_grv) then
-      !l_cg=cg*dtmin/dx1*CFL
-      !l_cs=dt/dt_fld
-      ntdiv=ngrvmx+1-int(cg*dt_grv/(v_fld*dt))
-      ntdiv=max0(ntdiv,1)
-      !endif
-
-      !if(dt_fld/dt_grv > dble(ngrvmx)) write(*,*) 'cg_err'
-      if(in20==1) write(*,*)'dt', ntdiv, dt_fld, dt, dt_grv !,dtmin
-
     END IF
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
-    CALL MPI_BCAST(ntdiv,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
+    if(NRANK.eq.0) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
-
-    !call system_clock(time_begin_c, CountPerSec, CountMax)
-  !  call system_clock(time_end_c7)
+!if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
 !***** Source parts 1*****
-    !if(t(nunit)>10.d0)then
-    !if(iffed.eq.2) then; call feedback(dt      ,1); end if
-  !  call system_clock(time_end_c4)
-    !tim1=real((time_end_c4 - time_end_c7)/CountPerSec)
-    !if(iffed.eq.2) then; call feedback(dt*0.5d0,2); end if
-    !if(iffed.eq.2) then; call feedback(dt,2); end if
-  !  call system_clock(time_end_c5)
-    !if(iffed.eq.2) then; call feedback(dt*0.5d0,3); end if
-    !if(iffed.eq.2) then; call feedback(dt,3); end if
-    !endif
-
-  !  tim1=real(time_end_c4 - time_end_c7)/CountPerSec+tim1
-    !tim1=real(time_end_c4 - time_begin_c)/CountPerSec-real(time_end_c7 - time_begin_c)/CountPerSec+tim1
-  !  tim2=real(time_end_c5 - time_end_c4)/CountPerSec+tim2
-
-  !  call system_clock(time_end_c1)
-
     if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
-    !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); end if
-
     call SOURCE(0.5d0*dt)
-
-    if(iffed.eq.2) then; call feedback(dt,1); call feedback(dt,2); call feedback(dt,3); end if
-    
-    !if(iffed.eq.2) then; call feedback(dt,1); end if
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
 !***** Godunov parts *****
-!goto 3711
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
       ifEVO = 2; goto 1000
@@ -921,8 +681,8 @@ do in10 = 1, maxstp
       ifEVO = 1; goto 1000
     end if
 1000 continue
-!3711 continue
     DEALLOCATE(Bcc)
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
 !***** CT part *****
     ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
     call CC(1,dt)
@@ -935,16 +695,11 @@ do in10 = 1, maxstp
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
 !***** Source parts 2*****
     call SOURCE(0.5d0*dt)
-
-   !if(ifgrv.eq.2) then; call SELFGRAVWAVE(0.5d0*dt,2); call SELFGRAVWAVE(dt,3); end if
-   if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
-   ! if(iffed.eq.2) then; call feedback(dt*0.5d0,3); end if
-   ! if(iffed.eq.2) then; call feedback(dt*0.5d0,2); end if
-    !if(iffed.eq.2) then; call feedback(dt*0.5d0,1); end if
-
-
+    if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
+!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
     time = time + dt
   end do
@@ -968,6 +723,7 @@ end do
 9000 continue
 IF(NRANK.EQ.0) write(*,*) 'MPI time1 = ',MPI_WTIME()
 call SAVEU(nunit,dt,stb,st,t,1)
+
 END SUBROUTINE EVOLVE
 
 
@@ -978,7 +734,6 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
-USE fedvar
 INCLUDE 'mpif.h'
 
 integer :: nunit,st,msig
@@ -986,35 +741,26 @@ double precision  :: dt,t(1000)
 character*7 stb(3)
 character*3 filenm
 CHARACTER*3 NPENUM
-double precision  :: Mstclct=0.d0
 
 
 WRITE(NPENUM,'(I3.3)') NRANK
 write(filenm,'(I3.3)') nunit
-!open(10,file=dir//''//filenm//NPENUM//'.dat')
-open(10,FILE=dir//''//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
+!open(10,file='/work/maedarn/3DMHD/samplecnv2/'//filenm//NPENUM//'.dat')
+open(10,FILE=dir//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 100 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
   k=1;j=1;i=1
-  do k = -1, Ncellz+2
-  do j = -1, Ncelly+2
+  do k = 1, Ncellz+1
+  do j = 1, Ncelly+1
 !    write(10) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
 !               sngl(Bcc(i,j,k,1)),sngl(Bcc(i,j,k,2)),sngl(Bcc(i,j,k,3)), &
 !               sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
 !               sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
 !               sngl(Phi(i,j,k)),i=1,Ncellx+1 )
-  !  write(10) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
-  !             sngl(U(i,j,k,6)),sngl(U(i,j,k,7)),sngl(U(i,j,k,8)), &
-  !             sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
-  !             sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
-  !             sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
-   write(10) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
-   sngl(U(i,j,k,6)),sngl(U(i,j,k,7)),sngl(U(i,j,k,8)), &
-   sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
-   sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
-   !sngl(denrgn(i,j,k,1)),i=-1,Ncellx+2 )
-   !sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
-   !sngl(denrgn(i,j,k,1)), sngl(Phiwv(i,j,k,1)), sngl(Phigrdwv(i,j,k,1)),i=-1,Ncellx+2 )
-   sngl(denrgn(i,j,k,1)), sngl(Phi(i,j,k)),i=-1,Ncellx+2 )
+    write(10) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
+               sngl(U(i,j,k,6)),sngl(U(i,j,k,7)),sngl(U(i,j,k,8)), &
+               sngl(ndH(i,j,k)),sngl(ndp(i,j,k)),sngl(ndH2(i,j,k)),sngl(ndHe(i,j,k)), &
+               sngl(ndHep(i,j,k)),sngl(ndC(i,j,k)),sngl(ndCO(i,j,k)),sngl(ndCp(i,j,k)), &
+               sngl(Phi(i,j,k)),i=1,Ncellx+1 )
   end do
   end do
 
@@ -1024,27 +770,6 @@ open(10,FILE=dir//''//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITT
 !                 ndH(i,j,k),ndp(i,j,k),ndH2(i,j,k),ndHe(i,j,k), &
 !                 ndHep(i,j,k),ndC(i,j,k),ndCO(i,j,k),ndCp(i,j,k),i=1,Ncellx )
 close(10)
-
-
-Mtotrc(:)=0.d0
-Mtotrc(NRANK)=Mtotrc1
-do Nroot=0,(NPE)-1
-  CALL MPI_BCAST(Mtotrc(Nroot),1,MPI_REAL8,Nroot,MPI_COMM_WORLD,IERR)
-end do
-Mstclct=0.d0
-do Nroot=0,(NPE)-1
-  Mstclct=Mstclct+Mtotrc(Nroot)
-end do
-
-!IF(NRANK.EQ.0) THEN
-IF(IST.EQ.1) THEN
-open(11,FILE=dir//'ST'//filenm//NPENUM//'.dat',FORM='FORMATTED') !,CONVERT='LITTLE_ENDIAN')
-101 format(D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3,D10.3)
-    do j=1,numstar
-    write(11,101) (sngl(Ustar(i,j)),i=1,valstar),Mtotrc1,Mstclct
-  end do
-close(11)
-END IF
 
 
 IF(NRANK.EQ.0) THEN
@@ -1078,16 +803,7 @@ nunit = nunit + 1
   end do
   end do
   close(8)
-  
- open(12,file=dir//'000ST'//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
-   do j=1,numstar
-   write(12) (Ustar(i,j),i=1,valstar ),Mtotrc1
-   end do
- close(12)
 !end if
-
-
-
 
 END SUBROUTINE SAVEU
 
@@ -1102,8 +818,9 @@ INCLUDE 'mpif.h'
 character*3 filenm
 CHARACTER*3 NPENUM
 !write(*,*) Ncellx,Ncelly
-WRITE(NPENUM,'(I3.3)') NRANK
-write(filenm,'(I3.3)') nunit2D
+
+!WRITE(NPENUM,'(I3.3)') NRANK
+!write(filenm,'(I3.3)') nunit2D
 !open(11,FILE=dir//'2D'//filenm//NPENUM//'.dat',FORM='UNFORMATTED') !,CONVERT='LITTLE_ENDIAN')
 !  k=1; do j=1,Ncelly
 !    write(11) (sngl(U(i,j,k,1)),sngl(U(i,j,k,2)),sngl(U(i,j,k,3)),sngl(U(i,j,k,4)),sngl(U(i,j,k,5)), &
@@ -1154,8 +871,7 @@ IF(iwx.EQ.1) THEN
         nn = int( abs(xp)/(dx(0)*Ncellx*NSPLTx) ) + 1
         xp = xp + dx(0)*Ncellx*NSPLTx * nn
         II = int( xp/dx(0) ) + 1
-        !U(IX,JY,KZ,1) = DTF(II,JY,KZ)
-         U(IX,JY,KZ,1) = BBRV(1,1,1)
+        U(IX,JY,KZ,1) = DTF(II,JY,KZ)
       END DO;END DO;END DO; goto 1
       end if
       if(N_MPI(K).eq.6) then
@@ -1191,8 +907,7 @@ IF(iwx.EQ.1) THEN
         nn = int( abs(xp)/(dx(0)*Ncellx*NSPLTx) )
         xp = xp - dx(0)*Ncellx*NSPLTx * nn
         II = int( xp/dx(0) ) + 1
-        !U(IX,JY,KZ,1) = DTF(II,JY,KZ)
-         U(IX,JY,KZ,1) = BBRV(1,1,2)
+        U(IX,JY,KZ,1) = DTF(II,JY,KZ)
       END DO;END DO;END DO; goto 2
       end if
       if(N_MPI(K).eq.6) then
@@ -1389,22 +1104,12 @@ IF(iwx.eq.1) THEN
                        ndCp(       1-N_ol,-1,klps),1,VECU,LEFT,1, MPI_COMM_WORLD,MSTATUS,IERR)
     IF((BCx1.eq.4).and.(IST.eq.0)) THEN
       DO KZ = 1, Ncellz; DO JY = 1, Ncelly; DO IX = 1-N_ol, 0
-  !      ndH(IX,JY,KZ)   = BBRV_cm(1); ndp(IX,JY,KZ) = BBRV_cm(2); ndH2(IX,JY,KZ) = BBRV_cm(3); ndHe(IX,JY,KZ) = BBRV_cm(4)
-  !      ndHep(IX,JY,KZ) = BBRV_cm(5); ndC(IX,JY,KZ) = BBRV_cm(6); ndCO(IX,JY,KZ) = BBRV_cm(7); ndCp(IX,JY,KZ) = BBRV_cm(8)
-!ndH(IX,JY,KZ)   = BBRV_cm(1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2)*U(IX,JY,KZ,1)
-!ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
-!ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
-!ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
-!ndH(IX,JY,KZ)   = BBRV_cm(1,1)*BBRV(5,1,1); ndp(IX,JY,KZ)  = BBRV_cm(2,1)*BBRV(5,1,1)
-!ndH2(IX,JY,KZ)  = BBRV_cm(3,1)*BBRV(5,1,1); ndHe(IX,JY,KZ) = BBRV_cm(4,1)*BBRV(5,1,1)
-!ndHep(IX,JY,KZ) = BBRV_cm(5,1)*BBRV(5,1,1); ndC(IX,JY,KZ)  = BBRV_cm(6,1)*BBRV(5,1,1)
-!ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*BBRV(5,1,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*BBRV(5,1,1)
-
-ndH(IX,JY,KZ)   = BBRV_cm(1,1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2,1)*U(IX,JY,KZ,1)
-ndH2(IX,JY,KZ)  = BBRV_cm(3,1)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4,1)*U(IX,JY,KZ,1)
-ndHep(IX,JY,KZ) = BBRV_cm(5,1)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6,1)*U(IX,JY,KZ,1)
-ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*U(IX,JY,KZ,1)
-
+!        ndH(IX,JY,KZ)   = BBRV_cm(1); ndp(IX,JY,KZ) = BBRV_cm(2); ndH2(IX,JY,KZ) = BBRV_cm(3); ndHe(IX,JY,KZ) = BBRV_cm(4)
+!        ndHep(IX,JY,KZ) = BBRV_cm(5); ndC(IX,JY,KZ) = BBRV_cm(6); ndCO(IX,JY,KZ) = BBRV_cm(7); ndCp(IX,JY,KZ) = BBRV_cm(8) 
+        ndH(IX,JY,KZ)   = BBRV_cm(1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2)*U(IX,JY,KZ,1)
+        ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
+        ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
+        ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
       END DO;END DO;END DO
     END IF
 
@@ -1426,21 +1131,12 @@ ndCO(IX,JY,KZ)  = BBRV_cm(7,1)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8,1)*U(IX
                        ndCp(Ncellx+1     ,-1,klps),1,VECU,RIGT,1, MPI_COMM_WORLD,MSTATUS,IERR)
     IF((BCx2.eq.4).and.(IST.eq.NSPLTx-1)) THEN
       DO KZ=1,Ncellz; DO JY=1,Ncelly; DO IX=Ncellx+1,Ncellx+N_ol
-  !      ndH(IX,JY,KZ)   = BBRV_cm(1); ndp(IX,JY,KZ) = BBRV_cm(2); ndH2(IX,JY,KZ) = BBRV_cm(3); ndHe(IX,JY,KZ) = BBRV_cm(4)
-  !      ndHep(IX,JY,KZ) = BBRV_cm(5); ndC(IX,JY,KZ) = BBRV_cm(6); ndCO(IX,JY,KZ) = BBRV_cm(7); ndCp(IX,JY,KZ) = BBRV_cm(8)
-  !      ndH(IX,JY,KZ)   = BBRV_cm(1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2)*U(IX,JY,KZ,1)
-  !      ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
-  !      ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
-  !      ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
-!ndH(IX,JY,KZ)   = BBRV_cm(1,2)*BBRV(5,1,2); ndp(IX,JY,KZ)  = BBRV_cm(2,2)*BBRV(5,1,2)
-!ndH2(IX,JY,KZ)  = BBRV_cm(3,2)*BBRV(5,1,2); ndHe(IX,JY,KZ) = BBRV_cm(4,2)*BBRV(5,1,2)
-!ndHep(IX,JY,KZ) = BBRV_cm(5,2)*BBRV(5,1,2); ndC(IX,JY,KZ)  = BBRV_cm(6,2)*BBRV(5,1,2)
-!ndCO(IX,JY,KZ)  = BBRV_cm(7,2)*BBRV(5,1,2); ndCp(IX,JY,KZ) = BBRV_cm(8,2)*BBRV(5,1,2)
-
-ndH(IX,JY,KZ)   = BBRV_cm(1,2)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2,2)*U(IX,JY,KZ,1)
-ndH2(IX,JY,KZ)  = BBRV_cm(3,2)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4,2)*U(IX,JY,KZ,1)
-ndHep(IX,JY,KZ) = BBRV_cm(5,2)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6,2)*U(IX,JY,KZ,1)
-ndCO(IX,JY,KZ)  = BBRV_cm(7,2)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8,2)*U(IX,JY,KZ,1)
+!        ndH(IX,JY,KZ)   = BBRV_cm(1); ndp(IX,JY,KZ) = BBRV_cm(2); ndH2(IX,JY,KZ) = BBRV_cm(3); ndHe(IX,JY,KZ) = BBRV_cm(4)
+!        ndHep(IX,JY,KZ) = BBRV_cm(5); ndC(IX,JY,KZ) = BBRV_cm(6); ndCO(IX,JY,KZ) = BBRV_cm(7); ndCp(IX,JY,KZ) = BBRV_cm(8)
+        ndH(IX,JY,KZ)   = BBRV_cm(1)*U(IX,JY,KZ,1); ndp(IX,JY,KZ)  = BBRV_cm(2)*U(IX,JY,KZ,1)
+        ndH2(IX,JY,KZ)  = BBRV_cm(3)*U(IX,JY,KZ,1); ndHe(IX,JY,KZ) = BBRV_cm(4)*U(IX,JY,KZ,1)
+        ndHep(IX,JY,KZ) = BBRV_cm(5)*U(IX,JY,KZ,1); ndC(IX,JY,KZ)  = BBRV_cm(6)*U(IX,JY,KZ,1)
+        ndCO(IX,JY,KZ)  = BBRV_cm(7)*U(IX,JY,KZ,1); ndCp(IX,JY,KZ) = BBRV_cm(8)*U(IX,JY,KZ,1)
       END DO; END DO; END DO
     END IF
   END IF
@@ -1629,11 +1325,9 @@ do k = -1, Ncellz+2; do j = -1, Ncelly+2; do i = -1, Ncellx+2
   ix = iwx*i    + iwy*j + iwz*k
   xlag(i,j,k) = xelr(ix)
 end do; end do; end do
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD1'
+
 call RHS(dt,dxelr)
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD2'
 call MOC(dt,xelr)
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointMHD3'
 
 !do k = 1, Ncellz; do j = 1, Ncelly;do i = 1, Ncellx
 !  U(i,j,k,2) = U(i,j,k,2) * U(i,j,k,1); U(i,j,k,3) = U(i,j,k,3) * U(i,j,k,1)
@@ -1696,8 +1390,6 @@ double precision  :: depend1,depend2,cm
 double precision  :: dm(-1:ndmax)
 double precision  :: ndHm,ndpm,ndHem,ndHepm,ndH2m
 
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS1'
-
 itrn = 5
 
 if(iwx.eq.1) then; Ncell = Ncellx; Ncm = Ncelly; Ncl = Ncellz; BT1 = 2; BT2 = 3; VN = 2; end if
@@ -1712,8 +1404,6 @@ N_MPI(3)  = 5
 CALL BC_MPI(2,1)
 
 N_MPI(10) = 10; CALL BC_MPI_OT(2,1); N_MPI(10) = 0 ! for chemical boundary
-
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS2'
 
 DO Lnum = 1, Ncl
 DO Mnum = 1, Ncm
@@ -1773,8 +1463,6 @@ do i = 0, Ncell
 
 end do
 
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS3'
-
 !***** store lagrangian mass *****
 do i = 0, Ncell
   ix  = iwx*i    + iwy*Lnum + iwz*Mnum
@@ -1825,7 +1513,6 @@ end do
 END DO
 END DO
 
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'pointRHS4'
 END SUBROUTINE RHS
 
 
@@ -2080,11 +1767,7 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( U(ixp,jyp,kzp,k)-U(ixm,jym,kzm,k) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
-  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
-  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
-  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2109,11 +1792,7 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Bcc(ixp,jyp,kzp,kbc)-Bcc(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
-  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
-  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
-  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2138,11 +1817,7 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Blg(ixp,jyp,kzp,kbc)-Blg(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
-  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
-  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
-  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2167,11 +1842,7 @@ do i = i_sta, Ncell+i_end
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
   grdU(i,k) = flmt*( Vfc(ixp,jyp,kzp,kbc)-Vfc(ixm,jym,kzm,kbc) )/( dxx(i)+0.5d0*dxx(i-1)+0.5d0*dxx(i+1) )
 
-  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
-  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
-  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
-  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
   delp = 2.d0*delp/(dxx(i)+dxx(i+1)); delm = 2.d0*delm/(dxx(i)+dxx(i-1))
   gmm = (0.5d0+dsign(0.5d0,delp*delm))*dsign(1.d0,delp)*dmin1(dabs(delp),dabs(delm)) !minmod
   grdU(i,k) = grdU(i,k)*(0.5d0-dsign(0.5d0,T-3.d0)) + gmm*(0.5d0+dsign(0.5d0,T-3.d0))
@@ -2205,11 +1876,7 @@ do i = i_sta, Ncell+i_end
   jym = iwx*Mnum + iwy*(i-1)+ iwz*Lnum
   kzm = iwx*Lnum + iwy*Mnum + iwz*(i-1)
 
-  !T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
-  !ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
-  !ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
-  !T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  T = 2.d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
+  T = 1.27d0*U(ix,jy,kz,5)/(kb*U(ix,jy,kz,1))
 
   delp = ndH(ixp,jyp,kzp)-ndH(ix ,jy ,kz ); delm = ndH(ix ,jy ,kz )-ndH(ixm,jym,kzm)
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps))
@@ -2306,10 +1973,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tCFL = dmin1(tCFL, dx(i)/(dsqrt(c2) + dabs(U(i,j,k,2))) )
   tCFL = dmin1(tCFL, dy(j)/(dsqrt(c2) + dabs(U(i,j,k,3))) )
   tCFL = dmin1(tCFL, dz(k)/(dsqrt(c2) + dabs(U(i,j,k,4))) )
-
-  !tCFL = dmin1(tCFL, dx(i)/(dsqrt(15.d0) + dabs(U(i,j,k,2))) )
-  !tCFL = dmin1(tCFL, dy(j)/(dsqrt(15.d0) + dabs(U(i,j,k,3))) )
-  !tCFL = dmin1(tCFL, dz(k)/(dsqrt(15.d0) + dabs(U(i,j,k,4))) )
 end do; end do; end do
 if(tCFL.lt.0.d0) write(5,*) time,NRANK,'err at Couran'
 
@@ -2503,7 +2166,6 @@ USE comvar
 USE mpivar
 integer :: mode
 double precision  :: dt,dS
-INCLUDE 'mpif.h'
 
 if(mode.eq.1) then !FCVF & FCMFBC
   N_MPI(20) = 3
@@ -2556,21 +2218,15 @@ if(mode.eq.3) then !update FCMF
 end if
 
 if(mode.eq.4) then !CCMF
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'sub-CC-pre'
   ALLOCATE(Bcc(-1:ndx,-1:ndy,-1:ndz,3))
   do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
     Bcc(i,j,k,1) = 0.5d0 * ( U(i,j,k,6) + U(i+1,j,k,6) )
     Bcc(i,j,k,2) = 0.5d0 * ( U(i,j,k,7) + U(i,j+1,k,7) )
     Bcc(i,j,k,3) = 0.5d0 * ( U(i,j,k,8) + U(i,j,k+1,8) )
   end do; end do; end do
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'sub-CC-pst'
   N_MPI(10) = 0; N_MPI(11) = 1; N_MPI(12) = 0; N_MPI(13) = 0
   iwx=1; iwy=1; iwz=1; CALL BC_MPI_OT(2,1)
   N_MPI(11) = 0
-CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
-!write(*,*)'sub-CC-BC'
 end if
 
 END SUBROUTINE CC
@@ -2846,11 +2502,10 @@ INCLUDE 'mpif.h'
 
 double precision  dt
 DOUBLE PRECISION :: ndpold,ndHold,ndH2old,ndHeold,ndHepold,ndCold,ndCpold,ndCOold,T
-DOUBLE PRECISION :: zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,&
-kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep
+DOUBLE PRECISION :: zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep
 DOUBLE PRECISION :: temp1,temp2,temp3,omeps,eps
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Tn,Pn,Qx,Qy,Qz
-double precision  :: mmean,rtTx,rtTy,rtTz,tcd,CooL,u5pre,nad1
+double precision  :: mmean,rtTx,rtTy,rtTz,tcd,CooL
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
@@ -2896,7 +2551,6 @@ end do; end do; end do
 !if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),'point100'
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-  u5pre=U(i,j,k,5)
 !----- Cooling ---------------------------------------------------------
   Call Fcool( CooL,Tn(i,j,k),i,j,k)
   gammi1 =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
@@ -2912,9 +2566,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tcd = dsign(0.5d0,tcd-dt)
   U(i,j,k,5) = U(i,j,k,5) + (tcd+0.5d0)*gammi1*dt*0.5d0* &
   ( (Qx(i,j,k)-Qx(i-1,j,k))/dx(i) + (Qy(i,j,k)-Qy(i,j-1,k))/dy(j) + (Qz(i,j,k)-Qz(i,j,k-1))/dz(k) )
-
-  nad1=0.5d0+dsign(0.5d0,nad-U(i,j,k,1))
-  U(i,j,k,5) = U(i,j,k,5) * nad1 + u5pre * (1.d0-nad1)
   U(i,j,k,5) = dmax1(U(i,j,k,5),pmin)
   U(i,j,k,5) = dmin1(U(i,j,k,5),pmax)
 end do; end do; end do
@@ -2941,7 +2592,6 @@ do k = 0, Ncellz; do j = 0, Ncelly; do i = 0, Ncellx
 end do; end do; end do
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-  u5pre=U(i,j,k,5)
 !----- Cooling ---------------------------------------------------------
   Call Fcool( CooL,Tn(i,j,k),i,j,k)
   gammi1 =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
@@ -2959,9 +2609,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tcd = dsign(0.5d0,tcd-dt)
   U(i,j,k,5) = U(i,j,k,5) + (tcd+0.5d0)*gammi1*dt* &
   ( (Qx(i,j,k)-Qx(i-1,j,k))/dx(i) + (Qy(i,j,k)-Qy(i,j-1,k))/dy(j) + (Qz(i,j,k)-Qz(i,j,k-1))/dz(k) )
-
-  nad1=0.5d0+dsign(0.5d0,nad-U(i,j,k,1))
-  U(i,j,k,5) = U(i,j,k,5) * nad1 + u5pre * (1.d0-nad1)
 !if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101c'
   U(i,j,k,5) = dmax1(U(i,j,k,5),pmin)
 !if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101d'
@@ -2973,7 +2620,7 @@ DEALLOCATE(Tn,Pn,Qx,Qy,Qz)
 
 end if
 !*******************************(C3)
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point102'
+if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point102'
 !*******************************(A1)
 if(ifchem.eq.2) then
 
@@ -2986,8 +2633,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
   ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
   T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
-  call RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,&
-             kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
+  call RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
   
 !if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
 !ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103al'
@@ -3236,20 +2882,13 @@ double precision :: tau1,tau2,ct1,ct2,ym1,ym2,fes
 double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2
 double precision :: n1,n2,b21
 
-double precision Lamm,Lamh,T0,AbsL
-
-AbsL = 3.94656d1
-T0   = 1.0d3
-
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
 !( 1 pc * 1.d-17  = 3.0857d1 )
 !( 1 pc * 1.405656457d-22  = 4.33743413d-4 )
 
-if(T*T0<1.4577d4) then
-
-Av1  = 1.63542d-3*Ntot(i,j,k,1); x1 = 6.1714d3*NH2(i,j,k,1)
-Av2  = 1.63542d-3*Ntot(i,j,k,2); x2 = 6.1714d3*NH2(i,j,k,2)
+Av1  = fgr*1.63542d-3*Ntot(i,j,k,1); x1 = 6.1714d3*NH2(i,j,k,1)
+Av2  = fgr*1.63542d-3*Ntot(i,j,k,2); x2 = 6.1714d3*NH2(i,j,k,2)
 ATN1 = ( dexp(-2.5d0*Av1)     + dexp(-2.5d0*Av2) ) * 0.5d0
 ATN2 = ( dexp(-3.77358d0*Av1) + dexp(-3.77358d0*Av2) ) * 0.5d0
 pha  = G0 * dsqrt(1.d3*T) * ATN1 / nde(i,j,k)
@@ -3263,10 +2902,10 @@ Lamc = 6.0157d7*n2*b21
 !***------------------------- OI Cooling
 tO1  = 3.40057d-6*Ntot(i,j,k,1)/xo ; tO2 = 3.40057d-6*Ntot(i,j,k,2)/xo 
 call fesc(tO1,fesO1); call fesc(tO2,fesO2)
-Lamo = (dmax1(ndtot(i,j,k)*xo-ndCO(i,j,k),0.d0)/xo) * (ndH(i,j,k)+0.5d0*ndH2(i,j,k)) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )
+Lamo = fgr*(dmax1(ndtot(i,j,k)*xo-ndCO(i,j,k),0.d0)/xo) * (ndH(i,j,k)+0.5d0*ndH2(i,j,k)) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )
 Lamo = Lamo * (fesO1+fesO2)
 !***------------------------- DustRec Cooling
-Lamd = nde(i,j,k)*ndtot(i,j,k)*6.06236d0 * (T**0.94d0) * ( pha**( 0.462628d0/(T**6.8d-2) ) )
+Lamd = fgr*nde(i,j,k)*ndtot(i,j,k)*6.06236d0 * (T**0.94d0) * ( pha**( 0.462628d0/(T**6.8d-2) ) )
 !***------------------------- CO Cooling
 ncr  = 3.3d6*(T**0.75d0)/(ndH(i,j,k)+ndp(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))
 tau1 = 1.33194d1*NCO(i,j,k,1)/(T*dv); tau2 = 1.33194d1*NCO(i,j,k,2)/(T*dv)
@@ -3277,7 +2916,7 @@ LCOr = ndCO(i,j,k) * 1.91505d10*(T**2)*fes
 LCOH = ndH(i,j,k) *ndCO(i,j,k) * 7.96086d4*dsqrt(T)*dexp(-(2.d0/T)**3.43d0)*dexp(-3.08d0/T)
 LCOH2= ndH2(i,j,k)*ndCO(i,j,k) * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.08d0/T)
 !***------------------------- Photo-electric Heating
-Gampe = ndtot(i,j,k) * 2.56526d3 * G0*ATN1 * &
+Gampe = fgr*ndtot(i,j,k) * 2.56526d3 * G0*ATN1 * &
        ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
 !------------------------- CR Heating
 Gamcr = (ndH(i,j,k)+ndHe(i,j,k)+ndH2(i,j,k)) * 1.89435d0
@@ -3288,17 +2927,6 @@ Gampd = ndH2(i,j,k) * 4.16362d4 * G0*ATN2 * ( SHLD1+SHLD2 )*0.5d0
 
 CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd
 
-elseif((1.4577d4<T*T0).and.(T*T0<1.9449d4)) then
-Lamm = 5.d3 +  1.4d-2 * dsqrt(T*T0) * dexp( -9.2d1/(T*T0) ) !* metal
-  !CooL = ( N**2.d0 * (Lamm) - N ) * AbsL
-CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamm) - (U(i,j,k,1)/1.27d0) ) * AbsL
-  !CooLonly = Lamm
-elseif(1.9449d4<T*T0) then
-Lamh = 3.75d4*(1.d0-dtanh((T*T0-2.d5)/(2.d5)))*dexp(-5.d4/(T*T0))+1.d3*dexp(-5.d4/(T*T0))
-  !CooL = ( N**2.d0 * (Lamh) - N ) * AbsL
-CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamh) - (U(i,j,k,1)/1.27d0) ) * AbsL
-  !CooLonly = Lamh
-endif
 END SUBROUTINE Fcool
 
 SUBROUTINE fesc(tau,fes)
@@ -3458,12 +3086,10 @@ END SUBROUTINE SHIELD
 
 
 
-SUBROUTINE RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,&
-kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
+SUBROUTINE RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
 USE comvar
 USE chmvar
-DOUBLE PRECISION :: T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,&
-kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep
+DOUBLE PRECISION :: T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep
 DOUBLE PRECISION :: Av1,Av2,x1,x2,ATN2,ATN3,ATN4,ATN5,SHLD1,SHLD2,SHLC1,SHLC2
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
@@ -3471,8 +3097,8 @@ DOUBLE PRECISION :: Av1,Av2,x1,x2,ATN2,ATN3,ATN4,ATN5,SHLD1,SHLD2,SHLC1,SHLC2
 !( 1 pc * 1.d-17  = 3.0857d1 )
 !( 1 pc * 1.405656457d-22  = 4.33743413d-4 )
 
-Av1  = 1.63542d-3*Ntot(i,j,k,1); x1 = 6.1714d3*NH2(i,j,k,1)
-Av2  = 1.63542d-3*Ntot(i,j,k,2); x2 = 6.1714d3*NH2(i,j,k,2)
+Av1  = 1.63542d-3*Ntot(i,j,k,1)*fgr; x1 = 6.1714d3*NH2(i,j,k,1)
+Av2  = 1.63542d-3*Ntot(i,j,k,2)*fgr; x2 = 6.1714d3*NH2(i,j,k,2)
 ATN2 = ( dexp(-3.77358d0*Av1) +dexp(-3.77358d0*Av2) )*0.5d0
 ATN3 = ( dexp(-2.3585d0*Av1)  +dexp(-2.3585d0*Av2) )*0.5d0
 
@@ -3491,13 +3117,11 @@ ATN4 = ATN4*0.5d0
 
 ATN5 = &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,1))**0.6) &
-+(0.5d0+dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,1)&
-+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,1)+1.d-100)**(-1.3d0) )
++(0.5d0+dsign(0.5d0,NCO(i,j,k,1)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,1)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,1)+1.d-100)**(-1.3d0) )
 !if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'12'
 ATN5 = ATN5 + &
  (0.5d0-dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dexp(-1.d0*(1.02857d3*NCO(i,j,k,2))**0.6) &
-+(0.5d0+dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,2)+1.d-100)**(-0.75d0),&
-(7.3469d1*NCO(i,j,k,2)+1.d-100)**(-1.3d0) )
++(0.5d0+dsign(0.5d0,NCO(i,j,k,2)-1.40995d-3))*dmin1( (3.75439d3*NCO(i,j,k,2)+1.d-100)**(-0.75d0),(7.3469d1*NCO(i,j,k,2)+1.d-100)**(-1.3d0) )
 !if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'13'
 ATN5 = ATN5*0.5d0
 !if( k==33 .and. j==33 .and. i==33) write(*,*) ATN5,'14'
@@ -3510,7 +3134,7 @@ kHrec = 2.05572d1*(T**(-0.5d0))*kHrec
 !He Recombination
 kHerec= 6.37623d1*(T**(-0.672d0))
 !H2 formation
-kH2   = 3.4569d-3*dsqrt(T)/(1.d0+1.26491d0*dsqrt(T+Tgr)+2.d0*T+8.d0*T**2)
+kH2   = fgr*3.4569d-3*dsqrt(T)/(1.d0+1.26491d0*dsqrt(T+Tgr)+2.d0*T+8.d0*T**2)
 !***H2 Photo-dissociation
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
@@ -3525,10 +3149,8 @@ kCO   = 1.57785d-2/(1.d0+G0*ATN3/(ndH2(i,j,k)*xo))
 kCOph = 3.155d3*G0*ATN3*ATN4*ATN5
 !if( k==33 .and. j==33 .and. i==33) write(*,*) G0,ATN3,ATN4,ATN5,kCOph
 !***C ionization
-SHLC1 = dexp(-2.6d0*Av1-3.0857d1*NnC(i,j,k,1)&
--4.33743413d-4*NH2(i,j,k,1))/(1.d0+4.33743413d-4*NH2(i,j,k,1))
-SHLC2 = dexp(-2.6d0*Av2-3.0857d1*NnC(i,j,k,2)&
--4.33743413d-4*NH2(i,j,k,2))/(1.d0+4.33743413d-4*NH2(i,j,k,2))
+SHLC1 = dexp(-2.6d0*Av1-3.0857d1*NnC(i,j,k,1)-4.33743413d-4*NH2(i,j,k,1))/(1.d0+4.33743413d-4*NH2(i,j,k,1))
+SHLC2 = dexp(-2.6d0*Av2-3.0857d1*NnC(i,j,k,2)-4.33743413d-4*NH2(i,j,k,2))/(1.d0+4.33743413d-4*NH2(i,j,k,2))
 kCi   = 3.97d0*zeta + 6.62697d3*G0 * ( SHLC1+SHLC2 )*0.5d0
 !C recombination
 kCrec = 2.69267d1*(T**(-0.62d0))*(1.d0+1.d-4*dsqrt(nde(i,j,k))/(T**2))
@@ -3562,8 +3184,7 @@ SUBROUTINE Omexp(omeps,eps)
 DOUBLE PRECISION :: omeps,eps
 
 omeps = ( 0.5d0+dsign(0.5d0,eps-1.d-4) )*( 1.d0-dexp(-eps) ) + &
-( 0.5d0-dsign(0.5d0,eps-1.d-4) )*( eps-0.5d0*eps**2+0.16666666666666667d0*eps**3&
--4.16666666666666667d-2*eps**4 )
+( 0.5d0-dsign(0.5d0,eps-1.d-4) )*( eps-0.5d0*eps**2+0.16666666666666667d0*eps**3-4.16666666666666667d-2*eps**4 )
 
 END SUBROUTINE Omexp
 
@@ -3586,10 +3207,9 @@ if((IST.eq.0).or.(IST.eq.NSPLTx-1)) then
   offset = 0; if(IST.eq.NSPLTx-1) offset = Ncellx-10
   do k=0,Ncellz+1; do j=0,Ncelly+1; do i=0,11
     ix = i+offset
-    divv(i,j,k) = ( U(ix+1,j,k,2)-U(ix-1,j,k,2)+U(ix,j+1,k,3)&
--U(ix,j-1,k,3)+U(ix,j,k+1,4)-U(ix,j,k-1,4) )*0.25d0
+    divv(i,j,k) = ( U(ix+1,j,k,2)-U(ix-1,j,k,2)+U(ix,j+1,k,3)-U(ix,j-1,k,3)+U(ix,j,k+1,4)-U(ix,j,k-1,4) )*0.25d0
   end do; end do; end do
-  
+
   do k=1,Ncellz; do j=1,Ncelly; do i=1,10
     ix = i+offset
     U(ix,j,k,2) = U(ix,j,k,2) + 0.1d0*(divv(i+1,j,k)-divv(i-1,j,k))
