@@ -14,7 +14,6 @@
             else
                delta_esc=1.d-5*esc(j)
             endif
- 
             do jj=1,N_p
                if(jj.eq.j) then
                   esc_f(jj)=esc(jj)+delta_esc
@@ -29,7 +28,6 @@ C ------ set the matrix A
                A(i,j)=(func_f(i)-func(i))/(esc_f(j)-esc(j))
             enddo
          enddo
-
 C ------- set the vector desc
          do i=1,N_line
             desc(i)=-func(i)
@@ -40,7 +38,6 @@ C ------- solve linear equations
          if(itr.eq.1000) go to 20
 
          fact=1.d0
-
          if(itr.gt.20) then
             if(err_max.gt.1.d0) fact=1.d-2
          endif
@@ -64,7 +61,6 @@ C ------- solve linear equations
             endif
             err_max=max(err,err_max)
          enddo
-         
          if(err_max.lt.err_max_min) then
             err_max_min=err_max
             do i=1,N_line
@@ -90,7 +86,6 @@ C ------- solve linear equations
       enddo
 
       call pop(esc,func,xLd)
-
       return
       END
 
@@ -191,20 +186,21 @@ c
       DATA xk_B/1.38d-16/,h_Pl/6.63d-27/,pi/3.14159265358979d0/,
      &     xm_p/1.67d-24/
 
-      g_0=2.d0
-      g_1=4.d0
+      g_0=2.d0 !Degeneracy
+      g_1=4.d0 !Degeneracy
 
-      esc_10=esc(1)
-      DT_10=9.2d1
-      DE_10=DT_10*1.38d-16
-      Q_10=Q_bg(DT_10)
+      !esc_10=esc(1)
+      esc_10=1.d0
+      DT_10=9.2d1 !T_line
+      DE_10=DT_10*1.38d-16 !T_line*k_B
+      Q_10=0.d0 !Q_bg(DT_10)
 
-      A_10=2.4d-6   
-      gamma_e=2.8d-7/dsqrt(T_K*1.d-2)
-      gamma_H=8.0d-10*(T_K*1.d-2)**7.d-2
-      gamma_H2=5.d-1*gamma_H
-      C_10=xnH*(y_e*gamma_e+y_a*gamma_H+y_m*gamma_H2)
-      C_01=(g_1/g_0)*C_10*dexp(-DT_10/T_K)
+      A_10=2.4d-6 !Einstein A coefficient
+      gamma_e=2.8d-7/dsqrt(T_K*1.d-2) !Sigma v
+      gamma_H=8.0d-10*(T_K*1.d-2)**7.d-2 !Sigma v
+      gamma_H2=5.d-1*gamma_H !Sigma v
+      C_10=xnH*(y_e*gamma_e+y_a*gamma_H+y_m*gamma_H2) !Einstein C coefficient
+      C_01=(g_1/g_0)*C_10*dexp(-DT_10/T_K) !Einstein C coefficient
 
       R_01=(g_1/g_0)*A_10*esc_10*Q_10+C_01
       R_10=esc_10*A_10*(1.d0+Q_10)+C_10
@@ -217,8 +213,9 @@ c
       v_th=dsqrt(2.d0*xk_B*T_K/xm_C)
       xNc_1=xNc*f_1
       xNc_0=xNc*f_0
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu)**3*(xNc_0*g_1/g_0-xNc_1)
-     &     /v_th
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu)**3*(xNc_0*g_1/g_0-xNc_1)
+      !&     /v_th
+      tau_10=0.d0
 
       if(g_1*f_0/(g_0*f_1)-1.d0.eq.0.d0) then
          S_10=1.d50
@@ -245,9 +242,12 @@ c
       g_1=3.d0
       g_2=5.d0
       
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      !esc_10=esc(1)
+      !esc_20=esc(2)
+      !esc_21=esc(3)
+      esc_10=1.d0
+      esc_20=1.d0
+      esc_21=1.d0
 
       DT_10=2.4d1
       DT_20=6.3d1
@@ -257,9 +257,13 @@ c
       DE_20=DT_20*1.38d-16
       DE_21=DT_21*1.38d-16      
 
-      Q_10=Q_bg(DT_10)
-      Q_20=Q_bg(DT_20)
-      Q_21=Q_bg(DT_21)
+      !Q_10=Q_bg(DT_10)
+      !Q_20=Q_bg(DT_20)
+      !Q_21=Q_bg(DT_21)
+
+      Q_10=0.d0
+      Q_20=0.d0
+      Q_21=0.d0
 
       A_10=7.9d-8
       A_20=2.0d-14
@@ -308,12 +312,16 @@ c
       xNc_1=xNc*f_1
       xNc_2=xNc*f_2
 
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
-     &     *(xNc_0*g_1/g_0-xNc_1)/v_th
-      tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
-     &     *(xNc_0*g_2/g_0-xNc_2)/v_th
-      tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
-     &     *(xNc_1*g_2/g_1-xNc_2)/v_th
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
+      !&     *(xNc_0*g_1/g_0-xNc_1)/v_th
+      !tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
+      !&     *(xNc_0*g_2/g_0-xNc_2)/v_th
+      !tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
+      !&     *(xNc_1*g_2/g_1-xNc_2)/v_th
+
+      tau_10=0.d0
+      tau_20=0.d0
+      tau_21=0.d0
       
       if(g_1*f_0/(g_0*f_1)-1.d0.eq.0.d0) then
          S_10=1.d50
@@ -358,9 +366,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       g_1=3.d0
       g_2=1.d0
 
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      esc_10=1.0d0!esc(1)
+      esc_20=1.0d0!esc(2)
+      esc_21=1.0d0!esc(3)
 
       DT_10=2.3d2
       DT_20=3.28d2
@@ -370,9 +378,12 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       DE_20=DT_20*1.38d-16
       DE_21=DT_21*1.38d-16      
 
-      Q_10=Q_bg(DT_10)
-      Q_20=Q_bg(DT_20)
-      Q_21=Q_bg(DT_21)
+      !Q_10=Q_bg(DT_10)
+      !Q_20=Q_bg(DT_20)
+      !Q_21=Q_bg(DT_21)
+      Q_10=0.d0
+      Q_20=0.d0
+      Q_21=0.d0
 
       A_10=9.0d-5
       A_20=1.0d-10
@@ -397,9 +408,12 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       C_02=(g_2/g_0)*C_20*dexp(-DT_20/T_K)
       C_12=(g_2/g_1)*C_21*dexp(-DT_21/T_K)
 
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      !esc_10=esc(1)
+      !esc_20=esc(2)
+      !esc_21=esc(3)
+      esc_10=1.0d0!esc(1)
+      esc_20=1.0d0!esc(2)
+      esc_21=1.0d0!esc(3)
 
       R_10=esc_10*A_10*(1.d0+Q_10)+C_10
       R_20=esc_20*A_20*(1.d0+Q_20)+C_20
@@ -425,12 +439,15 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       xNc_1=xNc*f_1
       xNc_2=xNc*f_2
 
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
-     &     *(xNc_0*g_1/g_0-xNc_1)/v_th 
-      tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
-     &     *(xNc_0*g_2/g_0-xNc_2)/v_th 
-      tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
-     &     *(xNc_1*g_2/g_1-xNc_2)/v_th 
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
+      !&     *(xNc_0*g_1/g_0-xNc_1)/v_th
+      !tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
+      !&     *(xNc_0*g_2/g_0-xNc_2)/v_th
+      !tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
+      !&     *(xNc_1*g_2/g_1-xNc_2)/v_th
+      tau_10=0.d0
+      tau_20=0.d0
+      tau_21=0.d0
       
       if(g_1*f_0/(g_0*f_1)-1.d0.eq.0.d0) then
          S_10=1.d50
@@ -474,10 +491,10 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       g_0=6.d0
       g_1=12.d0
 
-      esc_10=esc(1)
+      esc_10=1.d0!esc(1)
       DT_10=6.2d4
       DE_10=DT_10*1.38d-16
-      Q_10=Q_bg(DT_10)
+      Q_10=0.d0!Q_bg(DT_10)
 
       A_10=3.6d0   
       gamma_e=2.3d-8/dsqrt(T_K*1.d-4)
@@ -495,8 +512,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       v_th=dsqrt(2.d0*xk_B*T_K/xm_C)
       xNc_1=xNc*f_1
       xNc_0=xNc*f_0
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu)**3*(xNc_0*g_1/g_0-xNc_1)
-     &     /v_th
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu)**3*(xNc_0*g_1/g_0-xNc_1)
+      !&     /v_th
+      tau_10=0.d0
 
       if(g_1*f_0/(g_0*f_1)-1.d0 .eq.0.d0) then
          S_10=1.d50
@@ -524,9 +542,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       g_1=5.d0
       g_2=1.d0
       
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      esc_10=1.d0!esc(1)
+      esc_20=1.d0!esc(2)
+      esc_21=1.d0!esc(3)
 
       DT_10=1.5d4
       DT_20=3.2d4
@@ -536,9 +554,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       DE_20=DT_20*1.38d-16
       DE_21=DT_21*1.38d-16      
 
-      Q_10=Q_bg(DT_10)
-      Q_20=Q_bg(DT_20)
-      Q_21=Q_bg(DT_21)
+      Q_10=0.d0!Q_bg(DT_10)
+      Q_20=0.d0!Q_bg(DT_20)
+      Q_21=0.d0!Q_bg(DT_21)
 
       A_10=3.4d-4
       A_20=2.6d-3
@@ -586,12 +604,16 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       xNc_1=xNc*f_1
       xNc_2=xNc*f_2
 
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
-     &     *(xNc_0*g_1/g_0-xNc_1)/v_th
-      tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
-     &     *(xNc_0*g_2/g_0-xNc_2)/v_th
-      tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
-     &     *(xNc_1*g_2/g_1-xNc_2)/v_th
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
+      !&     *(xNc_0*g_1/g_0-xNc_1)/v_th
+      !tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
+      !&     *(xNc_0*g_2/g_0-xNc_2)/v_th
+      !tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
+      !&     *(xNc_1*g_2/g_1-xNc_2)/v_th
+      tau_10=0.d0
+      tau_20=0.d0
+      tau_21=0.d0
+
       
       if(g_1*f_0/(g_0*f_1)-1.d0.eq.0.d0) then
          S_10=1.d50
@@ -637,9 +659,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       g_1=5.d0
       g_2=1.d0
 
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      esc_10=1.d0!esc(1)
+      esc_20=1.d0!esc(2)
+      esc_21=1.d0!esc(3)
 
       DT_10=2.3d4
       DT_20=4.9d4
@@ -649,9 +671,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       DE_20=DT_20*1.38d-16
       DE_21=DT_21*1.38d-16      
 
-      Q_10=Q_bg(DT_10)
-      Q_20=Q_bg(DT_20)
-      Q_21=Q_bg(DT_21)
+      Q_10=0.d0!Q_bg(DT_10)
+      Q_20=0.d0!Q_bg(DT_20)
+      Q_21=0.d0!Q_bg(DT_21)
 
       A_10=6.3d-3
       A_20=6.7d-2
@@ -675,9 +697,9 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       C_02=(g_2/g_0)*C_20*dexp(-DT_20/T_K)
       C_12=(g_2/g_1)*C_21*dexp(-DT_21/T_K)
 
-      esc_10=esc(1)
-      esc_20=esc(2)
-      esc_21=esc(3)
+      esc_10=1.d0!esc(1)
+      esc_20=1.d0!esc(2)
+      esc_21=1.d0!esc(3)
 
       R_10=esc_10*A_10*(1.d0+Q_10)+C_10
       R_20=esc_20*A_20*(1.d0+Q_20)+C_20
@@ -709,12 +731,15 @@ C     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
       xNc_1=xNc*f_1
       xNc_2=xNc*f_2
 
-      tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
-     &     *(xNc_0*g_1/g_0-xNc_1)/v_th 
-      tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
-     &     *(xNc_0*g_2/g_0-xNc_2)/v_th 
-      tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
-     &     *(xNc_1*g_2/g_1-xNc_2)/v_th 
+      !tau_10=(A_10/8.d0/pi)*(3.d10/xnu_10)**3
+      !&     *(xNc_0*g_1/g_0-xNc_1)/v_th
+      !tau_20=(A_20/8.d0/pi)*(3.d10/xnu_20)**3
+      !&     *(xNc_0*g_2/g_0-xNc_2)/v_th
+      !tau_21=(A_21/8.d0/pi)*(3.d10/xnu_21)**3
+      !&     *(xNc_1*g_2/g_1-xNc_2)/v_th
+      tau_10=0.d0
+      tau_20=0.d0
+      tau_21=0.d0
       
       if(g_1*f_0/(g_0*f_1)-1.d0.eq.0.d0) then
          S_10=1.d50

@@ -69,7 +69,7 @@ c      PARAMETER (NMAX=50,eps=1.d-13)
         indxr(i)=irow
         indxc(i)=icol
         if (a(icol,icol).eq.0.d0) then
-           print *, 'singular matrix in gaussj'
+           !print *, 'singular matrix in gaussj'
            go to 25
         endif
         pivinv=1.d0/a(icol,icol)
@@ -79,7 +79,7 @@ c      PARAMETER (NMAX=50,eps=1.d-13)
 16      continue
         do 17 l=1,m
           b(icol,l)=b(icol,l)*pivinv
-17      continue 
+17      continue
 
         do 21 ll=1,n
            if(ll.ne.icol)then

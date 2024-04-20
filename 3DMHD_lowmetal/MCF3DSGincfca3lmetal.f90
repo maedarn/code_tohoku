@@ -5,16 +5,25 @@ INTEGER, parameter :: ndx=66, ndy=66, ndz=66, ndmax=66, Dim=3 !512^3
 DOUBLE PRECISION, dimension(-1:ndx) :: x,dx
 DOUBLE PRECISION, dimension(-1:ndy) :: y,dy
 DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
-DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF,Bug
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
 DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
-DOUBLE PRECISION  :: pmin,pmax,rmin,rmax
+DOUBLE PRECISION  :: pmin,pmax,rmin,rmax,Tmin
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
-INTEGER :: ifchem,ifthrm,ifrad,ifgrv,loopbc=2
-character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m2/' !samplecnv2
+INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
+
+DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
+INTEGER :: idum1,idum2
+DOUBLE PRECISION  :: nad
+character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m3/' !samplecnv2
+
+integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
+integer :: time_end_c6,time_end_c7,time_end_c8
+
+DOUBLE PRECISION  :: Tth=1.d10
 END MODULE comvar
 
 MODULE mpivar
@@ -22,13 +31,14 @@ INTEGER :: NPE,NRANK, NSPLTx,NSPLTy,NSPLTz, IST,JST,KST, LEFT,RIGT,BOTM,TOP,UP,D
 INTEGER :: BCx1,BCx2,BCy1,BCy2,BCz1,BCz2, N_MPI(20)
 DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(8)
 REAL*4, dimension(:,:,:), allocatable :: DTF
+REAL*4, dimension(:,:,:,:), allocatable :: VTF,rd49
 END MODULE mpivar
 
 MODULE chmvar
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0!, TCMB=5.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2 !1/100 solar metal
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
@@ -46,12 +56,29 @@ END MODULE chmvar
 MODULE slfgrv
 DOUBLE PRECISION, parameter :: G=1.11142d-4, G4pi=12.56637d0*G
 INTEGER :: point1(0:15),point2(0:15),NGL,NGcr,Nmem1,Nmem2
-DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi
+DOUBLE PRECISION, dimension(:,:,:), allocatable :: Phi,Rhost
 DOUBLE PRECISION :: Lbox
 
 INTEGER :: pointb1(0:15),pointb2(0:15)
-DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2
+DOUBLE PRECISION, dimension(:,:), allocatable :: bphi1,bphi2,bphi3,bphi4,bphi5,bphi6
 END MODULE slfgrv
+
+MODULE fedvar
+DOUBLE PRECISION  :: LSFE,rhoth!=5.d0*1.d5*1.27d0,LSFE=0.02d0
+DOUBLE PRECISION  :: Mmassive=10.d0,cs0=0.19d0/0.953d0,rsphBE1,rdmod,rdpcnt=1.d-2,Rnbnratio=2.d0,rmvratio=0.5d0
+INTEGER, parameter :: numstar=5000,valstar=22,nlpmass=5000,nran1=1000000
+integer :: idum=1,nid=0,nidnw=0,isphloop=100,iradloop=10
+double precision :: Msun=2.4d-2 !3*3*3*1.7*10^(18+18+18-24)/2*10^33=3*3*3*1.7/2 *10^(-3)
+double precision, dimension(:,:)  , allocatable :: Ustar!(1:10,1:nstar)
+double precision, dimension(:)  , allocatable :: rsphBE,rhosphBE,idumraninp,idumransfe,radintst
+double precision :: aq=-39.3178d0,bq=221.997d0,cq=-227.456d0,dq=117.410d0,eq=-30.1511d0,fq=3.06810d0
+DOUBLE PRECISION  :: mass1,rhomean,rrsph3x,rrsph3y,rrsph3z,alpharcm=3.d0*1.d-13, Mtotint, Mtotint2
+DOUBLE PRECISION, dimension(:,:,:,:), allocatable  :: rdrgn,denrgn,radint,Phistar
+DOUBLE PRECISION, dimension(:,:,:), allocatable  :: preP!,radint
+DOUBLE PRECISION, dimension(:), allocatable  :: Nstinp,MGtoS,Fstar
+!DOUBLE PRECISION  :: dnMPI(0:numstar,0:NPE-1),rdnumMPI(0:numstar,0:NPE-1)
+!double precision, dimension(:,:,:,:) :: phibc
+END MODULE fedvar
 
 !======================================================================*
 !                                 MAIN                                 *
@@ -62,6 +89,7 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 
 CALL MPI_INIT(IERR)
@@ -100,21 +128,52 @@ ALLOCATE(ndH(-1:ndx,-1:ndy,-1:ndz),ndp(-1:ndx,-1:ndy,-1:ndz),ndH2(-1:ndx,-1:ndy,
        ndHep(-1:ndx,-1:ndy,-1:ndz),ndC(-1:ndx,-1:ndy,-1:ndz),ndCp(-1:ndx,-1:ndy,-1:ndz),ndCO(-1:ndx,-1:ndy,-1:ndz), &
          nde(-1:ndx,-1:ndy,-1:ndz),ndtot(-1:ndx,-1:ndy,-1:ndz),Ntot(-1:ndx,-1:ndy,-1:ndz,2),                        &
          NH2(-1:ndx,-1:ndy,-1:ndz,2),NnC(-1:ndx,-1:ndy,-1:ndz,2),NCO(-1:ndx,-1:ndy,-1:ndz,2),tCII(-1:ndx,-1:ndy,-1:ndz,2) )
-ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz))
-ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(DTF(-1:(ndx-2)*NSPLTx+2,-1:ndy,-1:ndz),VTF(-1:ndx,-1:ndy,-1:ndz,3))
+ALLOCATE(Phi(-1:ndx,-1:ndy,-1:ndz),Rhost(-1:ndx,-1:ndy,-1:ndz))
+ALLOCATE(Ustar(1:valstar,0:numstar),radintst(0:numstar),Phistar(-1:ndx,-1:ndy,-1:ndz,8))
+ALLOCATE(rsphBE(1:isphloop),rhosphBE(1:isphloop))
+ALLOCATE( Bug(-1:ndx,-1:ndy,-1:ndz,4) )
+ALLOCATE( rdrgn(-1:ndx,-1:ndy,-1:ndz,2) )
+ALLOCATE( denrgn(-1:ndx,-1:ndy,-1:ndz,2) )
+ALLOCATE( preP(-1:ndx,-1:ndy,-1:ndz),radint(-1:ndx,-1:ndy,-1:ndz,2) )
+ALLOCATE(idumraninp(0:nran1),idumransfe(0:nran1))
+ALLOCATE(Nstinp(0:NPE-1),MGtoS(0:NPE-1),Fstar(0:NPE-1))
+ALLOCATE(rd49(-1:ndx,-1:ndy,-1:ndz,1:17))
 
+idum1=NRANK+1
+idum2=NRANK+1+NPE+1
+!do i6=0,nran1
+!call ran0(idumraninp(i6),idum1)
+!call ran0(idumransfe(i6),idum2)
+!idumraninp(NRANK)=NRANK+1
+!idumransfe(NRANK)=NRANK+1+NPE+1
+!write(*,*) 'ran',idumransfe(i6),idumraninp(i6)
+!enddo
+
+Ustar(:,:)=0.d0
+Phistar(:,:,:,:)=0.d0
+Mtotint=0.d0
+Mtotint2=0.d0
 !write(*,*) 'OK3'
 
 call INITIA
-!write(*,*) 'OK'
+write(*,*) 'OK-INIT'
 call EVOLVE
 
 !write(*,*) 'OK'
 
 DEALLOCATE(U)
 DEALLOCATE(ndH,ndp,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
-DEALLOCATE(DTF)
-DEALLOCATE(Phi)
+DEALLOCATE(DTF,VTF)
+DEALLOCATE(Phi,Rhost)
+DEALLOCATE(Ustar,Phistar)
+DEALLOCATE(rsphBE,rhosphBE)
+DEALLOCATE(Bug)
+DEALLOCATE(rdrgn,denrgn)
+DEALLOCATE( preP ,radint)
+DEALLOCATE(idumraninp,idumransfe,radintst)
+DEALLOCATE(Nstinp,MGtoS,Fstar)
+DEALLOCATE(rd49)
 
 CALL MPI_FINALIZE(IERR)
 
@@ -128,6 +187,7 @@ USE comvar
 USE mpivar
 USE chmvar
 USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 
 integer :: Np1x, Np2x, Np1y, Np2y, Np1z, Np2z, nunit, ix, jy, kz,b,c
@@ -143,6 +203,7 @@ INTEGER :: MSTATUS(MPI_STATUS_SIZE)
 double precision, dimension(:,:), allocatable :: plane,rand
 integer i3,i4
 
+write(*,*)'START'!,NARANK
 open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  Np1x,Np2x
   read(8,*)  Np1y,Np2y
@@ -159,8 +220,11 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  CFL,facdep
   read(8,*)  maxstp,nitera,tfinal
   read(8,*)  BCx1,BCx2,BCy1,BCy2,BCz1,BCz2
-  read(8,*)  ifchem,ifthrm,ifrad,ifgrv
+  read(8,*)  ifchem,ifthrm,ifrad,ifgrv,iffed
+  read(8,*)  rhoth,LSFE
+  read(8,*)  nad
 close(8)
+write(*,*)'READ',NRANK
 
 !WNM ntot = 1.024
 !goto 10000
@@ -228,6 +292,9 @@ BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
 BBRV_cm(8)=xc/1.27d0 !Cp
 BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
 BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
+
+!BBRV_cm(1)=Hini/dinit1; BBRV_cm(2)=pini/dinit1; BBRV_cm(3)=H2ini/dinit1; BBRV_cm(4)=Heini/dinit1
+!BBRV_cm(5)=Hepini/dinit1; BBRV_cm(6)=Cini/dinit1; BBRV_cm(7)=COini/dinit1; BBRV_cm(8)=Cpini/dinit1
 
 dBC = mH*BBRV_cm(1) + mH*BBRV_cm(2) + mH2*BBRV_cm(3) + mHe*BBRV_cm(4) + mHe*BBRV_cm(5)
 BBRV(1,1,1) = dBC;     BBRV(1,2,1) = dBC;         BBRV(1,1,2) =  dBC;     BBRV(1,2,2) =  dBC
@@ -556,6 +623,8 @@ SUBROUTINE EVOLVE
 USE comvar
 USE mpivar
 USE chmvar
+USE slfgrv
+USE fedvar
 INCLUDE 'mpif.h'
 
 double precision  :: t(1000),dt, stt, tLMT, dt_mpi(0:1024), dt_gat(0:1024), time_CPU(3)
@@ -608,25 +677,20 @@ do in10 = 1, maxstp
   call SAVEU(nunit,dt,stb,st,t,0)
  
   do in20 = 1, nitera
-if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),Bcc(1,1,1,2),U(1,1,1,7),'point'
     tsave2D = dtsave2D * nunit2D
     if(time.ge.tsave2D) call SAVEU2D(nunit2D)
     if(time.ge.tfinal) goto 9000
     if(time.ge.tsave ) goto 7777
 !***** Determine time-step dt *****
     dt_mpi(NRANK) = tfinal
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point1'
     call Couran(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point1'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), CFL * tLMT )
     st_mpi(NRANK) = 1
     stt= dt_mpi(NRANK)
 
     call Stblty(tLMT)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),tLMT,'point2'
     dt_mpi(NRANK) = dmin1( dt_mpi(NRANK), tLMT    )
     if(dt_mpi(NRANK).lt.stt) st_mpi(NRANK) = 2
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_GATHER(dt_mpi(NRANK),1,MPI_REAL8,   &
                     dt_gat       ,1,MPI_REAL8,   &
@@ -645,17 +709,17 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     END IF
     CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
     CALL MPI_BCAST(dt,1,MPI_REAL8,0,MPI_COMM_WORLD,IERR)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!    if((mod(in20,10).eq.1).and.(NRANK.eq.0)) write(*,*) in20,time,dt
     if(NRANK.eq.0) write(*,*) in20,time,dt
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
-!if(NRANK==40) write(*,*) NRANK,in20,dt,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point3'
-!***** Source parts 1*****
+
     if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
     call SOURCE(0.5d0*dt)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point4'
-!***** Godunov parts *****
+
+    if(iffed.eq.2) then; call feedback(dt,1); end if
+    if(iffed.eq.2) then; call feedback(dt,2); end if
+    if(iffed.eq.2) then; call feedback(dt,3); end if
+
     if(ifEVO.eq.1) then
       iwx=1; iwy=0; iwz=0; call MHD(x,dx,dt); iwx=0; iwy=1; iwz=0; call MHD(y,dy,dt); iwx=0; iwy=0; iwz=1; call MHD(z,dz,dt)
       ifEVO = 2; goto 1000
@@ -682,7 +746,6 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     end if
 1000 continue
     DEALLOCATE(Bcc)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point5'
 !***** CT part *****
     ALLOCATE(Vfc(-1:ndx,-1:ndy,-1:ndz,3))
     call CC(1,dt)
@@ -695,18 +758,16 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point6'
-!***** Source parts 2*****
+
     call SOURCE(0.5d0*dt)
     if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
-!if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point7'
     call DISSIP()
     time = time + dt
   end do
   itime = itime - 1
   7777   continue
   itime = itime + 1
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! for MPI
+
   IF(NRANK.EQ.0) THEN
     time_CPU(2) = MPI_WTIME()
     time_CPU(2) = ( time_CPU(2)-time_CPU(1) )/3.6d3
@@ -716,7 +777,6 @@ if(NRANK==40) write(*,*) NRANK,in20,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,
   CALL MPI_BCAST(Time_signal,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
   CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
   IF(Time_signal.EQ.1) GOTO 9000
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end do
 

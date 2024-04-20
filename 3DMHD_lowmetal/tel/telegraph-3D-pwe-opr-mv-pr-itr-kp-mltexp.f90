@@ -352,11 +352,13 @@ subroutine slvmuscle(dt)
 
   dtt2=dt!*0.3d0
   !rhomean=0.d0
+
+  call collectrho()
   do l=1,ndz-2
   do m=1,ndy-2
   do n=1,ndx-2
      !rho(n,m,l) = U(n,m,l,1)
-     rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)!-rhomean
+     rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)-rhomean
   !   rhomean=rhomean+rho(i,j,k)
   end do;end do;end do
   
@@ -1243,11 +1245,14 @@ one1=(1.d0,0.d0)
 ALLOCATE( Qlm(0:lsphmax,-lsphmax:lsphmax,0:NPE-1))!,Qlmtst(0:lsphmax,-lsphmax:lsphmax,0:NPE-1) )
 ALLOCATE( Qlmall(0:lsphmax,-lsphmax:lsphmax) )
 
+call collectrho()
+mass1=rhomean*dble(NPE)*dble(Ncellx*Ncelly*Ncellz)
+
 do l=1,ndz-2
 do m=1,ndy-2
 do n=1,ndx-2
    !rho(n,m,l) = U(n,m,l,1)
-   rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)!-rhomean
+   rho(n,m,l) = U(n,m,l,1)+Rhost(n,m,l)-rhomean
 !   rhomean=rhomean+rho(i,j,k)
 end do;end do;end do
 
@@ -1273,8 +1278,8 @@ yg = yg_mpi(Nroot)+yg
 zg = zg_mpi(Nroot)+zg
 end do
 
-call collectrho()
-mass1=rhomean*dble(NPE)*dble(Ncellx*Ncelly*Ncellz)
+!call collectrho()
+!mass1=rhomean*dble(NPE)*dble(Ncellx*Ncelly*Ncellz)
 
 xg=xg/mass1
 yg=yg/mass1

@@ -39,7 +39,8 @@ END MODULE mpivar
 
 MODULE chmvar
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3
 DOUBLE PRECISION, dimension(:,:,:)  , allocatable :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
@@ -243,15 +244,6 @@ write(*,*)'READ',NRANK
  Cini=0.1565848d-8*dratio; COini=0.2202631d-20*dratio; Cpini=0.1433520d-3*dratio
  dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
  write(*,*)'INI_cem',dinit1,pinit1
-
-BBRV_cm(1)=0.91d0/1.27d0 !H
-BBRV_cm(2)=0.91d0*pini/Hini/1.27d0 !p
-BBRV_cm(3)=0.91d0*H2ini/Hini/1.27d0 !H2
-BBRV_cm(4)=0.09d0/1.27d0 !He
-BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
-BBRV_cm(8)=xc/1.27d0 !Cp
-BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
-BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
 
  BBRV_cm(1)=Hini/dinit1; BBRV_cm(2)=pini/dinit1; BBRV_cm(3)=H2ini/dinit1; BBRV_cm(4)=Heini/dinit1
  BBRV_cm(5)=Hepini/dinit1; BBRV_cm(6)=Cini/dinit1; BBRV_cm(7)=COini/dinit1; BBRV_cm(8)=Cpini/dinit1
@@ -1116,6 +1108,7 @@ SUBROUTINE EVOLVE
 USE comvar
 USE mpivar
 USE chmvar
+USE slfgrv
 USE fedvar
 use,intrinsic :: iso_fortran_env
 INCLUDE 'mpif.h'
