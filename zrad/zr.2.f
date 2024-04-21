@@ -172,7 +172,11 @@ c            write(12,202) xnH,y
              write(12,202) xnH,y(2),y(23),y(17),y(33)             
 c            write(13,203) xnH,Gmm_cmp,xLmbd_cnt,xLmbd_line,xLmbd_gr,
 c     &           xLmbd_ch,Gmm_pe,Gmm_CR
-             write(14,204) xnH, xLmbd_CII+xLmbd_CI,xLmbd_OI 
+             write(*,*)'xLmbd_CI_1',xLmbd_CI
+             !xLmbd_CI=1.d-20!dsign(dmax1(dabs(xLmbd_CI),1.d-10),xLmbd_CI)
+             !write(*,*)'xLmbd_CI_2',xLmbd_CI
+             write(14,204) xnH, xLmbd_CII+xLmbd_CI,xLmbd_OI,
+     &                     xLmbd_CII,xLmbd_CI
 c            write(14,204) xnH, xLmbd_H2, xLmbd_HD, xLmbd_CO, xLmbd_OH,
 c     &           xLmbd_H2O, xLmbd_CII, xLmbd_CI, xLmbd_OI, xLmbd_Lya
 c            write(15,108) xMJ,T_K 
