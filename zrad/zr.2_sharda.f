@@ -230,7 +230,7 @@ C
       rhoo=rho
       eo=e
       po=p
-      t_ff=1.d20!dsqrt(3.d0*pi/(32.d0*G*rho))
+      t_ff=dsqrt(3.d0*pi/(32.d0*G*rho))
       if(xnH < 1.d2) then 
          ft=1.d0
       else
@@ -238,8 +238,8 @@ C
       endif
       do it=1,1000
          t_col=ft*t_ff
-         drho=0.d0!(rhoo/t_col)*dt
-         Gmm_cmp=0.d0!(gamma-1.d0)*eo/t_col
+         drho=(rhoo/t_col)*dt
+         Gmm_cmp=(gamma-1.d0)*eo/t_col
          de=(Gmm_cmp-xLmbd_net)*dt         
          if(i_ev == 1) then
             rho=rhoo+drho

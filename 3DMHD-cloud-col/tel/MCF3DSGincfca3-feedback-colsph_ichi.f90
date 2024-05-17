@@ -22,7 +22,7 @@ DOUBLE PRECISION  :: prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
 !character(35)::dir='/work/maedarn/3DMHD/samplecnv10Myr/'
-character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphhD/'
+character(38)::dir='/work/maedarn/3DMHD/samplecnvcolsphTS/'
 character(5) ::dir1
 character(5) ::svdir
 !character(36)::dir='/work/maedarn/3DMHD/samplecnvturbc3/'
@@ -233,7 +233,7 @@ INCLUDE 'mpif.h'
 integer :: Np1x, Np2x, Np1y, Np2y, Np1z, Np2z, nunit, ix, jy, kz,b,c
 double precision ::  ql1x,ql2x,ql1y,ql2y,ql1z,ql2z,dinit1,dinit2,pinit1,pinit2, &
            vinitx1,vinitx2,vinity1,vinity2,vinitz1,vinitz2,           &
-           binitx1,binitx2,binity1,binity2,binitz1,binitz2
+           binitx1,binitx2,binity1,binity2,binitz1,binitz2,dinitc
 double precision, dimension(:), allocatable :: x_i,y_i,z_i,dx_i,dy_i,dz_i
 double precision :: theta,pi,amp,xpi,ypi,zpi,phase1,phase2,phase3,kx,ky,kzz,kw
 double precision :: Hini,pini,H2ini,Heini,Hepini,Cini,COini,Cpini,dBC,dBC2
@@ -270,6 +270,7 @@ open(8,file=dir//'INPUT3D.DAT')
   read(8,*)  ifchem,ifthrm,ifrad,ifgrv,iffed
   read(8,*)  rhoth,LSFE
   read(8,*)  nad
+  read(8,*)  dinitc
 close(8)
 write(*,*)'READ',NRANK
 
@@ -564,7 +565,7 @@ if(rsph3 .le. rrsph3 ) then
 
   !do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     ix = Ncellx*IST+i
-    U(i,j,k,1)   = dble(DTF(ix,j,k)) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
+    U(i,j,k,1)   = dinitc * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
     if(IST.lt.(NSPLTx/2-nslid/(ndx-2))) then
     U(i,j,k,2)   = vinitx1
     ncm=1
@@ -601,7 +602,7 @@ endif
 
     !do k=1,Ncellz; do j=1,Ncelly; do i=1,Ncellx
     ix = Ncellx*IST+i
-    U(i,j,k,1)   = dble(DTF(ix,j,k)) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
+    U(i,j,k,1)   = dble(dinitc) * (1.d0+dtanh(0.5d0*(-rsph3+rrsph3))) * 0.5d0
     U(i,j,k,1)   = dmax1(U(i,j,k,1),dinitdef)
     U(i,j,k,2)   = vinitdef!-vinitx1*dtanh(0.5d0*(x(i)-ql1x))
     ndH(i,j,k)   = U(i,j,k,1)*BBRV_cm(1,ncm)

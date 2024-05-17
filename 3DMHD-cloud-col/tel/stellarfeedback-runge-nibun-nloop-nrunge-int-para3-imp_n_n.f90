@@ -74,7 +74,7 @@ Phistarpre = Phistar(i,j,k,1)
 gammi1 =   3.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+5.d0*ndH2(i,j,k)
 gammi1 = ( 2.d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k))+2.d0*ndH2(i,j,k) )/gammi1
 
-emag1 = 0.5d0 * ( U(i,j,k,6)**2 + U(i,j,k,7)**2 + U(i,j,k,8)**2 )
+emag1 = 0.d0 !0.5d0 * ( U(i,j,k,6)**2 + U(i,j,k,7)**2 + U(i,j,k,8)**2 )
 ekin1 = 0.5d0 * ( U(i,j,k,2)**2 + U(i,j,k,3)**2 + U(i,j,k,4)**2 ) * U(i,j,k,1)
 eth1  = U(i,j,k,5)/(gammi1)
 egr1  =Phi(i  ,j  ,k  )-&
@@ -94,9 +94,9 @@ grlocp=(0.5d0-dsign(0.5d0,Phi(i,j,k)-Phi(i+1,j,k)))*(0.5d0-dsign(0.5d0,Phi(i,j,k
 +(0.5d0-dsign(0.5d0,Phi(i,j,k)-Phi(i-1,j,k)))*(0.5d0-dsign(0.5d0,Phi(i,j,k)-Phi(i,j-1,k)))*&
 (0.5d0-dsign(0.5d0,Phi(i,j,k)-Phi(i,j,k-1)))-0.5d0
 
-nlpnm2=(0.5d0-dsign(0.5d0,-ndH2(i,j,k)+rhoth)) !*(0.5d0+dsign(0.5d0,-U(i,j,k,5)/&
-!( kb*(ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)))+Tth/T0)) &
-!    *(0.5d0-dsign(0.5d0,engy))*(0.5d0+dsign(0.5d0,grlocp))
+nlpnm2=(0.5d0-dsign(0.5d0,-ndH2(i,j,k)+rhoth)) *(0.5d0+dsign(0.5d0,-U(i,j,k,5)/&
+( kb*(ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)))+Tth/T0)) &
+    *(0.5d0-dsign(0.5d0,engy))*(0.5d0+dsign(0.5d0,grlocp))
 !U(i,j,k,5)/( kb*(ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)) )
 !write(*,*)NRANK,nlpnm2,-U(i,j,k,1)+rhoth,div(i,j,k,1),div(i,j,k,2),div(i,j,k,3),div(i,j,k,4),'div'
 !nlpnm2=(0.5d0-dsign(0.5d0,-ndH2(i,j,k)+rhoth))*(0.5d0+dsign(0.5d0,-U(i,j,k,5)/( kb*(ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)))+Tth/T0))
