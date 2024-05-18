@@ -146,7 +146,7 @@ c     continuum cooling
          call  rad_cool(Z_metal,T_K,T_gr_K,radius,A_v,esc_cnt,
      &        dt,xmu,gamma,y,xLmbd_ch,xLmbd_line,xLmbd_cnt,xLmbd_gr,
      &        i,i_ev)
-c         tau_cont=tau_cnt
+         tau_cont=tau_cnt
 c
 c     PE heating/cooling
          call  phelectr(xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe)
@@ -161,8 +161,8 @@ c
          v_D=dsqrt(2.d0*xk_B*T_K/(3.d0*xm_p))
          xNc_HD=dmin1(1.d0,v_D/v_bulk)*y_HD*xnH*radius
 c
-c         call chemcool(xnH,T_K,T_gr_K,Z_metal,
-c     &        y,dt,t_chem,xmu,gamma,xLmbd_ch)
+         call chemcool(xnH,T_K,T_gr_K,Z_metal,
+     &        y,dt,t_chem,xmu,gamma,xLmbd_ch)
 c
          y_H=y(1)
          y_H2=y(2)
@@ -200,17 +200,17 @@ c         xNc_HD=dmin1(1.d0,v_D/v_bulk)*y_HD*xnH*radius
          if(((xLmbd_net*xLmbd_net_High).le.0.d0)) T_K_Low=T_K_middle
          if(((xLmbd_net*xLmbd_net_Low).le.0.d0)) T_K_High=T_K_middle
 
-c         if(((xLmbd_net*xLmbd_net_High).gt.0.d0) .and.
-c     &      ((xLmbd_net*xLmbd_net_Low).le.0.d0)) then
-c             T_K_High=T_K;T_K=0.5d0*(T_K+T_K_Low);T_K_Low=T_K_Low
-c             write(*,*)T_K_High,T_K,T_K_Low
-c         endif
-c         if(((xLmbd_net*xLmbd_net_High).lt.0.d0) .and.
-c     &      ((xLmbd_net*xLmbd_net_Low).ge.0.d0)) then
-c             T_K_Low=T_K;T_K=0.5d0*(T_K+T_K_High);T_K_High=T_K_High
-c             write(*,*) T_K_High,T_K,T_K_Low
-c         endif
-c         xMJ=rho*radius**3/2.d33
+         if(((xLmbd_net*xLmbd_net_High).gt.0.d0) .and.
+     &      ((xLmbd_net*xLmbd_net_Low).le.0.d0)) then
+             T_K_High=T_K;T_K=0.5d0*(T_K+T_K_Low);T_K_Low=T_K_Low
+             write(*,*)T_K_High,T_K,T_K_Low
+         endif
+         if(((xLmbd_net*xLmbd_net_High).lt.0.d0) .and.
+     &      ((xLmbd_net*xLmbd_net_Low).ge.0.d0)) then
+             T_K_Low=T_K;T_K=0.5d0*(T_K+T_K_High);T_K_High=T_K_High
+             write(*,*) T_K_High,T_K,T_K_Low
+         endif
+         xMJ=rho*radius**3/2.d33
 
 c     update values of rho & e
 c         call update(i_ev)
@@ -642,7 +642,7 @@ c     total cooling rate by lines
       END
 c
 c    
-      include "subs/chemistry.f" 
+      include "subs/chemistry_2.f" 
       include "subs/reaction.f"  ! full reactions
       include "subs/grain.f"
       include "subs/xk_prm.f"
