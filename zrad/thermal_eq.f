@@ -132,11 +132,6 @@ c     continuum cooling
      &        dt,xmu,gamma,y,xLmbd_ch,xLmbd_line,xLmbd_cnt,xLmbd_gr,
      &        i,i_ev)
          tau_cont=tau_cnt
-
-         call  rad_cool(Z_metal,T_K1,T_gr_K,radius,A_v,esc_cnt,
-     &        dt,xmu,gamma,y,xLmbd_ch1,xLmbd_line1,xLmbd_cnt1,xLmbd_gr1,
-     &        i,i_ev)
-tau_cont=tau_cnt
 c
 c     PE heating/cooling
          call  phelectr(xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe)
