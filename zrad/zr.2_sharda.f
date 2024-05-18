@@ -12,8 +12,6 @@ C     updated 2008 Jun
       COMMON /lines/ xnH,T_K,y_e,y_a,y_m,v_bulk,tau_cnt,xNc  
       common /indcool/ xLmbd_H2, xLmbd_HD, xLmbd_CO, xLmbd_OH,
      &     xLmbd_H2O, xLmbd_CII, xLmbd_CI, xLmbd_OI, xLmbd_Lya
-      common /indcool_1/ xLmbd_H2_1, xLmbd_HD_1, xLmbd_CO_1, xLmbd_OH_1,
-     &     xLmbd_H2O_1, xLmbd_CII_1, xLmbd_CI_1, xLmbd_OI_1, xLmbd_Lya_1
       COMMON /radgr/ T_gr_K,tau_cont
       DATA xm_p/1.67d-24/,xk_B/1.38d-16/,G/6.67d-8/,
      &     pi/3.14159265358979d0/
