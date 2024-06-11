@@ -3290,7 +3290,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
     Call IMC( Pn(i,j,k),ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k),dt,i,j,k ) !implicit
     U(i,j,k,5) = Pn(i,j,k)
   end if
-!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101b'
 !----- Conduction ------------------------------------------------------
   tcd = gammi1*Kcond*dsqrt( Tn(i,j,k) )
   tcd = 0.49d0*(ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k))*kb/tcd*(dx(i)**2.d0)
@@ -3300,12 +3299,9 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 
   nad1=0.5d0+dsign(0.5d0,nad-U(i,j,k,1))
   U(i,j,k,5) = U(i,j,k,5) * nad1 + u5pre * (1.d0-nad1)
-!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101c'
   U(i,j,k,5) = dmax1(U(i,j,k,5),pmin)
   U(i,j,k,5) = dmax1(U(i,j,k,5),pmin1)
-!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101d'
   U(i,j,k,5) = dmin1(U(i,j,k,5),pmax)
-!if(NRANK==40 .and. k==1 .and. j==1 .and. i==1) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,5),sngl(U(33,33,33,1)),Tn(1,1,1),'point101e'
 end do; end do; end do
 
 DEALLOCATE(Tn,Pn,Qx,Qy,Qz)
@@ -3318,18 +3314,11 @@ if(ifchem.eq.2) then
 
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103am'
-
   ndpold=ndp(i,j,k); ndHold=ndH(i,j,k); ndH2old=ndH2(i,j,k); ndHeold=ndHe(i,j,k)
   ndHepold=ndHep(i,j,k); ndCold=ndC(i,j,k); ndCpold=ndCp(i,j,k); ndCOold=ndCO(i,j,k)
   T = U(i,j,k,5)/kb/( ndpold+ndHold+ndH2old+ndHeold+ndHepold )
   call RATES(i,j,k,T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie,kHiH,kHeiH,kCiH,kCOdHep,kH2dHep)
   
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103al'
-
 ! H recombination & ionization by CR
   temp1 = kHrec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
@@ -3339,9 +3328,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndp(i,j,k) = (  zeta*ndpold +temp1*ndpold*temp2 +  zeta*ndHold*omeps )*temp3
   ndHold = ndH(i,j,k); ndpold = ndp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ak'
-
 !He recombination & ionization by CR
   temp1 = kHerec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
@@ -3350,9 +3336,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHe(i,j,k)  = ( temp1*ndHeold + zeta*ndHeold*temp2 + temp1*ndHepold*omeps )*temp3
   ndHep(i,j,k) = ( zeta*ndHepold +temp1*ndHepold*temp2+  zeta*ndHeold*omeps )*temp3
   ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103aj'
 
 !H2 formation & dissociation by UV & electron collision
   temp1 = kH2ph + kH2de*nde(i,j,k)
@@ -3364,9 +3347,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH2(i,j,k)= ( 2.d0*ndH2old+ndHold*omeps )*kH2*ndtot(i,j,k) + temp1*ndH2old*temp3
   ndH2(i,j,k)= ndH2(i,j,k)/temp2
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ai'
   
 !H2 dissociation by H collision
   temp1 = ndHold + 2.d0*ndH2old
@@ -3375,9 +3355,6 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH(i,j,k) = ndHold*temp1*temp3
   ndH2(i,j,k)= ndH2old*temp1*temp2*temp3
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ah'
   
 !CO formation
   temp1 = dexp(-dt*kCO*ndtot(i,j,k))
@@ -3389,24 +3366,14 @@ eps = dt*kCO*ndtot(i,j,k)
   ndCO(i,j,k)  = ndCOold + omeps*ndCpold
   ndCp(i,j,k)  = temp1*ndCpold
   ndCOold = ndCO(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
-  
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ag'
 
 !CO dissociation by UV & electron collision & H collision
   temp1 = dexp(-dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold))
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,temp1,dt,kCOph,kCOde,nde(33,33,33),kCOdH,ndHold
   eps = dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold)
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,eps
  call Omexp(omeps,eps)
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,omeps,eps
   ndC(i,j,k) = ndCold + omeps*ndCOold
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,ndCold,ndCOold,ndC(33,33,33)
   ndCO(i,j,k)= temp1*ndCOold
   ndCold = ndC(i,j,k); ndCOold = ndCO(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103af'
   
 !C recombination & ionization by CR & UV
   temp1 = kCrec*nde(i,j,k)
@@ -3416,9 +3383,6 @@ eps = dt*kCO*ndtot(i,j,k)
   ndC(i,j,k) = ( temp1*ndCold +   kCi*ndCold*temp2 + temp1*ndCpold*omeps )*temp3
   ndCp(i,j,k)= (  kCi*ndCpold + temp1*ndCpold*temp2+   kCi*ndCold*omeps )*temp3
   ndCold = ndC(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ae'
 
 !H, He, C ionization by e collision
    ndH(i,j,k) = ndHold *dexp(-dt*kHie *nde(i,j,k))
@@ -3430,9 +3394,6 @@ eps = dt*kCO*ndtot(i,j,k)
   ndHold = ndH(i,j,k); ndHeold  =  ndHe(i,j,k);  ndCold =  ndC(i,j,k)
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ad'
 
 !H, He, C ionization by H or H2 or p collision
    temp1 = 1.d0/( 1.d0+kHiH*dt*ndHold )
@@ -3446,9 +3407,6 @@ eps = dt*kCO*ndtot(i,j,k)
   ndHold = ndH(i,j,k); ndHeold  =  ndHe(i,j,k);  ndCold =  ndC(i,j,k)
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ac'
 
 !H2 dissiciation by Hep recombination
   temp1 = ndHepold-ndH2old
@@ -3472,10 +3430,7 @@ eps = dt*kCO*ndtot(i,j,k)
      ndHe(i,j,k) = ndHeold + temp3
   end if
    ndHold =  ndH(i,j,k);   ndpold =   ndp(i,j,k); ndH2old = ndH2(i,j,k)
-  ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k) 
-
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103ab'
+  ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k)
 
 !CO dissiciation by Hep recombination
   temp1 = ndHepold-ndCOold
@@ -3496,8 +3451,6 @@ eps = dt*kCO*ndtot(i,j,k)
      ndCp(i,j,k) = ndCpold + temp3
      ndHe(i,j,k) = ndHeold + temp3
   end if
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103aa'
 
     ndH(i,j,k) = dmax1( ndHmin  ,ndH(i,j,k)   )
     ndp(i,j,k) = dmax1( ndpmin  ,ndp(i,j,k)   )
@@ -3507,17 +3460,12 @@ eps = dt*kCO*ndtot(i,j,k)
     ndC(i,j,k) = dmax1( ndCmin  ,ndC(i,j,k)   )
    ndCp(i,j,k) = dmax1( ndCpmin ,ndCp(i,j,k)  )
    ndCO(i,j,k) = dmax1( ndCOmin ,ndCO(i,j,k)  )
-!if(NRANK==40 .and. k==33 .and. j==33 .and. i==33) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)), &
-!ndH(33,33,33),ndp(33,33,33),ndH2(33,33,33),ndHe(33,33,33),ndHep(33,33,33),ndC(33,33,33),ndCp(33,33,33),ndCO(33,33,33),'point103a'
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   ndtot(i,j,k) = ndp(i,j,k)+ndH(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
   U(i,j,k,1) = mH*ndp(i,j,k)+mH*ndH(i,j,k)+mH2*ndH2(i,j,k)+mHe*ndHe(i,j,k)+mHe*ndHep(i,j,k)
 end do; end do; end do
 
 end if
-!if(NRANK==40) write(*,*) NRANK,U(33,33,33,1),U(33,33,33,2),U(33,33,33,5),sngl(U(33,33,33,1)),'point103'
-
-
 END SUBROUTINE SOURCE
 
 
@@ -3546,17 +3494,8 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   tauC  =  U(i,j,k,5)/gammi1/dabs(CooL)
   tauC  =  dmax1( 0.2d0*tauC , 2.5d-4 )
 
-
-!if(NRANK==40) write(*,*) NRANK,tauC,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point201'
-
   tLMT =  dmin1( tLMT , tauC  )
-
-
-!if(NRANK==40) write(*,*) NRANK,tLMT,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point202'
-
   tLMT =  dmin1( tLMT , alpha )
-
-!if(NRANK==40) write(*,*) NRANK,tLMT,U(33,33,33,1),U(33,33,33,2),sngl(U(33,33,33,1)),'point203'
 end do; end do; end do
 if(tLMT.lt.0.d0) write(5,*) time,NRANK,'err at Stblty'
 
@@ -3567,12 +3506,14 @@ SUBROUTINE Fcool(CooL,T,i,j,k)
 USE comvar
 USE chmvar
 double precision :: CooL,T,Av1,Av2,x1,x2
-double precision :: Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,pha,ncr
+double precision :: Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,pha,ncr,Lff,Lrr
 double precision :: Gampe,Gamcr,Gampd
 double precision :: ATN1,ATN2,SHLD1,SHLD2
 double precision :: tau1,tau2,ct1,ct2,ym1,ym2,fes
 double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2
 double precision :: n1,n2,b21
+double precision :: Zi=1.d0
+double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
 double precision :: Lamm,Lamh,T0,AbsL
 
@@ -3584,7 +3525,7 @@ T0   = 1.0d3
 !( 1 pc * 1.d-17  = 3.0857d1 )
 !( 1 pc * 1.405656457d-22  = 4.33743413d-4 )
 
-if(T*T0<1.4577d4) then
+!if(T*T0<1.4577d4) then
 
 Av1  = 1.63542d-3*Ntot(i,j,k,1); x1 = 6.1714d3*NH2(i,j,k,1)
 Av2  = 1.63542d-3*Ntot(i,j,k,2); x2 = 6.1714d3*NH2(i,j,k,2)
@@ -3623,21 +3564,53 @@ Gamcr = (ndH(i,j,k)+ndHe(i,j,k)+ndH2(i,j,k)) * 1.89435d0
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
 Gampd = ndH2(i,j,k) * 4.16362d4 * G0*ATN2 * ( SHLD1+SHLD2 )*0.5d0
+!***free-free !Draine p.95***
+Lff=1.422d-25*(1.d0+(0.44d0)/(1.d0+0.058d0*(dlog(T/10.d0**(5.4d0)/Zi**2))))*Zi**2.d0 * (T/1.d4)**0.5d0 * ndH(i,j,k) * nde(i,j,k)
+!***recomb.-rad.(case B) !Draine p.139,319,321***
+alphaB=2.54d0*1.d-13*Zi*(T/1.d4/Zi/Zi)**(-0.8163d0-0.0208d0*dlog(T/1.d4/Zi/Zi))
+Lrr=alphaB * ndH(i,j,k) * nde(i,j,k) * (0.684d0-0.0416d0*dlog(T/1.d4/Zi/Zi))*kb*T
 
-CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd
+Sigmo=1.d0/(1.d0+dexp(-asigmo*(T-0.5d0*(Tth1+Tth2))/(Tth2-Tth1)))
+CooL  = Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 + Lff + Lrr + Laml - Gampe - Gamcr - Gampd
 
-elseif((1.4577d4<T*T0).and.(T*T0<1.9449d4)) then
-Lamm = 5.d3 +  1.4d-2 * dsqrt(T*T0) * dexp( -9.2d1/(T*T0) ) !* metal
+!elseif((1.4577d4<T*T0).and.(T*T0<1.9449d4)) then
+!Lamm = 5.d3 +  1.4d-2 * dsqrt(T*T0) * dexp( -9.2d1/(T*T0) ) !* metal
   !CooL = ( N**2.d0 * (Lamm) - N ) * AbsL
-CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamm) - (U(i,j,k,1)/1.27d0) ) * AbsL
+!CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamm) - (U(i,j,k,1)/1.27d0) ) * AbsL
   !CooLonly = Lamm
-elseif(1.9449d4<T*T0) then
-Lamh = 3.75d4*(1.d0-dtanh((T*T0-2.d5)/(2.d5))) * dexp(-5.d4/(T*T0))+1.d3*dexp(-5.d4/(T*T0))
+!elseif(1.9449d4<T*T0) then
+!Lamh = 3.75d4*(1.d0-dtanh((T*T0-2.d5)/(2.d5))) * dexp(-5.d4/(T*T0))+1.d3*dexp(-5.d4/(T*T0))
   !CooL = ( N**2.d0 * (Lamh) - N ) * AbsL
-CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamh) - (U(i,j,k,1)/1.27d0) ) * AbsL
+!CooL = ( (U(i,j,k,1)/1.27d0)**2.d0 * (Lamh) - (U(i,j,k,1)/1.27d0) ) * AbsL
   !CooLonly = Lamh
-endif
+!endif
 END SUBROUTINE Fcool
+
+SUBROUTINE linear(xa,ya,mnum,x5,y5)
+integer mnum,i,ms
+real(4) :: xa(1:mnum),ya(1:mnum)
+real(4) :: x5
+double precision :: y1,y2,t5,y5
+
+!ms=m
+do i=1,mnum
+   if(x5-xa(i).le.0.d0) then
+      ms=i
+      !write(*,*) 'lin'
+      go to 12
+   endif
+enddo
+ms=mnum
+12   continue
+
+if(ms.eq.1) ms=2
+y1=dble(ya(ms-1))
+y2=dble(ya(ms))
+!x=xa(ms)
+t5=(dble(x5)-dble(xa(ms-1)))/(dble(xa(ms))-dble(xa(ms-1)))
+y5=(1.d0-t5)*y1+t*y2
+END SUBROUTINE linear
+
 
 SUBROUTINE fesc(tau,fes)
 double precision tau,fes

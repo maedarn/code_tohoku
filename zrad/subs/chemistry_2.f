@@ -9,7 +9,7 @@
 C     input    Tp,xnH,dt,y,xmu,gamma  
 C     output   y,xmu,gamma,xLmbdch
 
-      func(t,xLmbdch)=Tp-t-(gamma-1.d0)*xmu*xm_p*xLmbdch*dt/xk_B
+c      func(t,xLmbdch)=Tp-t-(gamma-1.d0)*xmu*xm_p*xLmbdch*dt/xk_B
 
       Tp1=Tp
       do j=1,N_sp
@@ -17,7 +17,7 @@ C     output   y,xmu,gamma,xLmbdch
       enddo      
       call chemreact(xnH,Tp1,Tp_gr,Z_metal,
      &     ytmp,dt,tchem1,xmu1,gamma1,xLmbdch1)
-      fL=func(Tp1,xLmbdch1)
+c      fL=func(Tp1,xLmbdch1)
       if((xnH.le.1.d16).and.(Tp.le.1.65d3)) go to 12
 
       Tp2=0.99d0*Tp1
@@ -26,33 +26,33 @@ C     output   y,xmu,gamma,xLmbdch
       enddo      
       call chemreact(xnH,Tp2,Tp_gr,Z_metal,
      &     ytmp,dt,tchem2,xmu2,gamma2,xLmbdch2)
-      f=func(Tp2,xLmbdch2)
+c      f=func(Tp2,xLmbdch2)
 
-      if(dabs(fL).lt.dabs(f)) then
-         Tpsec=Tp1
-         TpL=Tp2
-         swap=fL
-         fL=f
-         f=swap
-      else
-         TpL=Tp1
-         Tpsec=Tp2
-      endif
-      
-      do 11 i=1,maxit
-         dTp=(TpL-Tpsec)*f/(f-fL)
-         TpL=Tpsec
-         fL=f
-         Tpsec=Tpsec+dTp
-         do j=1,N_sp
-            ytmp(j)=y(j)
-         enddo
+c      if(dabs(fL).lt.dabs(f)) then
+c         Tpsec=Tp1
+c         TpL=Tp2
+c         swap=fL
+c         fL=f
+c         f=swap
+c      else
+c         TpL=Tp1
+c         Tpsec=Tp2
+c      endif
+c
+c      do 11 i=1,maxit
+c         dTp=(TpL-Tpsec)*f/(f-fL)
+c         TpL=Tpsec
+c         fL=f
+c         Tpsec=Tpsec+dTp
+c         do j=1,N_sp
+c            ytmp(j)=y(j)
+c         enddo
          call chemreact(xnH,Tpsec,Tp_gr,Z_metal,
      &        ytmp,dt,tchem1,xmu1,gamma1,xLmbdch1)
-         f=func(Tpsec,xLmbdch1)
-         if(dabs(f/Tpsec).le.1.d-7) go to 12
- 11   continue 
- 12   continue 
+c         f=func(Tpsec,xLmbdch1)
+c         if(dabs(f/Tpsec).le.1.d-7) go to 12
+c 11   continue
+ 12   continue
       do 13 j=1,N_sp
          y(j)=ytmp(j)
  13   continue

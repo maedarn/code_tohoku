@@ -2547,7 +2547,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   
   dt = dt*0.5d0
 
-! H recombination & ionization by CR
+!! H recombination & ionization by CR
   temp1 = kHrec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
   temp3 = 1.d0/(zeta+temp1)
@@ -2556,7 +2556,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndp(i,j,k) = (  zeta*ndpold +temp1*ndpold*temp2 +  zeta*ndHold*omeps )*temp3
   ndHold = ndH(i,j,k); ndpold = ndp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   
-!He recombination & ionization by CR
+!! He recombination & ionization by CR
   temp1 = kHerec*nde(i,j,k)
   temp2 = dexp(-dt*(zeta+temp1))
   temp3 = 1.d0/(zeta+temp1)
@@ -2565,7 +2565,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHep(i,j,k) = ( zeta*ndHepold +temp1*ndHepold*temp2+  zeta*ndHeold*omeps )*temp3
   ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!H2 formation & dissociation by UV & electron collision
+!! H2 formation & dissociation by UV & electron collision
   temp1 = kH2ph + kH2de*nde(i,j,k)
   temp2 = temp1 + 2.d0*kH2*ndtot(i,j,k)
   temp3 = dexp(-dt*temp2)
@@ -2576,7 +2576,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH2(i,j,k)= ndH2(i,j,k)/temp2
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
 
-!H2 dissociation by H collision
+!! H2 dissociation by H collision
   temp1 = ndHold + 2.d0*ndH2old
   temp2 = dexp(-dt*temp1*kH2dH)
   temp3 = 1.d0/(ndHold + 2.d0*ndH2old*temp2)
@@ -2584,21 +2584,21 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndH2(i,j,k)= ndH2old*temp1*temp2*temp3
   ndHold = ndH(i,j,k); ndH2old = ndH2(i,j,k)
 
-!CO dissociation by UV & electron collision & H collision
+!! CO dissociation by UV & electron collision & H collision
   temp1 = dexp(-dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold))
   eps = dt*(kCOph+kCOde*nde(i,j,k)+kCOdH*ndHold); call Omexp(omeps,eps)
   ndC(i,j,k) = ndCold + omeps*ndCOold
   ndCO(i,j,k)= temp1*ndCOold
   ndCold = ndC(i,j,k); ndCOold = ndCO(i,j,k)
 
-!CO formation
+!! CO formation
   temp1 = dexp(-dt*kCO*ndtot(i,j,k))
   eps = dt*kCO*ndtot(i,j,k); call Omexp(omeps,eps)
   ndCO(i,j,k)  = ndCOold + omeps*ndCpold
   ndCp(i,j,k)  = temp1*ndCpold
   ndCOold = ndCO(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!C recombination & ionization by CR & UV
+!! C recombination & ionization by CR & UV
   temp1 = kCrec*nde(i,j,k)
   temp2 = dexp(-dt*(kCi+temp1))
   temp3 = 1.d0/(kCi+temp1)
@@ -2607,7 +2607,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndCp(i,j,k)= (  kCi*ndCpold + temp1*ndCpold*temp2+   kCi*ndCold*omeps )*temp3
   ndCold = ndC(i,j,k); ndCpold = ndCp(i,j,k); nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!H, He, C ionization by e collision
+!! H, He, C ionization by e collision
    ndH(i,j,k) = ndHold *dexp(-dt*kHie *nde(i,j,k))
   ndHe(i,j,k) = ndHeold*dexp(-dt*kHeie*nde(i,j,k))
    ndC(i,j,k) = ndCold *dexp(-dt*kCie *nde(i,j,k))
@@ -2618,7 +2618,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!H, He, C ionization by H or H2 or p collision
+!! H, He, C ionization by H or H2 or p collision
    temp1 = 1.d0/( 1.d0+kHiH*dt*ndHold )
    ndH(i,j,k) = ndHold*temp1
    ndp(i,j,k) = ndpold+temp1*kHiH*dt*ndHold**2
@@ -2631,7 +2631,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndpold = ndp(i,j,k); ndHepold = ndHep(i,j,k); ndCpold = ndCp(i,j,k) 
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!H2 dissiciation by Hep recombination
+!! H2 dissiciation by Hep recombination
   temp1 = ndHepold-ndH2old
   if(temp1.gt.1.d-50) then
     temp3 = dexp(-dt*kH2dHep*temp1)
@@ -2657,7 +2657,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   ndHeold = ndHe(i,j,k); ndHepold = ndHep(i,j,k)
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
 
-!CO dissiciation by Hep recombination
+!! CO dissiciation by Hep recombination
   temp1 = ndHepold-ndCOold
   if(temp1.gt.1.d-50) then
     temp3 = dexp(-dt*kCOdHep*temp1)

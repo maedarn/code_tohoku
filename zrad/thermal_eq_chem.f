@@ -29,6 +29,7 @@ c      zeta=0.d0
 c
       yHe=8.333d-2
       yD=3.d-5
+      iit=10
 c
       open(8,file='data/nT.dat',status='unknown')
       open(11,file='data/1.dat',status='unknown')
@@ -36,15 +37,18 @@ c
 c      open(13,file='3.dat',status='unknown')
       open(14,file='data/4.dat',status='unknown')
       open(15,file='data/5.dat',status='unknown')
-c      open(15,file='data/data_5',status='unknown')
+      open(16,file='data/data_y.dat',status='unknown')
 c      open(16,file='data/ar.dat',status='unknown')
 c      
 ************************************************************
 
-      do j = 1 , 140
-      sisu = -2.0d0
-      sisu =sisu + 0.05d0*dble(j)
-      xnH=10.0d0**sisu
+      do j = 1 , iit
+c      sisu = -2.0d0
+c      sisu =sisu + 0.05d0*dble(j)
+c      xnH=10.0d0**sisu
+      read(16,*) xNH,y(3),y(1),y(2),y(4)
+     &       ,y(13),y(33),y(32),y(34),y(23),y(17),y(30)
+      write(*,*)y(3),y(1),y(2),y(4)
       rho = (1.0d0+4.d0*yHe)*xm_p*xnH
       i_ev=1
 C     initial condition 
@@ -75,9 +79,9 @@ c      y_H2=0.d0
 c      y_HD=1.d-9
 c
       y_H=1.d0-y_Hp-2.d0*y_H2-y_HD
-      y(1)=y_H      
-      y(2)=y_H2
-      y(4)=y_Hp
+c      y(1)=y_H
+c      y(2)=y_H2
+c      y(4)=y_Hp
       y(8)=yHe
 c
       y_D=yD-y_Dp-y_HD
@@ -90,7 +94,7 @@ c     for fiducial dust model
       yO=3.568d-4*Z_metal_gas 
 c
 c     no dust model (Anders & Grevesse 1989)
-cc      yC=3.58d-4*Z_metal_gas
+c      yC=3.58d-4*Z_metal_gas
 c      yC=3.97d-4*Z_metal_gas
 c      yO=8.49d-4*Z_metal_gas
 c
@@ -282,6 +286,7 @@ c
       write(15,*) xnH,T_K
       enddo
       close(15)
+      close(16)
 c
       CONTAINS
 C
@@ -642,7 +647,7 @@ c     total cooling rate by lines
       END
 c
 c    
-      include "subs/chemistry_2.f" 
+      include "subs/chemistry_2.f"
       include "subs/reaction.f"  ! full reactions
       include "subs/grain.f"
       include "subs/xk_prm.f"
