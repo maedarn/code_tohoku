@@ -24,7 +24,7 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-1
+DOUBLE PRECISION  :: dt1=1.d-4
 END MODULE comvar
 
 MODULE chmvar
@@ -45,7 +45,7 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=400000,itrcool=1000
+integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000000,itrcool=1000
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
 real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
@@ -57,15 +57,18 @@ program main
 use comvar
 use chmvar
 !implicit none
-integer, parameter :: ix = 2,cnt=10!,itrcool=1000
+integer, parameter :: ix = 20,cnt=10!,itrcool=1000
 integer :: i,j,k,jm,j_lin
+
 double precision, parameter :: Tmin=1.d4,Tmax=1.d8
-double precision, parameter :: Rhomin=1.d0,Rhomax=1.d5
-double precision :: dlogT,Tmp1,dlogT1,dlogRho,Rho1,dlogRho1
+double precision :: Tmp1 = 1.0d-1,Tmp2 = 1.0d5
+double precision, parameter :: Rhomin=1.d-3,Rhomax=1.d-1,CooLth=1.d-5
+
+double precision :: dlogT,dlogT1,dlogRho,Rho1,dlogRho1
 double precision, dimension(:), allocatable :: Tmp,Rho
 double precision, dimension(:), allocatable :: Lambda,Lambdaff,Lambdarr,Lambdameta,LambdaHe
 double precision, dimension(:,:), allocatable :: Lambda_CIE
-double precision :: neold,nech,neth=1.d-6,Tch,Tth=1.d-6
+double precision :: neold,nech,neth=1.d-6,Tch,Tth=1.d-4
 DOUBLE PRECISION:: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION :: ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,ndCph,ndCOh,ndeh,ndtoth
@@ -74,7 +77,13 @@ DOUBLE PRECISION :: ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,ndCpmd,ndCOmd
 DOUBLE PRECISION, dimension(2) :: Ntotmd,NH2md,NnCmd,NCOmd,tCIImd
 DOUBLE PRECISION :: ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,ndCOl,ndel,ndtotl
 DOUBLE PRECISION, dimension(2) :: Ntotl,NH2l,NnCl,NCOl,tCIIl
-DOUBLE PRECISION :: dt,Tmpmid,Tmp2,CooL1,CooL2,CooLmid,nechl,nechh,nechmd,neoldl,neoldh,neoldmd,dinit1,Rhopre
+DOUBLE PRECISION :: dt,Tmpmid,CooL1,CooL2,CooLmid,nechl,nechh,nechmd,neoldl,neoldh,neoldmd,dinit1,Rhopre
+double precision :: Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel
+double precision :: Gampel,Gamcrl,Gampdl
+double precision :: Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh
+double precision :: Gampeh,Gamcrh,Gampdh
+double precision :: Lamlmd,Lamcmd,Lamomd,Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd
+double precision :: Gampemd,Gamcrmd,Gampdmd
 
 allocate(Tmp(0:ix),Rho(0:ix))
 allocate(Lambda(0:ix),Lambdaff(0:ix),Lambdarr(0:ix),Lambdameta(0:ix),LambdaHe(0:ix))
@@ -162,8 +171,15 @@ Rhopre=dinit1
 
 call metal_cool_corona()
 
-Tmp1 = 1.0d-3
-Tmp2 = 1.0d7
+open(100,file=dir//'thermal_eq_curve_l_hot.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+open(110,file=dir//'thermal_eq_curve_md_hot.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+open(120,file=dir//'thermal_eq_curve_h_hot.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+!open(100,file=dir//'thermal_eq_curve_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+!open(110,file=dir//'thermal_eq_curve_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+!open(120,file=dir//'thermal_eq_curve_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+
+!Tmp1 = 1.0d-1
+!Tmp2 = 1.0d5
 do i=0,ix
 Rho1 = Rho(i)
 
@@ -226,7 +242,7 @@ Ntoth(2)=0.d0; NH2h(2)=0.d0; NnCh(2)=0.d0; tCIIh(2)=0.d0
 
 
 Tmp1 = 1.0d-3
-Tmp2 = 1.0d7
+Tmp2 = 1.0d3
 do j=1,itrcool
 Tmpmid = 0.5d0*(Tmp1+Tmp2)
 
@@ -238,9 +254,9 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
  call chem(Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
  ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt)
  !nechl=dabs((ndel-neoldl)/ndel)
- ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
- nechl=dabs((ndel-neoldl)/ndtotl)
- if(nechl<neth) then; exit; endif
+! ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
+! nechl=dabs((ndel-neoldl)/ndtotl)
+! if(nechl<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  !write(*,*)Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
@@ -252,9 +268,9 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
  call chem(Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
  ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,dt)
  !nechmd=dabs((ndemd-neoldmd)/ndemd)
- ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
- nechmd=dabs((ndemd-neoldmd)/ndtotmd)
- if(nechmd<neth) then; exit; endif
+! ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
+! nechmd=dabs((ndemd-neoldmd)/ndtotmd)
+! if(nechmd<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  !write(*,*)Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
@@ -266,9 +282,9 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
  call chem(Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
  ndCph,ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,dt)
  !nechh=dabs((ndeh-neoldh)/ndeh)
- ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
- nechh=dabs((ndeh-neoldh)/ndtoth)
- if(nechh<neth) then; exit; endif
+! ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
+! nechh=dabs((ndeh-neoldh)/ndtoth)
+! if(nechh<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  !write(*,*)Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
@@ -279,17 +295,22 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
  !do i1=1,itrcool
  !Tmpmid = 0.5d0*(Tmp1+Tmp2)
  call Fcool(CooL1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,&
- ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,Tmp1)
+ ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,Tmp1,Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,&
+ LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel,Gampel,Gamcrl,Gampdl)
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  call Fcool(CooL2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,ndCph,&
- ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,Tmp2)
+ ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,Tmp2,Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,&
+ LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh,Gampeh,Gamcrh,Gampdh)
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  call Fcool(CooLmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
- ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,Tmpmid)
+ ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,Tmpmid,Lamlmd,Lamcmd,Lamomd,&
+ Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd,Gampemd,Gamcrmd,Gampdmd)
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
 
- Tch=dabs((Tmp2-Tmp1)/Tmp2)
- if(Tch < Tth) then; exit; endif
+ !Tch=dabs((Tmp2-Tmp1)/Tmp2)
+ !Tch=dabs(Tmp2-Tmp1)
+ !if(Tch < Tth) then; go to 189; endif
+ if(CooLmid < CooLth) then; go to 189; endif
 
  if(CooL1*CooLmid<0.d0) then
    Tmp2 = Tmpmid
@@ -303,30 +324,28 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
   if(j==itrcool) write(*,*) 'itrcool max'
 enddo
 
+189 continue
+
+write(100) Rho1,Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
+ndCpl,ndCOl,ndel,ndtotl,Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,&
+LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel,Gampel,Gamcrl,Gampdl
+
+write(110) Rho1,Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
+ndCpmd,ndCOmd,ndemd,ndtotmd,Lamlmd,Lamcmd,Lamomd,&
+Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd,Gampemd,Gamcrmd,Gampdmd
+
+write(120,*) Rho1,Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
+ndCph,ndCOh,ndeh,ndtoth,Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,&
+LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh,Gampeh,Gamcrh,Gampdh
+
 Rhopre=Rho1
 enddo
 
+close(100)
+close(110)
+close(120)
 
-open(10,file='cool_rate.dat',access='stream',FORM='UNFORMATTED')
-open(11,file='cool_rate_nobi.dat',FORM='FORMATTED')
-do i=0,ix
-write(10) sngl(Tmp(i)), (sngl(Lambda_CIE(i,j)),j=1,j_lin)
-write(11,*) sngl(Tmp(i)), (sngl(Lambda_CIE(i,j)),j=1,j_lin)
-enddo
-close(10)
-close(11)
 
-open(13,file='test_cool_rate.dat',access='stream',FORM='UNFORMATTED')
-do i=1,imtrx
-write(13) (Mtl(1,j,i),j=1,4)
-enddo
-close(13)
-
-open(14,file='cool_rate_net.dat',access='stream',FORM='UNFORMATTED')
-do i=0,ix
-write(14) sngl(Tmp(i)),sngl(Lambdameta(i)),sngl(LambdaHe(i)),sngl(Lambdaff(i)),sngl(Lambdarr(i))
-enddo
-close(14)
 
 deallocate(Tmp,Rho)
 deallocate(Lambda,Lambdaff,Lambdarr,Lambdameta,LambdaHe)
@@ -553,13 +572,14 @@ end SUBROUTINE chem
 
 
 
-SUBROUTINE Fcool(CooL,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII,T)
+SUBROUTINE Fcool(CooL,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII,T,&
+Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,LamH2,Lff,Lrr,LCIE,LCIEHe,Gampe,Gamcr,Gampd)
 USE comvar
 USE chmvar
-double precision :: CooL,T,Av1,Av2,x1,x2
-double precision :: Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,pha,ncr
-double precision :: LamH2,LamH2H,LamH2H2,LamH2He,LamH2p,LamH2e
-double precision :: Lff,Lrr,LCIE,LCIEHe,alpha_B
+double precision :: CooL,T,Av1,Av2,x1,x2,pha,ncr
+double precision :: Laml,Lamc,Lamo,Lamd,LCOr,LCOH,LCOH2,LamH2,Lff,Lrr,LCIE,LCIEHe
+double precision :: LamH2H,LamH2H2,LamH2He,LamH2p,LamH2e
+double precision :: alpha_B
 double precision :: Sigmo,Tth1=2.d1,Tth2=3.5d1,asigmo=1.d1 !Tth1=2.d4,Tth2=3.5d4 K
 double precision :: Gampe,Gamcr,Gampd
 double precision :: ATN1,ATN2,SHLD1,SHLD2
@@ -681,9 +701,22 @@ enddo
 !----Kim+23
 Sigmo=1.d0/(1.d0+dexp(-asigmo*(T-0.5d0*(Tth1+Tth2))/(Tth2-Tth1)))
 
-CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd + LamH2
+!CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd + LamH2
 !CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) * (1.d0-Sigmo) + Sigmo * (LCIEHe + LCIE) &
 !- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff
+
+Lamc = Lamc * (1.d0-Sigmo)
+Lamo = Lamo * (1.d0-Sigmo)
+Lamd = Lamd * (1.d0-Sigmo)
+LCOr = LCOr * (1.d0-Sigmo)
+LCOH = LCOH * (1.d0-Sigmo)
+LCOH2 = LCOH2 * (1.d0-Sigmo)
+LCIEHe = Sigmo * (LCIEHe)
+LCIE = Sigmo * (LCIE)
+
+CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) + (LCIEHe + LCIE) &
+- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff
+
 
 !write(*,*) 'FCooL', Lamc, Lamo, Lamd, LCOr, LCOH, LCOH2, LCIEHe,LCIE, Gampe, Gamcr, Gampd, LamH2, Laml, Lrr, Lff
 
@@ -752,23 +785,37 @@ call LEVC2(T,b21,ndH,ndH2,nde,ndCp,n1,n2)
   temp = 1.15563d1*(n1-n2)*dvin
 !end do; end do;end do
 
+!    tNtot =  dxh * ndtot
+!    tNH2  =  dxh *  ndH2
+!    tNC   =  dxh *   ndC
+!    tNCO  =  dxh *  ndCO
+!    ttau  =  dxh *  temp
+!    Ntot(1) = tNtot
+!    NH2(1)  = tNH2
+!    NnC(1)  = tNC
+!    NCO(1)  = tNCO
+!    tCII(1) = ttau
+!    tNtot = dxh * ndtot
+!    tNH2  = dxh *  ndH2
+!    tNC   = dxh *   ndC
+!    tNCO  = dxh *  ndCO
+!    ttau  = dxh *  temp
 
-
-    tNtot =  dxh * ndtot
-    tNH2  =  dxh *  ndH2
-    tNC   =  dxh *   ndC
-    tNCO  =  dxh *  ndCO
-    ttau  =  dxh *  temp
-    Ntot(1) = tNtot
-    NH2(1)  = tNH2
-    NnC(1)  = tNC
-    NCO(1)  = tNCO
-    tCII(1) = ttau
-    tNtot = dxh * ndtot
-    tNH2  = dxh *  ndH2
-    tNC   = dxh *   ndC
-    tNCO  = dxh *  ndCO
-    ttau  = dxh *  temp
+tNtot =  0.d0
+tNH2  =  0.d0
+tNC   =  0.d0
+tNCO  =  0.d0
+ttau  =  0.d0
+Ntot(1) = 0.d0
+NH2(1)  = 0.d0
+NnC(1)  = 0.d0
+NCO(1)  = 0.d0
+tCII(1) = 0.d0
+tNtot = 0.d0
+tNH2  = 0.d0
+tNC   = 0.d0
+tNCO  = 0.d0
+ttau  = 0.d0
 
     Nttot=tNtot; NtH2=tNH2; NtC=tNC; NtCO=tNCO; tau=ttau
 

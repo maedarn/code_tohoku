@@ -24,7 +24,7 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-1
+DOUBLE PRECISION  :: dt1=1.d-4
 END MODULE comvar
 
 MODULE chmvar
@@ -162,7 +162,7 @@ ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
 
 
 Rhopre=dinit1
-Rho1 = 100.d0
+Rho1 = 5.d2
 
 ndHl   = ndHl * Rho1 / Rhopre
 ndpl   = ndpl * Rho1 / Rhopre
@@ -179,16 +179,18 @@ Ntotl(1)=0.d0; NH2l(1)=0.d0; NnCl(1)=0.d0; tCIIl(1)=0.d0
 Ntotl(2)=0.d0; NH2l(2)=0.d0; NnCl(2)=0.d0; tCIIl(2)=0.d0
 
 
-Tmp1 = 1.0d-1
+Tmp1 = 1.0d-2
 !Tmp2 = 1.0d7
 !Tmpmid = 0.5d0*(Tmp1+Tmp2)
-
+tint=0.d0
  !write(*,*)Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
  !ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt
  open(10,file='chem_abnd.dat',access='stream',FORM='UNFORMATTED')
+ open(11,file='chem_abnd_test.dat',FORM='FORMATTED')
  do i1=1,itrchm
  dt=dt1
  tint=tint+dt
+ write(*,*) dt,tint
  neoldl=ndel
  call chem(Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
  ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt)
@@ -197,12 +199,14 @@ Tmp1 = 1.0d-1
  !nechl=dabs((ndel-neoldl)/ndtotl)
  !if(nechl<neth) then; exit; endif
 
- if(mod(i1,cnt)==1) then
+ if(mod(i1,cnt)==0) then
  write(10) tint,Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,ndCOl,ndel,ndtotl
+ write(11,*) tint,Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,ndCOl,ndel,ndtotl
  endif
 
  enddo
  close(10)
+ close(11)
 
 
 
@@ -278,8 +282,8 @@ ndHepold=ndHep; ndCold=ndC; ndCpold=ndCp; ndCOold=ndCO
 call RATES(T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie, &
 kHiH,kHeiH,kCiH,kCOdHep,kH2dHep,kHm,kH2m,kHmde,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
 
-write(*,*) 'RATES',T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie, &
-kHiH,kHeiH,kCiH,kCOdHep,kH2dHep,kHm,kH2m,kHmde,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII
+!write(*,*) 'RATES',T,zeta,kHrec,kHerec,kH2,kH2ph,kH2dH,kH2de,kCO,kCOph,kCi,kCrec,kCOde,kCOdH,kHie,kHeie,kCie, &
+!kHiH,kHeiH,kCiH,kCOdHep,kH2dHep,kHm,kH2m,kHmde,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII
 
 !! H recombination & ionization by CR
 temp1 = kHrec*nde
