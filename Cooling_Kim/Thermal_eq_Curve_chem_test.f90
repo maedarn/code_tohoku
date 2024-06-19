@@ -45,7 +45,7 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=100,itrcool=1,cnt=1
+integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000,itrcool=1,cnt=10
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
 real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
@@ -162,7 +162,7 @@ ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
 
 
 Rhopre=dinit1
-Rho1 = 5.d2
+Rho1 = 1.d-2
 
 ndHl   = ndHl * Rho1 / Rhopre
 ndpl   = ndpl * Rho1 / Rhopre
@@ -179,7 +179,7 @@ Ntotl(1)=0.d0; NH2l(1)=0.d0; NnCl(1)=0.d0; tCIIl(1)=0.d0
 Ntotl(2)=0.d0; NH2l(2)=0.d0; NnCl(2)=0.d0; tCIIl(2)=0.d0
 
 
-Tmp1 = 1.0d-2
+Tmp1 = 1.0d3
 !Tmp2 = 1.0d7
 !Tmpmid = 0.5d0*(Tmp1+Tmp2)
 tint=0.d0
