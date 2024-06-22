@@ -18,7 +18,7 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
 DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
-character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m3/' !samplecnv2
+character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m2/' !samplecnv2
 
 integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 integer :: time_end_c6,time_end_c7,time_end_c8
@@ -35,8 +35,10 @@ REAL*4, dimension(:,:,:,:), allocatable :: VTF,rd49
 END MODULE mpivar
 
 MODULE chmvar
+double precision :: Zsolar=1.d-2
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
@@ -52,10 +54,11 @@ DOUBLE PRECISION, dimension(:,:,:)  , allocatable :: ndp,ndH,ndH2,ndHm,ndHe,ndHe
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2
+integer, parameter :: ifile = 30, imtrx=200,num_lin=30*(3+32)/2
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
-real(4), dimension(1:ifile,1:ifile+3,1:imtrx), allocatable :: Mtl
+DOUBLE PRECISION, parameter :: dlogT=(-dlog10(1.d4) + dlog10(1.d8))/dble(200)
+DOUBLE PRECISION, dimension(1:ifile,1:2,1:imtrx) :: Mtl
 END MODULE chmvar
 
 MODULE slfgrv
@@ -232,16 +235,36 @@ open(8,file=dir//'INPUT3D.DAT')
 close(8)
 write(*,*)'READ',NRANK
 
+
+!pinit1=7.0419655812297428d0*kb
+pini=6.7815331807422842d-3
+Hini=0.55951731125948345d0
+H2ini=9.6157661283181674d-10
+Hmini=8.5405987097865246d-11
+Heini=5.5582508112584604d-2
+Hepini=4.2506800508827200d-4
+Cini=7.6100719457386430d-12
+Cpini=8.7158152685108690d-7
+COini=7.0431488446823906d-27
+!nde=7.2074727673574071d-3
+ndtot=0.62230642248105172d0
+pinit1=7.0419655812297428d0*kb*(pini+Hini+H2ini+Heini+Hepini); pinit2=pinit1
+dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini; BBRV_cm(9)=Hmini
+BBRV_cm(:)=BBRV_cm(:)/dinit1
+
+
 !WNM ntot = 1.024
 !goto 10000
 !n=2.d0,p=2896.6d0 * 1.38d0/1.52d0 * 1.d-2 ! kb->p0
- pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
- Hini=0.9219098d0; pini=0.9503446d-2; H2ini=0.9465513d-8; Heini=0.9155226d-1; Hepini=0.5655353d-3
- Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3;Hmini=Hini*1.d-50
+ !pinit1=8.810807d3*kb*1.d-3; pinit2=pinit1
+ !Hini=0.9219098d0; pini=0.9503446d-2; H2ini=0.9465513d-8; Heini=0.9155226d-1; Hepini=0.5655353d-3
+ !Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3;Hmini=Hini*1.d-50
  !dinit1=mH*Hini+mH*pini+mH2*H2ini+mHe*Heini+mHe*Hepini; dinit2=dinit1
- dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini; dinit2=dinit1
- BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
- BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini; BBRV_cm(9)=Hmini
+ !dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini; dinit2=dinit1
+ !BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
+ !BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini; BBRV_cm(9)=Hmini
  !BBRV_cm(:)=BBRV_cm(:)/dinit1
 
 !*** Pen = pinit1+dinit1*vinit1**2
@@ -298,14 +321,14 @@ ndHmin  = rmin*0.91d0; ndpmin  = 1.d-100; ndH2min = 1.d-100; ndHmmin = 1.d-100; 
 ndHepmin= 1.d-20; ndCpmin = 1.d-20; ndCmin = 1.d-20; ndCOmin = 1.d-20
 
 !***** for constrained boundary *****!
-BBRV_cm(1)=0.91d0/1.27d0 !H
-BBRV_cm(2)=0.91d0*pini/Hini/1.27d0 !p
-BBRV_cm(3)=0.91d0*H2ini/Hini/1.27d0 !H2
-BBRV_cm(4)=0.09d0/1.27d0 !He
-BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
-BBRV_cm(8)=xc/1.27d0 !Cp
-BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
-BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
+!BBRV_cm(1)=0.91d0/1.27d0 !H
+!BBRV_cm(2)=0.91d0*pini/Hini/1.27d0 !p
+!BBRV_cm(3)=0.91d0*H2ini/Hini/1.27d0 !H2
+!BBRV_cm(4)=0.09d0/1.27d0 !He
+!BBRV_cm(5)=0.09d0*Hepini/Heini/1.27d0 !Hep
+!BBRV_cm(8)=xc/1.27d0 !Cp
+!BBRV_cm(6)=xc*Cini/Cpini/1.27d0 !C
+!BBRV_cm(7)=xc*COini/Cpini/1.27d0 !CO
 
 !BBRV_cm(1)=Hini/dinit1; BBRV_cm(2)=pini/dinit1; BBRV_cm(3)=H2ini/dinit1; BBRV_cm(4)=Heini/dinit1
 !BBRV_cm(5)=Hepini/dinit1; BBRV_cm(6)=Cini/dinit1; BBRV_cm(7)=COini/dinit1; BBRV_cm(8)=Cpini/dinit1
@@ -2949,14 +2972,19 @@ double precision :: Sigmo,Tth1=2.d1,Tth2=3.5d1,asigmo=1.d1 !Tth1=2.d4,Tth2=3.5d4
 double precision :: Gampe,Gamcr,Gampd
 double precision :: ATN1,ATN2,SHLD1,SHLD2
 double precision :: tau1,tau2,ct1,ct2,ym1,ym2,fes
-double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2
+double precision :: tC1,tC2,fesC1,fesC2,tO1,tO2,fesO1,fesO2,ndHtot
 double precision :: n1,n2,b21
 double precision, dimension(1:ifile) :: LCIE_each
+integer :: kmtl
+DOUBLE PRECISION :: dlogT2,ktmk,x_ktmk1,x_ktmk2,Mtl_CL
+integer :: idlogT
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
 !( 1 pc * 1.d-17  = 3.0857d1 )
 !( 1 pc * 1.405656457d-22  = 4.33743413d-4 )
+
+ndHtot = ndH(i,j,k)+ndp(i,j,k)+2.d0*ndH2(i,j,k)+ndHm(i,j,k)
 
 Av1  = fgr*1.63542d-3*Ntot(i,j,k,1); x1 = 6.1714d3*NH2(i,j,k,1)
 Av2  = fgr*1.63542d-3*Ntot(i,j,k,2); x2 = 6.1714d3*NH2(i,j,k,2)
@@ -2964,9 +2992,12 @@ ATN1 = ( dexp(-2.5d0*Av1)     + dexp(-2.5d0*Av2) ) * 0.5d0
 ATN2 = ( dexp(-3.77358d0*Av1) + dexp(-3.77358d0*Av2) ) * 0.5d0
 pha  = G0 * dsqrt(1.d3*T) * ATN1 / nde(i,j,k)
 !------------------------- Lya Cooling
+!-spitzer
 Laml = ndH(i,j,k)*nde(i,j,k) * 1.44049d9*dexp( -1.184d2/T)
 Laml = Laml + ndH(i,j,k)**2 * (1.54d8/dsqrt(T)+1.305d6*dsqrt(T)) * dexp( -1.184d2/T )
-Laml = Laml + ndp(i,j,k)*nde(i,j,k) * 1.48d6*dexp( -8.d1/T) !ion
+!Laml = Laml + ndp(i,j,k)*nde(i,j,k) * 1.48d6*dexp( -8.d1/T) !ion
+!-Kim
+!Laml = ndH*nde*1.184d5*1.38d-16*5.31d-8*((T/1.d1)**0.15 / (1.d0+(T/5.d1)**0.65))*dexp(-11.84d0/(T/1.d1))*1.9733d27 !/ndtot
 !_________________________ CII Cooling L
 call fesc(tCII(i,j,k,1),fesC1); call fesc(tCII(i,j,k,2),fesC2); b21 = fesC1+fesC2
 call LEVC2(T,b21,ndH(i,j,k),ndH2(i,j,k),nde(i,j,k),ndCp(i,j,k),n1,n2)
@@ -2991,7 +3022,8 @@ LCOH2= ndH2(i,j,k)*ndCO(i,j,k) * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.
 Gampe = fgr*ndtot(i,j,k) * 2.56526d3 * G0*ATN1 * &
        ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
 !------------------------- CR Heating
-Gamcr = (ndH(i,j,k)+ndHe(i,j,k)+ndH2(i,j,k)) * 1.89435d0
+Gamcr = (ndH(i,j,k)+ndHe(i,j,k)+ndH2(i,j,k)) * 1.89435d0 !zeta=3.d-17
+!Gamcr = (ndH(i,j,k)+ndHe(i,j,k)+ndH2(i,j,k)) * 12.62d0 !zeta=2.d-16
 !***------------------------- Photo-destruction Heating
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
@@ -3045,27 +3077,62 @@ endif
 LamH2 = (LamH2H+LamH2H2+LamH2He+LamH2p+LamH2e)*1.9733d27
 !------------------------- free-free cooling
 !Lff=1.422d-25*(1.d0+(0.44d0)/(1.d0+0.058d0*(dlog(T/10.d0**(5.4d0)/Zi**2))))*Zi**2.d0 * (T/1.d4)**0.5d0 * ndp(i,j,k) * nde(i,j,k)
-Lff=2.96d0*(1.d0+(0.44d0)/(1.d0+0.058d0*(dlog(T/10.d0**(2.4d0)/Zi**2))))*Zi**2.d0 * (T/1.d1)**0.5d0 * ndp(i,j,k) * nde(i,j,k)
+!Lff=2.96d0*(1.d0+(0.44d0)/(1.d0+0.058d0*(dlog(T/10.d0**(2.4d0)/Zi**2))))*Zi**2.d0 * (T/1.d1)**0.5d0 * ndp(i,j,k) * nde(i,j,k)
+Lff=(1.d0+(0.44d0)/(1.d0+0.058d0*(dlog(T/10.d0**(2.4d0)/Zi**2))))*Zi**2.d0 * (T/1.d1)**0.5d0 &
+* ndp(i,j,k) * nde(i,j,k) * 1.422d-25 * 1.9733d27
 !------------------------- recomb.-rad.(case B)
+!alpha_B=2.54d0*1.d-13*Zi*(T/1.d1/Zi/Zi)**(-0.8163d0-0.0208d0*dlog(T/1.d1/Zi/Zi))
+!Lrr=alpha_B * ndp(i,j,k) * nde(i,j,k) * (0.684d0-0.0416d0*dlog(T/1.d1/Zi/Zi))*kb*T * 3.3d12
 alpha_B=2.54d0*1.d-13*Zi*(T/1.d1/Zi/Zi)**(-0.8163d0-0.0208d0*dlog(T/1.d1/Zi/Zi))
-Lrr=alpha_B * ndp(i,j,k) * nde(i,j,k) * (0.684d0-0.0416d0*dlog(T/1.d1/Zi/Zi))*kb*T * 3.3d12
+Lrr=alpha_B * ndp(i,j,k) * nde(i,j,k) * (0.684d0-0.0416d0*dlog(T/1.d1/Zi/Zi))* 1.38d-16 * T * 1.d3 * 1.9733d27
 !------------------------- CIE
+if((T*1.d3 .gt. 1.1d4).and.(T*1.d3 .le. 1.d8)) then
 !He
-call linear(Mtl(2,1,:),Mtl(2,in_mtl(2),:),imtrx,sngl(T*1.d3),LCIEHe)
-LCIEHe=LCIEHe*2.08d25
+dlogT2 = (-dlog10(1.d4) + dlog10(T*1.d3))
+idlogT = int(dlogT2/dlogT)
+x_ktmk1=dlog10(Mtl(2,1,idlogT))
+x_ktmk2=dlog10(Mtl(2,1,idlogT+1))
+ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
+Mtl_CL=(1.d0-ktmk)*Mtl(2,2,idlogT)+ktmk*Mtl(2,2,idlogT+1)
+LCIEHe=Mtl_CL*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
 !other metals
 LCIE_each(:)=0.d0
 LCIE=0.d0
-do k=3,ifile
-call linear(Mtl(k,1,:),Mtl(k,in_mtl(k),:),imtrx,sngl(T*1.d3),LCIE_each(k))
-LCIE=LCIE_each(k)*Zmetals(k)*fgr*2.08d25+LCIE
+do kmtl=3,ifile
+x_ktmk1=dlog10(Mtl(k,1,idlogT))
+x_ktmk2=dlog10(Mtl(k,1,idlogT+1))
+ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
+Mtl_CL=(1.d0-ktmk)*Mtl(k,2,idlogT)+ktmk*Mtl(k,2,idlogT+1)
+LCIE=Mtl_CL*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 enddo
+else
+LCIEHe=0.d0
+LCIE=0.d0
+endif
+!------------------------- neb (Kim+32)
+fneb = 6.92d-1*((dlog(T/1.d1))**0) - 5.86d-1*((dlog(T/1.d1))**1) + &
+8.16d-1*((dlog(T/1.d1))**2) - 5.05d-1*(dlog((T/1.d1))**3) &
++ 1.18d-1*((dlog(T/1.d1))**4) + 7.66d-3*((dlog(T/1.d1))**5) - 5.08d-3*((dlog(T/1.d1))**6)
+Lneb = Zsolar * ndp(i,j,k) * nde(i,j,k) * (3.68d-23 * dexp(-3.86d1/T) * fneb) &
+/ ( (T/1.d1)**(0.5d0) * (1.d0+0.12d0*(nde(i,j,k)/100.d0)**(0.38d0-0.12d0*dlog(T/1.d1)))) * 1.9733d27
 
 !----Kim+23
 Sigmo=1.d0/(1.d0+dexp(-asigmo*(T-0.5d0*(Tth1+Tth2))/(Tth2-Tth1)))
 
+Lamc = Lamc * (1.d0-Sigmo)
+Lamo = Lamo * (1.d0-Sigmo)
+Lamd = Lamd * (1.d0-Sigmo)
+LCOr = LCOr * (1.d0-Sigmo)
+LCOH = LCOH * (1.d0-Sigmo)
+LCOH2 = LCOH2 * (1.d0-Sigmo)
+LCIEHe = Sigmo * (LCIEHe)
+LCIE = Sigmo * (LCIE)
+Lneb = Lneb * (1.d0-Sigmo)
+
 !CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd + LamH2
-CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) * (1.d0-Sigmo) + Sigmo * (LCIEHe + LCIE) - Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff
+!CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) * (1.d0-Sigmo) + Sigmo * (LCIEHe + LCIE) - Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff
+CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) + (LCIEHe + LCIE) &
+- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb
 END SUBROUTINE Fcool
 
 SUBROUTINE linear(xa,ya,m,x,y)
@@ -3407,8 +3474,8 @@ icrn11=14,icrn12=15,icrn13=16,icrn14=17,icrn15=18,icrn16=19,icrn17=20,icrn18=21,
 icrn21=24,icrn22=25,icrn23=26,icrn24=27,icrn25=28,icrn26=29,icrn27=30,icrn28=31,icrn29=32,icrn30=33
 character(2) :: nm
 
-Zmetals(1)=1.d0; Zmetals(2)=8.33d-2
-!Zmetals(2)=1.d-1
+Zmetals(1)=1.d0!; Zmetals(2)=8.33d-2
+Zmetals(2)=1.d-1
 Zmetals(3)=2.04d-9; Zmetals(4)=2.63d-11; Zmetals(5)=6.17d-10
 Zmetals(6)=2.45d-4; Zmetals(7)=6.03d-5; Zmetals(8)=4.57d-4
 Zmetals(9)=3.02d-8; Zmetals(10)=1.95d-4; Zmetals(11)=2.14d-6
@@ -3423,8 +3490,8 @@ Mtl(:,:,:)=0.e0
 
 do k=1,ifile
 write(nm,'(I2.2)') k
-open(14,file=dir//'METAL/'//nm//'.dat')
-imaxlp=k+3
+open(14,file=dir//'METAL/Mtl'//nm//'.dat')
+imaxlp=2
 do j=1,imtrx
 !read(14,'E8.2E2') (Mtl(i,j,k),i=1,imaxlp)
 read(14,*) (Mtl(k,i,j),i=1,imaxlp)

@@ -24,17 +24,16 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-4,testLya1,testLya2,testLya3
+DOUBLE PRECISION  :: dt1=1.d-4
 END MODULE comvar
 
 MODULE chmvar
+double precision :: Zsolar=1.d-2,xHe=0.1d0
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
-!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.6d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0/1.7d0, xc=1.6d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0 !Kim+23 G0, ntotC
-!DOUBLE PRECISION, parameter :: G0=1.d0/1.7d0, xc=1.6d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2 !Kim+23 G0, ntotC, Z=10^-2
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
-!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=2.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
 !POP0
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
 !REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
@@ -48,26 +47,25 @@ DOUBLE PRECISION, parameter :: G0=1.d0/1.7d0, xc=1.6d-4, xo=3.2d-4, dv=2.d0, Tgr
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=200,num_lin=30*(3+32)/2,itrchm=1000000,itrcool=1000
+integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000000,itrcool=1000
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
-DOUBLE PRECISION , dimension(1:ifile,1:2,0:imtrx):: Mtl
-double precision :: Zi=1.d0,alphaB,ni,ne !,kb=1.38d-16
-double precision :: Zsolar=1.d-2,xHe=0.1d0,xnHtotinit
+real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
+double precision :: Zi=1.d-2,alphaB,ni,ne !,kb=1.38d-16
 END MODULE chmvar
 
 program main
 use comvar
 use chmvar
 !implicit none
-integer, parameter :: ix = 100,cnt=10!,itrcool=1000
+integer, parameter :: ix = 200,cnt=10!,itrcool=1000
 integer :: i,j,k,jm,j_lin
 
-double precision, parameter :: Tmin=1.d0,Tmax=1.d5,Tmp1p=1.d-2,Tmp2p=1.d5
-double precision :: Tmp1 = 1.0d-1,Tmp2 = 1.0d5, Rho1p=1.d-5, Rho2p=1.d2
-double precision, parameter :: Rhomin=1.d-3,Rhomax=1.d0,CooLth=1.d-3
+double precision, parameter :: Tmin=1.d4,Tmax=1.d8,Tmp1p=1.d-2,Tmp2p=1.d6
+double precision :: Tmp1 = 1.0d-2,Tmp2 = 1.0d5
+double precision, parameter :: Rhomin=1.d-2,Rhomax=1.d4,CooLth=1.d-5
 
-double precision :: dlogT,dlogT1,dlogRho,Rho1,dlogRho1,Rho2,Tmpn,Rhomid
+double precision :: dlogT,dlogT1,dlogRho,Rho1,dlogRho1
 double precision, dimension(:), allocatable :: Tmp,Rho
 double precision, dimension(:), allocatable :: Lambda,Lambdaff,Lambdarr,Lambdameta,LambdaHe
 double precision, dimension(:,:), allocatable :: Lambda_CIE
@@ -79,7 +77,6 @@ DOUBLE PRECISION, dimension(2) :: Ntoth,NH2h,NnCh,NCOh,tCIIh
 DOUBLE PRECISION :: ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,ndCpmd,ndCOmd,ndemd,ndtotmd
 DOUBLE PRECISION, dimension(2) :: Ntotmd,NH2md,NnCmd,NCOmd,tCIImd
 DOUBLE PRECISION :: ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,ndCOl,ndel,ndtotl
-DOUBLE PRECISION :: ndplini,ndHlini,ndH2lini,ndHmlini,ndHelini,ndHeplini,ndClini,ndCplini,ndCOlini,ndelini,ndtotlini
 DOUBLE PRECISION, dimension(2) :: Ntotl,NH2l,NnCl,NCOl,tCIIl
 DOUBLE PRECISION :: dt,Tmpmid,CooL1,CooL2,CooLmid,nechl,nechh,nechmd,neoldl,neoldh,neoldmd,dinit1,Rhopre
 double precision :: Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel
@@ -87,17 +84,17 @@ double precision :: Gampel,Gamcrl,Gampdl,Lnebl
 double precision :: Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh
 double precision :: Gampeh,Gamcrh,Gampdh,Lnebh
 double precision :: Lamlmd,Lamcmd,Lamomd,Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd
-double precision :: Gampemd,Gamcrmd,Gampdmd,Lnebmd
-double precision :: ndHtot
+double precision :: Gampemd,Gamcrmd,Gampdmd,Lnebmd,LCIE
+character(2) :: num
 
 allocate(Tmp(0:ix),Rho(0:ix))
 allocate(Lambda(0:ix),Lambdaff(0:ix),Lambdarr(0:ix),Lambdameta(0:ix),LambdaHe(0:ix))
 allocate(Lambda_CIE(0:ix,1:num_lin))
 !allocate(Mtl(1:ifile,1:ifile+3,1:imtrx))
 
-!do i=1,ifile
-!in_mtl(i)=i+3
-!enddo
+do i=1,ifile
+in_mtl(i)=i+3
+enddo
 
 
 dlogT = (-dlog10(Tmin) + dlog10(Tmax))/dble(ix)
@@ -118,285 +115,23 @@ Rho(i)=10.d0**dlogRho1
 write(*,*) Rho(i),Tmp(i)
 enddo
 
-Hini=0.9219098d0; pini=0.9503446d-2; H2ini=0.9465513d-8; Heini=0.9155226d-1; Hepini=0.5655353d-3
-Cini=0.1565848d-8*Zsolar; COini=0.2202631d-20*Zsolar; Cpini=0.1433520d-3*Zsolar;Hmini=Hini*1.d-50
-
-dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini
-
-!ndH   = Hini  /dinit1
-!ndp   = pini  /dinit1
-!ndH2  = H2ini /dinit1
-!ndHm  = Hmini /dinit1
-!ndHe  = Heini /dinit1
-!ndHep = Hepini/dinit1
-!ndC   = Cini /dinit1
-!ndCO  = COini/dinit1
-!ndCp  = Cpini/dinit1
-!nde   = ndp+ndHep+ndCp
-!ndtot = ndH+ndp+2.d0*ndH2+ndHe+ndHep
-!Ntot(1)=0.d0; NH2(1)=0.d0; NnC(1)=0.d0; tCII(1)=0.d0
-
-ndHlini   = Hini  /dinit1
-ndplini   = pini  /dinit1
-ndH2lini  = H2ini /dinit1
-ndHmlini  = Hmini /dinit1
-ndHelini  = Heini /dinit1
-ndHeplini = Hepini/dinit1
-ndClini   = Cini /dinit1
-ndCOlini  = COini/dinit1
-ndCplini  = Cpini/dinit1
-ndel   = ndpl+ndHepl+ndCpl
-ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
-xnHtotinit=ndHlini+ndplini+2.d0*ndH2lini+ndHmlini
-write(*,*)'xnHtotinit',xnHtotinit
-
-ndHh   = Hini  /dinit1
-ndph   = pini  /dinit1
-ndH2h  = H2ini /dinit1
-ndHmh  = Hmini /dinit1
-ndHeh  = Heini /dinit1
-ndHeph = Hepini/dinit1
-ndCh   = Cini /dinit1
-ndCOh  = COini/dinit1
-ndCph  = Cpini/dinit1
-ndeh   = ndph+ndHeph+ndCph
-ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
-
-ndHmd   = Hini  /dinit1
-ndpmd   = pini  /dinit1
-ndH2md  = H2ini /dinit1
-ndHmmd  = Hmini /dinit1
-ndHemd  = Heini /dinit1
-ndHepmd = Hepini/dinit1
-ndCmd   = Cini /dinit1
-ndCOmd  = COini/dinit1
-ndCpmd  = Cpini/dinit1
-ndemd   = ndpmd+ndHepmd+ndCpmd
-ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
-
-Rhopre=dinit1
-
 call metal_cool_corona()
 
-open(100,file=dir//'thermal_eq_curve_l_rho3.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
-!open(110,file=dir//'thermal_eq_curve_md_rho.dat',access='stream',FORM='UNFORMATTED')!, position='append')
-!open(120,file=dir//'thermal_eq_curve_h_rho.dat' ,access='stream',FORM='FORMATTED')!, position='append')
-!open(100,file=dir//'thermal_eq_curve_l_lmt.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
-!open(110,file=dir//'thermal_eq_curve_md_lmt.dat',access='stream',FORM='UNFORMATTED')!, position='append')
-!open(120,file=dir//'thermal_eq_curve_h_lmt.dat' ,access='stream',FORM='FORMATTED')!, position='append')
-
-!Tmp1 = 1.0d-1
-!Tmp2 = 1.0d5
-Rho1 = 1.27d0
-
-ndHl   = ndHlini * Rho1
-ndpl   = ndplini * Rho1
-ndH2l  = ndH2lini * Rho1
-ndHml  = ndHmlini * Rho1
-ndHel  = ndHelini * Rho1
-ndHepl = ndHeplini * Rho1
-ndCl   = ndClini * Rho1
-ndCOl  = ndCOlini * Rho1
-ndCpl  = ndCplini * Rho1
-ndel   = ndpl+ndHepl+ndCpl
-ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
-Ntotl(1)=0.d0; NH2l(1)=0.d0; NnCl(1)=0.d0; tCIIl(1)=0.d0
-Ntotl(2)=0.d0; NH2l(2)=0.d0; NnCl(2)=0.d0; tCIIl(2)=0.d0
-xnHtotinit=ndHl+ndpl+2.d0*ndH2l+ndHml
-
-write(*,*) ndtotl*1.27d0,dinit1,ndHlini,xnHtotinit,(ndHel+ndHepl)/(ndHl+ndpl+2.d0*ndH2l)
+do k=1,ifile
+write(num,'(I2.2)') k
+open(100,file=dir//'Mtln'//num//'.dat' ,access='stream',FORM='FORMATTED')!, position='append')
 
 do i=0,ix
-!Rho1 = Rho(i)
-Tmpn=Tmp(i)
-
-
-write(*,*) 'Loop', i
-
-!ndH   = ndH * Rho1 / Rhopre
-!ndp   = ndp * Rho1 / Rhopre
-!ndH2  = ndH2 * Rho1 / Rhopre
-!ndHm  = ndHm * Rho1 / Rhopre
-!ndHe  = ndHe * Rho1 / Rhopre
-!ndHep = ndHep * Rho1 / Rhopre
-!ndC   = ndC * Rho1 / Rhopre
-!ndCO  = ndCO * Rho1 / Rhopre
-!ndCp  = ndCp * Rho1 / Rhopre
-!nde   = ndp+ndHep+ndCp
-!ndtot = ndH+ndp+2.d0*ndH2+ndHe+ndHep
-!Ntot(1)=0.d0; NH2(1)=0.d0; NnC(1)=0.d0; tCII(1)=0.d0
-
-
-
-
-!Rho1 = Rho1p
-!Rho2 = Rho2p
-
-!ndHh   = ndHlini * Rho2
-!ndph   = ndplini * Rho2
-!ndH2h  = ndH2lini * Rho2
-!ndHmh  = ndHmlini * Rho2
-!ndHeh  = ndHelini * Rho2
-!ndHeph = ndHeplini * Rho2
-!ndCh   = ndClini * Rho2
-!ndCOh  = ndCOlini * Rho2
-!ndCph  = ndCplini * Rho2
-!ndeh   = ndph+ndHeph+ndCph
-!ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
-!Ntoth(1)=0.d0; NH2h(1)=0.d0; NnCh(1)=0.d0; tCIIh(1)=0.d0
-!Ntoth(2)=0.d0; NH2h(2)=0.d0; NnCh(2)=0.d0; tCIIh(2)=0.d0
-
-!do j=1,itrcool
-!Rhomid = 0.5d0*(Rho1+Rho2)
-
-!ndHmd   = ndHl+ndHh
-!ndpmd   = ndpl+ndph
-!ndH2md  = ndH2l+ndH2h
-!ndHmmd  = ndHml+ndHmh
-!ndHemd  = ndHel+ndHeh
-!ndHepmd = ndHepl+ndHeph
-!ndCmd   = ndCl+ndCh
-!ndCOmd  = ndCOl+ndCOh
-!ndCpmd  = ndCpl+ndCph
-!ndemd   = ndpmd+ndHepmd+ndCpmd
-!ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
-!Ntotmd(1)=0.d0; NH2md(1)=0.d0; NnCmd(1)=0.d0; tCIImd(1)=0.d0
-!Ntotmd(2)=0.d0; NH2md(2)=0.d0; NnCmd(2)=0.d0; tCIImd(2)=0.d0
-
-
-
- do i1=1,itrchm
- dt=dt1
- !neoldl=ndel
- call chem(Tmpn,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
- ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt)
- !nechl=dabs((ndel-neoldl)/ndel)
-! ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
-! nechl=dabs((ndel-neoldl)/ndtotl)
-! if(nechl<neth) then; exit; endif
- enddo
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
- !ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt
-
-! do i1=1,itrchm
-! dt=dt1
- !neoldmd=ndemd
-! call chem(Tmpn,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
-! ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,dt)
- !nechmd=dabs((ndemd-neoldmd)/ndemd)
-! ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
-! nechmd=dabs((ndemd-neoldmd)/ndtotmd)
-! if(nechmd<neth) then; exit; endif
-! enddo
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
- !ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,dt
-
-! do i1=1,itrchm
-! dt=dt1
- !neoldh=ndeh
-! call chem(Tmpn,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
-! ndCph,ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,dt)
- !nechh=dabs((ndeh-neoldh)/ndeh)
-! ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
-! nechh=dabs((ndeh-neoldh)/ndtoth)
-! if(nechh<neth) then; exit; endif
-! enddo
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
- !ndCph,ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,dt
-
- !Tmp1 = 1.0d-3
- !Tmp2 = 1.0d7
- !do i1=1,itrcool
- !Tmpmid = 0.5d0*(Tmp1+Tmp2)
- call Fcool(CooL1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,ndCpl,&
- ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,Tmpn,Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,&
- LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel,Gampel,Gamcrl,Gampdl,Lnebl)
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
-! call Fcool(CooL2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,ndCph,&
-! ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,Tmpn,Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,&
-! LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh,Gampeh,Gamcrh,Gampdh,Lnebh)
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
-! call Fcool(CooLmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
-! ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,Tmpn,Lamlmd,Lamcmd,Lamomd,&
-! Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd,Gampemd,Gamcrmd,Gampdmd,Lnebmd)
- !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
-
- !Tch=dabs((Tmp2-Tmp1)/Tmp2)
- !Tch=dabs(Tmp2-Tmp1)
- !if(Tch < Tth) then; go to 189; endif
-! if(abs(CooL1-CooL2) < CooLth) then
-! write(*,*)'exit',Rho1,Rho2,Rhomid,Tmpn,CooL1,CooL2,CooLmid
-! go to 189
-! endif
-
-! if(CooL1*CooLmid<0.d0) then
-!   Rho2 = Rhomid
-!   ndHh   = ndHmd
-!   ndph   = ndpmd
-!   ndH2h  = ndH2md
-!   ndHmh  = ndHmmd
-!   ndHeh  = ndHemd
-!   ndHeph = ndHepmd
-!   ndCh   = ndCmd
-!   ndCOh  = ndCOmd
-!   ndCph  = ndCpmd
-!   ndeh   = ndph+ndHeph+ndCph
-!   ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
-!   Ntoth(1)=0.d0; NH2h(1)=0.d0; NnCh(1)=0.d0; tCIIh(1)=0.d0
-!   Ntoth(2)=0.d0; NH2h(2)=0.d0; NnCh(2)=0.d0; tCIIh(2)=0.d0
-! else if(CooL2*CooLmid < 0.d0) then
-!   Rho1 = Rhomid
-!   ndHl   = ndHmd
-!   ndpl   = ndpmd
-!   ndH2l  = ndH2md
-!   ndHml  = ndHmmd
-!   ndHel  = ndHemd
-!   ndHepl = ndHepmd
-!   ndCl   = ndCmd
-!   ndCOl  = ndCOmd
-!   ndCpl  = ndCpmd
-!   ndel   = ndpl+ndHepl+ndCpl
-!   ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
-!   Ntotl(1)=0.d0; NH2l(1)=0.d0; NnCl(1)=0.d0; tCIIl(1)=0.d0
-!   Ntotl(2)=0.d0; NH2l(2)=0.d0; NnCl(2)=0.d0; tCIIl(2)=0.d0
-! endif
-! if(CooL1*CooL2>0.d0) then
-!  write(*,*) 'Err. Cooling',Rho1,Rho2,Rhomid,Tmpn,CooL1,CooL2,CooLmid
-!  go to 190
-! endif
- 
-
-!  if(mod(j,cnt)==1) then
-  write(*,*)Rho1,Rho2,Rhomid,Tmpn,CooL1,CooL2,CooLmid
-!  endif
-!  if(j==itrcool) write(*,*) 'itrcool max'
-!enddo
-
-!189 continue
-!190 continue
-ndHtot = ndHl+ndpl+2.d0*ndH2l+ndHml
-write(100) Rho1,Tmpn,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
-ndCpl,ndCOl,ndel,ndtotl,Lamll,Lamcl,Lamol,Lamdl,LCOrl,LCOHl,&
-LCOH2l,LamH2l,Lffl,Lrrl,LCIEl,LCIEHel,Gampel,Gamcrl,Gampdl,Lnebl,ndHtot &
-,testLya1,testLya2,testLya3
-
-!write(110) Rho1,Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
-!ndCpmd,ndCOmd,ndemd,ndtotmd,Lamlmd,Lamcmd,Lamomd,&
-!Lamdmd,LCOrmd,LCOHmd,LCOH2md,LamH2md,Lffmd,Lrrmd,LCIEmd,LCIEHemd,Gampemd,Gamcrmd,Gampdmd,Lnebmd
-
-!write(120,*) Rho1,Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
-!ndCph,ndCOh,ndeh,ndtoth,Lamlh,Lamch,Lamoh,Lamdh,LCOrh,LCOHh,&
-!LCOH2h,LamH2h,Lffh,Lrrh,LCIEh,LCIEHeh,Gampeh,Gamcrh,Gampdh,Lnebh
-
-!Rhopre=Rho1
+T=Tmp(i)
+call linear(Mtl(k,1,:),Mtl(k,in_mtl(k),:),imtrx,sngl(T),LCIE)
+write(100,*) T,LCIE
+write(*,*) k,T,LCIE
 enddo
 
 close(100)
-!close(110)
-!close(120)
+
+enddo
+
 
 
 
@@ -405,38 +140,7 @@ deallocate(Lambda,Lambdaff,Lambdarr,Lambdameta,LambdaHe)
 !deallocate(Mtl)
 end program main
 
-
-!subroutine metal_cool_corona()
 !http://wise-obs.tau.ac.il/~orlyg/ion_by_ion/
-!use comvar
-!use chmvar
-!integer, parameter :: ifile = 30, imtrx=189
-!integer :: i,j,k,imaxlp
-!integer, dimension(1:ifile) :: in_mtl
-!H,He,Li,Be,B,C,N,O,F,Ne
-!Na,Mg,Al,Si,P,S,Cl,Ar,K,Ca
-!Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn
-!integer :: icrn1=4,icrn2=5,icrn3=6,icrn4=7,icrn5=8,icrn6=9,icrn7=10,icrn8=11,icrn9=12,icrn10=13, &
-!icrn11=14,icrn12=15,icrn13=16,icrn14=17,icrn15=18,icrn16=19,icrn17=20,icrn18=21,icrn19=22,icrn20=23, &
-!icrn21=24,icrn22=25,icrn23=26,icrn24=27,icrn25=28,icrn26=29,icrn27=30,icrn28=31,icrn29=32,icrn30=33
-!real(4), dimension(:,:), allocatable :: Mtl1,Mtl2,Mtl3,Mtl4,Mtl5,Mtl6,Mtl7,Mtl8,Mtl9
-!character(2) :: nm
-
-
-!Mtl(k,i,j)
-!do k=1,ifile
-!write(nm,'(I2.2)') k
-!open(14,file=nm//'.dat')
-!imaxlp=k+3
-!do j=1,imtrx
-!read(14,'E8.2E2') (Mtl,i=1,imaxlp)
-!read(14,*) (Mtl(k,i,j),i=1,imaxlp)
-!enddo
-!close(14)
-!enddo
-
-!end subroutine metal_cool_corona
-
 
 SUBROUTINE chem(T,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII,dt)
 USE comvar
@@ -451,7 +155,6 @@ DOUBLE PRECISION :: kHm,kH2m,kHmde
 DOUBLE PRECISION :: temp1,temp2,temp3,omeps,eps
 !DOUBLE PRECISION, dimension(:,:,:), allocatable :: Tn,Pn,Qx,Qy,Qz
 double precision  :: mmean,rtTx,rtTy,rtTz,tcd,CooL
-
 
 nde = ndp+ndHep+ndCp
 ndtot = ndp+ndH+2.d0*ndH2+ndHe+ndHep
@@ -619,6 +322,8 @@ nde = ndp+ndHep+ndCp
 nde = ndp+ndHep+ndCp
 ndtot = ndp+ndH+2.d0*ndH2+ndHe+ndHep
 !U(i,j,k,1) = mH*ndp+mH*ndH+mH2*ndH2+mHe*ndHe+mHe*ndHep
+
+!write(*,*) 'n',nde,ndtot,T
 end SUBROUTINE chem
 
 
@@ -641,10 +346,6 @@ double precision :: n1,n2,b21,fneb
 double precision, dimension(1:ifile) :: LCIE_each
 DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,ndHtot
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
-DOUBLE PRECISION :: dlogT=(-dlog10(1.d4) + dlog10(1.d8))/dble(200),dlogT2
-DOUBLE PRECISION :: ktmk,x_ktmk1,x_ktmk2,Mtl_CL
-integer :: idlogT
-
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
@@ -663,9 +364,6 @@ pha  = G0 * dsqrt(1.d3*T) * ATN1 / nde
 Laml = ndH*nde * 1.44049d9*dexp( -1.184d2/T)
 Laml = Laml + ndH**2 * (1.54d8/dsqrt(T)+1.305d6*dsqrt(T)) * dexp( -1.184d2/T )
 !Laml = Laml + ndp*nde * 1.48d6*dexp( -8.d1/T) !ion (imitating High-Temp region)
-!testLya1=ndH*nde * 1.44049d9*dexp( -1.184d2/T)
-!testLya2=ndH**2 * (1.54d8/dsqrt(T)+1.305d6*dsqrt(T)) * dexp( -1.184d2/T )
-!testLya3=ndp*nde * 1.48d6*dexp( -8.d1/T)
 !-Kim
 !Laml = ndH*nde*1.184d5*1.38d-16*5.31d-8*((T/1.d1)**0.15 / (1.d0+(T/5.d1)**0.65))*dexp(-11.84d0/(T/1.d1))*1.9733d27 !/ndtot
 !_________________________ CII Cooling L
@@ -692,8 +390,7 @@ LCOH2= ndH2*ndCO * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.08d0/T)
 Gampe = fgr*ndtot * 2.56526d3 * G0*ATN1 * &
        ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
 !------------------------- CR Heating
-!Gamcr = (ndH+ndHe+ndH2) * 1.89435d0 !zeta=3.d-17
-Gamcr = (ndH+ndHe+ndH2) * 12.62d0 !zeta=2.d-16
+Gamcr = (ndH+ndHe+ndH2) * 1.89435d0
 !***------------------------- Photo-destruction Heating
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
@@ -755,53 +452,27 @@ alpha_B=2.54d0*1.d-13*Zi*(T/1.d1/Zi/Zi)**(-0.8163d0-0.0208d0*dlog(T/1.d1/Zi/Zi))
 Lrr=alpha_B * ndp * nde * (0.684d0-0.0416d0*dlog(T/1.d1/Zi/Zi))* 1.38d-16 * T * 1.d3 * 1.9733d27
 !------------------------- CIE
 !---He
-if((T*1.d3 .gt. 1.1d4).and.(T*1.d3 .le. 1.d8)) then
-dlogT = (-dlog10(1.d4) + dlog10(1.d8))/dble(200)
-dlogT2 = (-dlog10(1.d4) + dlog10(T*1.d3))
-idlogT = int(dlogT2/dlogT)
-x_ktmk1=dlog10(Mtl(2,1,idlogT))
-x_ktmk2=dlog10(Mtl(2,1,idlogT+1))
-ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
-Mtl_CL=(1.d0-ktmk)*Mtl(2,2,idlogT)+ktmk*Mtl(2,2,idlogT+1)
-write(*,*) 'logT',dlogT,dlogT2,idlogT,T*1.d3,Mtl(2,1,idlogT),Mtl_CL
-!call linear(Mtl(2,1,:),Mtl(2,2,:),imtrx,sngl(T*1.d3),LCIEHe)
+call linear(Mtl(2,1,:),Mtl(2,in_mtl(2),:),imtrx,sngl(T*1.d3),LCIEHe)
 !LCIEHe=LCIEHe*2.08d25
-!LCIEHe=LCIEHe*1.9733d27
-!LCIEHe=LCIEHe*Zmetals(2)*1.9733d27 * ndtot * ndtot
-!LCIEHe=LCIEHe*Zmetals(2)*1.9733d27 * ndHtot * ndHtot
-LCIEHe=Mtl_CL*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
+LCIEHe=LCIEHe*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
 !---other metals
 LCIE_each(:)=0.d0
 LCIE=0.d0
 do k=3,ifile
-x_ktmk1=dlog10(Mtl(k,1,idlogT))
-x_ktmk2=dlog10(Mtl(k,1,idlogT+1))
-ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
-Mtl_CL=(1.d0-ktmk)*Mtl(k,2,idlogT)+ktmk*Mtl(k,2,idlogT+1)
-!call linear(Mtl(k,1,:),Mtl(k,2,:),imtrx,sngl(T*1.d3),LCIE_each(k))
+call linear(Mtl(k,1,:),Mtl(k,in_mtl(k),:),imtrx,sngl(T*1.d3),LCIE_each(k))
 !LCIE=LCIE_each(k)*Zmetals(k)*fgr*2.08d25+LCIE
-!LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27+LCIE
-!LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27 * ndtot * ndtot +LCIE
-!LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot +LCIE
-LCIE=Mtl_CL*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
+LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 enddo
-else
-LCIEHe=0.d0
-LCIE=0.d0
-endif
 !------------------------- neb (Kim+32)
 fneb = 6.92d-1*((dlog(T/1.d1))**0) - 5.86d-1*((dlog(T/1.d1))**1) + &
 8.16d-1*((dlog(T/1.d1))**2) - 5.05d-1*(dlog((T/1.d1))**3) &
 + 1.18d-1*((dlog(T/1.d1))**4) + 7.66d-3*((dlog(T/1.d1))**5) - 5.08d-3*((dlog(T/1.d1))**6)
-!Lneb=Zsolar*nde*ndp* (3.68d-23 * dexp(-3.86d0/(T/1.d1)) * fneb) &
-!/ ( (T/1.d1)**(0.5d0) * (1.d0+0.12d0*(nde/100.d0)**(0.38d0-0.12d0*dlog(T/1.d1)))) * 1.9733d27
-!Lneb=Zsolar*nde*ndp* (3.68d-23 * dexp(-3.86d1/T) * fneb) &
-!/ ( (T/1.d1)**(0.5d0) * (1.d0+0.12d0*(nde/100.d0)**(0.38d0-0.12d0*dlog(T/1.d1)))) * 1.9733d27
 Lneb=Zsolar*ndtot*nde* (3.68d-23 * dexp(-3.86d1/T) * fneb) &
 / ( (T/1.d1)**(0.5d0) * (1.d0+0.12d0*(nde/100.d0)**(0.38d0-0.12d0*dlog(T/1.d1)))) * 1.9733d27
 
 !write(*,*) fneb,Lneb,LCIE
-!----Kim+23 formulation
+
+!----Kim+23
 Sigmo=1.d0/(1.d0+dexp(-asigmo*(T-0.5d0*(Tth1+Tth2))/(Tth2-Tth1)))
 
 !CooL  = Laml + Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2 - Gampe - Gamcr - Gampd + LamH2
@@ -975,9 +646,7 @@ ATN5 = ATN5 + &
 ATN5 = ATN5*0.5d0
 
 !H Ionization
-!zeta  = 9.4671d-4 !3.d-17 s^-1
-zeta  = 6.308d-3 !2.d-16 s^-1
-
+zeta  = 9.4671d-4
 !H Recombination
 kHrec = (0.5d0+dsign(0.5d0,15.78d0-T))*0.45d0*dlog(1.578d2/T) &
        +(0.5d0-dsign(0.5d0,15.78d0-T))*0.4d0*dsqrt(1.578d2/T)
@@ -1045,7 +714,6 @@ omeps = ( 0.5d0+dsign(0.5d0,eps-1.d-4) )*( 1.d0-dexp(-eps) ) + &
 END SUBROUTINE Omexp
 
 
-
 subroutine metal_cool_corona()
 !http://wise-obs.tau.ac.il/~orlyg/ion_by_ion/
 use comvar
@@ -1059,6 +727,7 @@ integer :: icrn1=4,icrn2=5,icrn3=6,icrn4=7,icrn5=8,icrn6=9,icrn7=10,icrn8=11,icr
 icrn11=14,icrn12=15,icrn13=16,icrn14=17,icrn15=18,icrn16=19,icrn17=20,icrn18=21,icrn19=22,icrn20=23, &
 icrn21=24,icrn22=25,icrn23=26,icrn24=27,icrn25=28,icrn26=29,icrn27=30,icrn28=31,icrn29=32,icrn30=33
 character(2) :: nm
+double precision :: xcpre,xopre,xnHtotinitpre
 
 Zmetals(1)=1.d0!; Zmetals(2)=8.33d-2
 Zmetals(2)=1.d-1
@@ -1076,12 +745,22 @@ Mtl(:,:,:)=0.e0
 
 do k=1,ifile
 write(nm,'(I2.2)') k
-open(14,file=dir//'Mtl'//nm//'.dat')
-imaxlp=2
-do j=0,imtrx
+open(14,file=dir//nm//'.dat')
+imaxlp=k+3
+do j=1,imtrx
 !read(14,'E8.2E2') (Mtl,i=1,imaxlp)
 read(14,*) (Mtl(k,i,j),i=1,imaxlp)
 enddo
 close(14)
 enddo
+
+!xcpre=Zmetals(6)
+!xopre=Zmetals(8)
+!xnHtotinitpre=Zmetals(1)
+!do k=1,ifile
+!write(*,*)'Zmetal',Zmetals(k),Zmetals(k)/xnHtotinitpre*xnHtotinit
+!Zmetals(k)=Zmetals(k)/Zmetals(1)*xnHtotinit
+ !Zmetals(k)=Zmetals(k)/xcpre*xc
+ !Zmetals(k)=Zmetals(k)/xopre*xo
+!enddo
 end subroutine metal_cool_corona
