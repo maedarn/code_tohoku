@@ -24,14 +24,17 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-4
+DOUBLE PRECISION  :: dt1=1.d-5
 END MODULE comvar
 
 MODULE chmvar
-double precision :: Zsolar=1.d-1,xHe=0.1d0
+double precision :: Zsolar=1.d0,xHe=0.1d0, fgr=1.d0,av1para=1.d0,av2para=1.d0,zeta_cr=3.d-1
+!DOUBLE PRECISION, parameter :: G0=1.69d0, Axc=5.4d-4, Axo=3.d-4, dv=2.d0, Tgr=5.d-3 !Bialy+19
+DOUBLE PRECISION, parameter :: G0=1.d0, Axc=5.4d-4, Axo=3.d-4, dv=2.d0, Tgr=5.d-3 !Bialy+19
+DOUBLE PRECISION :: xc=1.4d-4, xo=3.2d-4,dmo=0.41d0,dmc=0.53d0,Zd=1.d0
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=2.d0, Tgr=5.d-3, fgr=1.d-1
+!DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=2.d0, Tgr=5.d-3, fgr=1.d-1
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
@@ -42,34 +45,34 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=2.d0, Tgr=5.d-3
 !REAL*8, parameter :: G0=1.d-4, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPA
 !REAL*8, parameter :: G0=1.d-3, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPB
 !REAL*8, parameter :: G0=1.d-2, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPC
-
 !DOUBLE PRECISION, allocatable :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000000,itrcool=1000
+integer, parameter :: ifile = 30, imtrx=200,num_lin=30*(3+32)/2,itrchm=10000000,itrcool=1000
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
-real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
-double precision :: Zi=1.d-2,alphaB,ni,ne !,kb=1.38d-16
+double precision, dimension(1:ifile,1:2,0:imtrx):: Mtl
+double precision :: Zi=1.d0,alphaB,ni,ne !,kb=1.38d-16
+double precision,parameter :: dlogTn = (-dlog10(1.d4) + dlog10(1.d8))/dble(imtrx)
 END MODULE chmvar
 
 program main
 use comvar
 use chmvar
 !implicit none
-integer, parameter :: ix = 100,cnt=10!,itrcool=1000
+integer, parameter :: ix = 30,cnt=10!,itrcool=1000
 integer :: i,j,k,jm,j_lin
 
-double precision, parameter :: Tmin=1.d4,Tmax=1.d8,Tmp1p=1.d-2,Tmp2p=1.d6
+double precision, parameter :: Tmin=1.d4,Tmax=1.d8,Tmp1p=1.d-2,Tmp2p=1.d1
 double precision :: Tmp1 = 1.0d-2,Tmp2 = 1.0d5
-double precision, parameter :: Rhomin=1.d-2,Rhomax=1.d4,CooLth=1.d-3
+double precision, parameter :: Rhomin=1.d1,Rhomax=1.d4,CooLth=1.d-3
 
 double precision :: dlogT,dlogT1,dlogRho,Rho1,dlogRho1
 double precision, dimension(:), allocatable :: Tmp,Rho
 double precision, dimension(:), allocatable :: Lambda,Lambdaff,Lambdarr,Lambdameta,LambdaHe
 double precision, dimension(:,:), allocatable :: Lambda_CIE
-double precision :: neold,nech,neth=1.d-6,Tch,Tth=1.d-4
+double precision :: neold,nech,neth=1.d-6,Tch,Tth=1.d-8
 DOUBLE PRECISION:: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION :: ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,ndCph,ndCOh,ndeh,ndtoth
@@ -91,9 +94,21 @@ allocate(Lambda(0:ix),Lambdaff(0:ix),Lambdarr(0:ix),Lambdameta(0:ix),LambdaHe(0:
 allocate(Lambda_CIE(0:ix,1:num_lin))
 !allocate(Mtl(1:ifile,1:ifile+3,1:imtrx))
 
-do i=1,ifile
-in_mtl(i)=i+3
-enddo
+!do i=1,ifile
+!in_mtl(i)=i+3
+!enddo
+
+!--Bialy+19
+!if(Zsolar .ge. 1.d0) then
+!fgr=Zsolar
+!else
+!fgr=0.2d0*(Zsolar/0.2d0)**3
+!endif
+!xo=Axo*Zsolar*(1.d0-dmo*fgr/Zsolar)
+!xc=Axc*Zsolar*(1.d0-dmc*fgr/Zsolar)
+!write(*,*)'metal_xc_xo_dust',xc,xo,fgr
+!--Bialy+19
+
 
 
 dlogT = (-dlog10(Tmin) + dlog10(Tmax))/dble(ix)
@@ -115,7 +130,7 @@ write(*,*) Rho(i),Tmp(i)
 enddo
 
 Hini=0.9219098d0; pini=0.9503446d-2; H2ini=0.9465513d-8; Heini=0.9155226d-1; Hepini=0.5655353d-3
-Cini=0.1565848d-8*Zsolar; COini=0.2202631d-20*Zsolar; Cpini=0.1433520d-3*Zsolar;Hmini=Hini*1.d-50
+Cini=0.1565848d-8; COini=0.2202631d-20; Cpini=0.1433520d-3;Hmini=Hini*1.d-50
 
 dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini
 
@@ -138,9 +153,9 @@ ndH2l  = H2ini /dinit1
 ndHml  = Hmini /dinit1
 ndHel  = Heini /dinit1
 ndHepl = Hepini/dinit1
-ndCl   = Cini /dinit1
-ndCOl  = COini/dinit1
-ndCpl  = Cpini/dinit1
+ndCl   = Cini /dinit1 * xc / 1.4d-4
+ndCOl  = COini/dinit1 * xc / 1.4d-4
+ndCpl  = Cpini/dinit1 * xc / 1.4d-4
 ndel   = ndpl+ndHepl+ndCpl
 ndtotl = ndHl+ndpl+2.d0*ndH2l+ndHel+ndHepl
 
@@ -150,9 +165,9 @@ ndH2h  = H2ini /dinit1
 ndHmh  = Hmini /dinit1
 ndHeh  = Heini /dinit1
 ndHeph = Hepini/dinit1
-ndCh   = Cini /dinit1
-ndCOh  = COini/dinit1
-ndCph  = Cpini/dinit1
+ndCh   = Cini /dinit1 * xc / 1.4d-4
+ndCOh  = COini/dinit1 * xc / 1.4d-4
+ndCph  = Cpini/dinit1 * xc / 1.4d-4
 ndeh   = ndph+ndHeph+ndCph
 ndtoth = ndHh+ndph+2.d0*ndH2h+ndHeh+ndHeph
 
@@ -162,9 +177,9 @@ ndH2md  = H2ini /dinit1
 ndHmmd  = Hmini /dinit1
 ndHemd  = Heini /dinit1
 ndHepmd = Hepini/dinit1
-ndCmd   = Cini /dinit1
-ndCOmd  = COini/dinit1
-ndCpmd  = Cpini/dinit1
+ndCmd   = Cini /dinit1 * xc / 1.4d-4
+ndCOmd  = COini/dinit1 * xc / 1.4d-4
+ndCpmd  = Cpini/dinit1 * xc / 1.4d-4
 ndemd   = ndpmd+ndHepmd+ndCpmd
 ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
 
@@ -172,9 +187,12 @@ Rhopre=dinit1
 
 call metal_cool_corona()
 
-open(100,file=dir//'init_Z10m1_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
-open(110,file=dir//'init_Z10m1_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
-open(120,file=dir//'init_Z10m1_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+!open(100,file=dir//'Thermal_bialy_Z10m0_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+!open(110,file=dir//'Thermal_bialy_Z10m0_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+!open(120,file=dir//'Thermal_bialy_Z10m0_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+open(100,file=dir//'Thermal_optthick_Z10m0_l2.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+open(110,file=dir//'Thermal_optthick_Z10m0_md2.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+open(120,file=dir//'Thermal_optthick_Z10m0_h2.dat' ,access='stream',FORM='FORMATTED')!, position='append')
 !open(100,file=dir//'thermal_eq_curve_l_hot3.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
 !open(110,file=dir//'thermal_eq_curve_md_hot3.dat',access='stream',FORM='UNFORMATTED')!, position='append')
 !open(120,file=dir//'thermal_eq_curve_h_hot3.dat' ,access='stream',FORM='FORMATTED')!, position='append')
@@ -265,9 +283,11 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
 ! if(nechl<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
+ !write(*,*)'Tmp1',Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
  !ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt
 
+ !write(*,*)'Tmpmidpre',j,Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
+ !ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,dt
  do i1=1,itrchm
  dt=dt1
  neoldmd=ndemd
@@ -279,7 +299,7 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
 ! if(nechmd<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
+ !write(*,*)'Tmpmid',j,Tmpmid,ndpmd,ndHmd,ndH2md,ndHmmd,ndHemd,ndHepmd,ndCmd,&
  !ndCpmd,ndCOmd,ndemd,ndtotmd,Ntotmd,NH2md,NnCmd,NCOmd,tCIImd,dt
 
  do i1=1,itrchm
@@ -293,7 +313,7 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
 ! if(nechh<neth) then; exit; endif
  enddo
  !write(*,*)Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
- !write(*,*)Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
+ !write(*,*)'Tmp2',Tmp2,ndph,ndHh,ndH2h,ndHmh,ndHeh,ndHeph,ndCh,&
  !ndCph,ndCOh,ndeh,ndtoth,Ntoth,NH2h,NnCh,NCOh,tCIIh,dt
 
  !Tmp1 = 1.0d-3
@@ -316,7 +336,7 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
  !Tch=dabs((Tmp2-Tmp1)/Tmp2)
  !Tch=dabs(Tmp2-Tmp1)
  !if(Tch < Tth) then; go to 189; endif
- if(abs(CooL1-CooL2) < CooLth) then
+ if((abs(CooL1-CooL2) < CooLth) .or. (abs((Tmp1-Tmp2)/(Tmp1+Tmp2)) < Tth)) then
  write(*,*)'exit',Rho1,Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
  go to 189
  endif
@@ -334,6 +354,7 @@ Tmpmid = 0.5d0*(Tmp1+Tmp2)
 
   if(mod(j,cnt)==1) then
   write(*,*)Rho1,Tmp1,Tmp2,Tmpmid,CooL1,CooL2,CooLmid
+  
   endif
   if(j==itrcool) write(*,*) 'itrcool max'
 enddo
@@ -421,6 +442,7 @@ ndtot = ndp+ndH+2.d0*ndH2+ndHe+ndHep
 !call SHIELD()
 call SHIELD(T,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII)
 !end if
+!write(*,*)'SHIELD',T,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII
 
 ndpold=ndp; ndHold=ndH; ndH2old=ndH2; ndHmold=ndHm; ndHeold=ndHe
 ndHepold=ndHep; ndCold=ndC; ndCpold=ndCp; ndCOold=ndCO
@@ -604,6 +626,9 @@ double precision :: n1,n2,b21,fneb
 double precision, dimension(1:ifile) :: LCIE_each
 DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,ndHtot
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
+DOUBLE PRECISION :: dlogT=(-dlog10(1.d4) + dlog10(1.d8))/dble(200),dlogT2
+DOUBLE PRECISION :: ktmk,x_ktmk1,x_ktmk2,Mtl_CL
+integer :: idlogT
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
@@ -614,6 +639,10 @@ ndHtot = ndH+ndp+2.d0*ndH2+ndHm
 
 Av1  = fgr*1.63542d-3*Ntot(1); x1 = 6.1714d3*NH2(1)
 Av2  = fgr*1.63542d-3*Ntot(2); x2 = 6.1714d3*NH2(2)
+!Av1  = av1para
+!Av2  = av2para
+!x1 = 6.1714d3*Av1/ndtot*ndH2
+!x2 = 6.1714d3*Av2/ndtot*ndH2
 ATN1 = ( dexp(-2.5d0*Av1)     + dexp(-2.5d0*Av2) ) * 0.5d0
 ATN2 = ( dexp(-3.77358d0*Av1) + dexp(-3.77358d0*Av2) ) * 0.5d0
 pha  = G0 * dsqrt(1.d3*T) * ATN1 / nde
@@ -648,7 +677,8 @@ LCOH2= ndH2*ndCO * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.08d0/T)
 Gampe = fgr*ndtot * 2.56526d3 * G0*ATN1 * &
        ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
 !------------------------- CR Heating
-Gamcr = (ndH+ndHe+ndH2) * 1.89435d0
+!Gamcr = (ndH+ndHe+ndH2) * 1.89435d0
+Gamcr = (ndH+ndHe+ndH2) * 12.62d0/2.d0 * zeta_cr !zeta=1.d-16
 !***------------------------- Photo-destruction Heating
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
@@ -710,17 +740,29 @@ alpha_B=2.54d0*1.d-13*Zi*(T/1.d1/Zi/Zi)**(-0.8163d0-0.0208d0*dlog(T/1.d1/Zi/Zi))
 Lrr=alpha_B * ndp * nde * (0.684d0-0.0416d0*dlog(T/1.d1/Zi/Zi))* 1.38d-16 * T * 1.d3 * 1.9733d27
 !------------------------- CIE
 !---He
-call linear(Mtl(2,1,:),Mtl(2,in_mtl(2),:),imtrx,sngl(T*1.d3),LCIEHe)
-!LCIEHe=LCIEHe*2.08d25
-LCIEHe=LCIEHe*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
+if((T*1.d3 .gt. 1.1d4).and.(T*1.d3 .le. 1.d8)) then
+dlogT2 = (-dlog10(1.d4) + dlog10(T*1.d3))
+idlogT = int(dlogT2/dlogTn)
+x_ktmk1=dlog10(Mtl(2,1,idlogT))
+x_ktmk2=dlog10(Mtl(2,1,idlogT+1))
+ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
+Mtl_CL=(1.d0-ktmk)*Mtl(2,2,idlogT)+ktmk*Mtl(2,2,idlogT+1)
+LCIEHe=Mtl_CL*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
 !---other metals
 LCIE_each(:)=0.d0
 LCIE=0.d0
 do k=3,ifile
-call linear(Mtl(k,1,:),Mtl(k,in_mtl(k),:),imtrx,sngl(T*1.d3),LCIE_each(k))
-!LCIE=LCIE_each(k)*Zmetals(k)*fgr*2.08d25+LCIE
-LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
+x_ktmk1=dlog10(Mtl(k,1,idlogT))
+x_ktmk2=dlog10(Mtl(k,1,idlogT+1))
+ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
+Mtl_CL=(1.d0-ktmk)*Mtl(k,2,idlogT)+ktmk*Mtl(k,2,idlogT+1)
+LCIE=Mtl_CL*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 enddo
+else
+LCIEHe=0.d0
+LCIE=0.d0
+endif
+!write(*,*)'in1',T*1.d3,LCIE,LCIEHe
 !------------------------- neb (Kim+32)
 fneb = 6.92d-1*((dlog(T/1.d1))**0) - 5.86d-1*((dlog(T/1.d1))**1) + &
 8.16d-1*((dlog(T/1.d1))**2) - 5.05d-1*(dlog((T/1.d1))**3) &
@@ -800,13 +842,16 @@ USE chmvar
 double precision :: Nttot,NtH2,NtC,NtCO,tau,temp
 double precision :: tNtot,tNH2,tNC,tNCO,ttau,dxh
 double precision :: T,fesC1,fesC2,n1,n2,b21,dvin
-DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
+DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,pc1
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 
 !ALLOCATE( Nttot(ndy,ndz,0:NSPLTx-1),NtH2(ndy,ndz,0:NSPLTx-1),NtC(ndy,ndz,0:NSPLTx-1),NtCO(ndy,ndz,0:NSPLTx-1) )
 !ALLOCATE(   tau(ndy,ndz,0:NSPLTx-1),temp(ndx,ndy,ndz) )
 
-dxh = 1.d0 ! 1 pc
+pc1=av1para/(fgr*1.63542d-3*ndtot)
+
+dxh = pc1
+!dxh = 1.d0 ! 1 pc
 
 dvin = 1.d0/dv
 !do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
@@ -816,39 +861,39 @@ call LEVC2(T,b21,ndH,ndH2,nde,ndCp,n1,n2)
   temp = 1.15563d1*(n1-n2)*dvin
 !end do; end do;end do
 
-!    tNtot =  dxh * ndtot
-!    tNH2  =  dxh *  ndH2
-!    tNC   =  dxh *   ndC
-!    tNCO  =  dxh *  ndCO
-!    ttau  =  dxh *  temp
-!    Ntot(1) = tNtot
-!    NH2(1)  = tNH2
-!    NnC(1)  = tNC
-!    NCO(1)  = tNCO
-!    tCII(1) = ttau
-!    tNtot = dxh * ndtot
-!    tNH2  = dxh *  ndH2
-!    tNC   = dxh *   ndC
-!    tNCO  = dxh *  ndCO
-!    ttau  = dxh *  temp
+    tNtot =  dxh * ndtot
+    tNH2  =  dxh *  ndH2
+    tNC   =  dxh *   ndC
+    tNCO  =  dxh *  ndCO
+    ttau  =  dxh *  temp
+    Ntot(1) = tNtot
+    NH2(1)  = tNH2
+    NnC(1)  = tNC
+    NCO(1)  = tNCO
+    tCII(1) = ttau
+    tNtot = dxh * ndtot
+    tNH2  = dxh *  ndH2
+    tNC   = dxh *   ndC
+    tNCO  = dxh *  ndCO
+    ttau  = dxh *  temp
 
-tNtot =  0.d0
-tNH2  =  0.d0
-tNC   =  0.d0
-tNCO  =  0.d0
-ttau  =  0.d0
-Ntot(1) = 0.d0
-NH2(1)  = 0.d0
-NnC(1)  = 0.d0
-NCO(1)  = 0.d0
-tCII(1) = 0.d0
-tNtot = 0.d0
-tNH2  = 0.d0
-tNC   = 0.d0
-tNCO  = 0.d0
-ttau  = 0.d0
+!tNtot =  0.d0
+!tNH2  =  0.d0
+!tNC   =  0.d0
+!tNCO  =  0.d0
+!ttau  =  0.d0
+!Ntot(1) = 0.d0
+!NH2(1)  = 0.d0
+!NnC(1)  = 0.d0
+!NCO(1)  = 0.d0
+!tCII(1) = 0.d0
+!tNtot = 0.d0
+!tNH2  = 0.d0
+!tNC   = 0.d0
+!tNCO  = 0.d0
+!ttau  = 0.d0
 
-    Nttot=tNtot; NtH2=tNH2; NtC=tNC; NtCO=tNCO; tau=ttau
+Nttot=tNtot; NtH2=tNH2; NtC=tNC; NtCO=tNCO; tau=ttau
 
     Ntot(2) = Ntot(1)
      NH2(2) =  NH2(1)
@@ -881,6 +926,9 @@ DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 
 Av1  = 1.63542d-3*Ntot(1)*fgr; x1 = 6.1714d3*NH2(1)
 Av2  = 1.63542d-3*Ntot(2)*fgr; x2 = 6.1714d3*NH2(2)
+!Av1  = av1para
+!Av2  = av2para
+
 ATN2 = ( dexp(-3.77358d0*Av1) +dexp(-3.77358d0*Av2) )*0.5d0
 ATN3 = ( dexp(-2.3585d0*Av1)  +dexp(-2.3585d0*Av2) )*0.5d0
 
@@ -904,7 +952,8 @@ ATN5 = ATN5 + &
 ATN5 = ATN5*0.5d0
 
 !H Ionization
-zeta  = 9.4671d-4
+!zeta  = 9.4671d-4
+zeta  = 6.308d-3/2.d0*zeta_cr !1.d-16 s^-1
 !H Recombination
 kHrec = (0.5d0+dsign(0.5d0,15.78d0-T))*0.45d0*dlog(1.578d2/T) &
        +(0.5d0-dsign(0.5d0,15.78d0-T))*0.4d0*dsqrt(1.578d2/T)
@@ -1002,9 +1051,9 @@ Mtl(:,:,:)=0.e0
 
 do k=1,ifile
 write(nm,'(I2.2)') k
-open(14,file=dir//nm//'.dat')
-imaxlp=k+3
-do j=1,imtrx
+open(14,file=dir//'Mtl'//nm//'.dat')
+imaxlp=2
+do j=0,imtrx
 !read(14,'E8.2E2') (Mtl,i=1,imaxlp)
 read(14,*) (Mtl(k,i,j),i=1,imaxlp)
 enddo

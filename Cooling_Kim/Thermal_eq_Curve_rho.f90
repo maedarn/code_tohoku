@@ -789,6 +789,7 @@ else
 LCIEHe=0.d0
 LCIE=0.d0
 endif
+write(*,*)'in1',T*1.d3,LCIE,LCIEHe
 !------------------------- neb (Kim+32)
 fneb = 6.92d-1*((dlog(T/1.d1))**0) - 5.86d-1*((dlog(T/1.d1))**1) + &
 8.16d-1*((dlog(T/1.d1))**2) - 5.05d-1*(dlog((T/1.d1))**3) &

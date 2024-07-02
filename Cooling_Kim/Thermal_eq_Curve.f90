@@ -24,14 +24,14 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-4
+DOUBLE PRECISION  :: dt1=1.d-5
 END MODULE comvar
 
 MODULE chmvar
-double precision :: Zsolar=1.d-1,xHe=0.1d0
+double precision, parameter :: Zsolar=1.d-4,xHe=0.1d0
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=2.d0, Tgr=5.d-3, fgr=1.d-1
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4*Zsolar, xo=3.2d-4*Zsolar, dv=2.d0, Tgr=5.d-3, fgr=1.d0*Zsolar
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
@@ -47,23 +47,23 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=2.d0, Tgr=5.d-3
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000000,itrcool=1000
+integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=10000000,itrcool=1000
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
 real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
-double precision :: Zi=1.d-2,alphaB,ni,ne !,kb=1.38d-16
+double precision :: Zi=1.d0,alphaB,ni,ne !,kb=1.38d-16
 END MODULE chmvar
 
 program main
 use comvar
 use chmvar
 !implicit none
-integer, parameter :: ix = 100,cnt=10!,itrcool=1000
+integer, parameter :: ix = 1,cnt=10!,itrcool=1000
 integer :: i,j,k,jm,j_lin
 
-double precision, parameter :: Tmin=1.d4,Tmax=1.d8,Tmp1p=1.d-2,Tmp2p=1.d6
+double precision, parameter :: Tmin=1.d4,Tmax=1.d8,Tmp1p=1.d-2,Tmp2p=1.d3
 double precision :: Tmp1 = 1.0d-2,Tmp2 = 1.0d5
-double precision, parameter :: Rhomin=1.d-2,Rhomax=1.d4,CooLth=1.d-3
+double precision, parameter :: Rhomin=1.d-1,Rhomax=1.d4,CooLth=1.d-3
 
 double precision :: dlogT,dlogT1,dlogRho,Rho1,dlogRho1
 double precision, dimension(:), allocatable :: Tmp,Rho
@@ -172,9 +172,12 @@ Rhopre=dinit1
 
 call metal_cool_corona()
 
-open(100,file=dir//'init_Z10m1_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
-open(110,file=dir//'init_Z10m1_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
-open(120,file=dir//'init_Z10m1_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+!open(100,file=dir//'Thermal_Z10m0_Tst_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+!open(110,file=dir//'Thermal_Z10m0_Tst_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+!open(120,file=dir//'Thermal_Z10m0_Tst_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+open(100,file=dir//'init_Z10m4_Tst_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+open(110,file=dir//'init_Z10m4_Tst_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+open(120,file=dir//'init_Z10m4_Tst_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
 !open(100,file=dir//'thermal_eq_curve_l_hot3.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
 !open(110,file=dir//'thermal_eq_curve_md_hot3.dat',access='stream',FORM='UNFORMATTED')!, position='append')
 !open(120,file=dir//'thermal_eq_curve_h_hot3.dat' ,access='stream',FORM='FORMATTED')!, position='append')
@@ -188,6 +191,8 @@ do i=0,ix
 Rho1 = Rho(i)
 !init_condition
 !Rho1 =1.0273365703885329d0
+!Rho1 = 66.179587716638878d0
+Rho1=119.12325788995d0
 
 write(*,*) 'Loop', i
 
@@ -631,7 +636,7 @@ Lamc = 6.0157d7*n2*b21
 !***------------------------- OI Cooling
 tO1  = 3.40057d-6*Ntot(1)/xo ; tO2 = 3.40057d-6*Ntot(2)/xo
 call fesc(tO1,fesO1); call fesc(tO2,fesO2)
-Lamo = fgr*(dmax1(ndtot*xo-ndCO,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )
+Lamo = fgr*(dmax1(ndtot*xo-ndCO,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * ((T*1.d1)**0.4d0) * dexp( -0.228d0/T )
 Lamo = Lamo * (fesO1+fesO2)
 !***------------------------- DustRec Cooling
 Lamd = fgr*nde*ndtot*6.06236d0 * (T**0.94d0) * ( pha**( 0.462628d0/(T**6.8d-2) ) )
@@ -721,6 +726,7 @@ call linear(Mtl(k,1,:),Mtl(k,in_mtl(k),:),imtrx,sngl(T*1.d3),LCIE_each(k))
 !LCIE=LCIE_each(k)*Zmetals(k)*fgr*2.08d25+LCIE
 LCIE=LCIE_each(k)*Zmetals(k)*fgr*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 enddo
+!write(*,*)'in1',T*1.d3,LCIE,LCIEHe
 !------------------------- neb (Kim+32)
 fneb = 6.92d-1*((dlog(T/1.d1))**0) - 5.86d-1*((dlog(T/1.d1))**1) + &
 8.16d-1*((dlog(T/1.d1))**2) - 5.05d-1*(dlog((T/1.d1))**3) &
@@ -750,7 +756,7 @@ Lneb = Lneb * (1.d0-Sigmo)
 CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) + (LCIEHe + LCIE) &
 - Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb
 
-!write(*,*) 'FCooL', Lamc, Lamo, Lamd, LCOr, LCOH, LCOH2, LCIEHe,LCIE, Gampe, Gamcr, Gampd, LamH2, Laml, Lrr, Lff
+!write(*,*) 'FCooL',T,ndtot, Lamc, Lamo, Lamd, LCOr, LCOH, LCOH2, LCIEHe,LCIE, Gampe, Gamcr, Gampd, LamH2, Laml, Lrr, Lff
 END SUBROUTINE Fcool
 
 SUBROUTINE linear(xa,ya,m,x,y)

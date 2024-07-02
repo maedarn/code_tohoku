@@ -24,11 +24,11 @@ integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end
 integer :: time_end_c6,time_end_c7,time_end_c8
 !double precision :: Sigmo,Tth1=2.d4,Tth2=3.5d4,asigmo=1.d1
 
-DOUBLE PRECISION  :: dt1=1.d-4
+DOUBLE PRECISION  :: dt1=1.d-6
 END MODULE comvar
 
 MODULE chmvar
-DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
+DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2,av1para=1.d0
 DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
@@ -45,7 +45,7 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3
 !DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 DOUBLE PRECISION  :: ndpmin,ndHmin,ndH2min,ndHmmin,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=1000,itrcool=1,cnt=10
+integer, parameter :: ifile = 30, imtrx=189,num_lin=30*(3+32)/2,itrchm=10000,itrcool=1,cnt=100
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
 real(4), dimension(1:ifile,1:ifile+3,1:imtrx):: Mtl
@@ -162,7 +162,7 @@ ndtotmd = ndHmd+ndpmd+2.d0*ndH2md+ndHemd+ndHepmd
 
 
 Rhopre=dinit1
-Rho1 = 1.d-2
+Rho1 = 550.d0
 
 ndHl   = ndHl * Rho1 / Rhopre
 ndpl   = ndpl * Rho1 / Rhopre
@@ -179,7 +179,7 @@ Ntotl(1)=0.d0; NH2l(1)=0.d0; NnCl(1)=0.d0; tCIIl(1)=0.d0
 Ntotl(2)=0.d0; NH2l(2)=0.d0; NnCl(2)=0.d0; tCIIl(2)=0.d0
 
 
-Tmp1 = 1.0d3
+Tmp1 = 31.260d0
 !Tmp2 = 1.0d7
 !Tmpmid = 0.5d0*(Tmp1+Tmp2)
 tint=0.d0
@@ -190,7 +190,7 @@ tint=0.d0
  do i1=1,itrchm
  dt=dt1
  tint=tint+dt
- write(*,*) dt,tint
+ !write(*,*) dt,tint
  neoldl=ndel
  call chem(Tmp1,ndpl,ndHl,ndH2l,ndHml,ndHel,ndHepl,ndCl,&
  ndCpl,ndCOl,ndel,ndtotl,Ntotl,NH2l,NnCl,NCOl,tCIIl,dt)
@@ -265,7 +265,7 @@ double precision  :: mmean,rtTx,rtTy,rtTz,tcd,CooL
 nde = ndp+ndHep+ndCp
 ndtot = ndp+ndH+2.d0*ndH2+ndHe+ndHep
 
-write(*,*)'init',T,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII,dt
+!write(*,*)'init',T,ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,Ntot,NH2,NnC,NCO,tCII,dt
 
 !if(ifrad.eq.2) then
 !call SHIELD()
@@ -626,13 +626,16 @@ USE chmvar
 double precision :: Nttot,NtH2,NtC,NtCO,tau,temp
 double precision :: tNtot,tNH2,tNC,tNCO,ttau,dxh
 double precision :: T,fesC1,fesC2,n1,n2,b21,dvin
-DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot
+DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,pc1
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
 
 !ALLOCATE( Nttot(ndy,ndz,0:NSPLTx-1),NtH2(ndy,ndz,0:NSPLTx-1),NtC(ndy,ndz,0:NSPLTx-1),NtCO(ndy,ndz,0:NSPLTx-1) )
 !ALLOCATE(   tau(ndy,ndz,0:NSPLTx-1),temp(ndx,ndy,ndz) )
 
-dxh = 1.d0 ! 1 pc
+!dxh = 1.d0 ! 1 pc
+pc1=av1para/(fgr*1.63542d-3*ndtot)
+
+dxh = pc1
 
 dvin = 1.d0/dv
 !do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
