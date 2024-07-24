@@ -1,0 +1,71 @@
+
+
+SUBROUTINE OHcool(xnH,T_K,y_H2,xNc_OH,tau_cnt,xLd_OH)
+    IMPLICIT REAL*8(a-h,o-z)
+    !double precision :: xnH,T_K,y_H2,xNc_OH,tau_cnt,xLd_OH
+    !     OH cooling function by Leiden data
+    double precision :: xk_B=1.38d-16, xm_p=1.67d-24
+    double precision :: xlTa(1:6)
+    data xlTa/1.477d0, 1.699d0, 1.903d0,&
+    2.000d0, 2.477d0, 2.778d0/
+    double precision :: xlNa(1:9)
+    data xlNa/10.0d0, 11.d0, 12.0d0, 13.d0, 14.d0,&
+    15.d0, 16.d0, 17.d0, 18.d0/
+    double precision :: aL0a(1:6)
+    data aL0a/0.2531d2, 0.2453d2, 0.2402d2, 0.2382d2, 0.2316d2,&
+    0.2290d2/
+    double precision :: aLLTEa(1:6,1:9)
+    data aLLTEa/0.1620d2, 0.1544d2, 0.1490d2, 0.1467d2, 0.1381d2,&
+    0.1358d2,&
+    0.1620d2, 0.1545d2, 0.1490d2, 0.1467d2, 0.1381d2, 0.1358d2,&
+    0.1622d2, 0.1546d2, 0.1491d2, 0.1467d2, 0.1381d2, 0.1359d2,&
+    0.1636d2, 0.1555d2, 0.1496d2, 0.1471d2, 0.1383d2, 0.1359d2,&
+    0.1702d2, 0.1600d2, 0.1525d2, 0.1495d2, 0.1394d2, 0.1367d2,&
+    0.1774d2, 0.1660d2, 0.1577d2, 0.1545d2, 0.1449d2, 0.1415d2,&
+    0.1858d2, 0.1738d2, 0.1650d2, 0.1616d2, 0.1510d2, 0.1477d2,&
+    0.1942d2, 0.1828d2, 0.1740d2, 0.1705d2, 0.1584d2, 0.1540d2,&
+    0.2038d2, 0.1921d2, 0.1836d2, 0.1802d2, 0.1683d2, 0.1635d2/
+    double precision :: xlnha(1:6,1:9)
+    data xlnha/0.905d1,  0.898d1,  0.890d1,  0.888d1,  0.877d1,&
+    0.872d1,&
+    0.905d1,  0.898d1,  0.890d1,  0.887d1,  0.877d1,  0.871d1,&
+    0.903d1,  0.897d1,  0.889d1,  0.887d1,  0.876d1,  0.871d1,&
+    0.888d1,  0.885d1,  0.881d1,  0.880d1,  0.874d1,  0.869d1,&
+    0.820d1,  0.827d1,  0.836d1,  0.840d1,  0.850d1,  0.850d1,&
+    0.725d1,  0.745d1,  0.771d1,  0.779d1,  0.799d1,  0.801d1,&
+    0.626d1,  0.646d1,  0.675d1,  0.685d1,  0.722d1,  0.729d1,&
+    0.526d1,  0.546d1,  0.575d1,  0.585d1,  0.623d1,  0.633d1,&
+    0.426d1,  0.446d1,  0.475d1,  0.485d1,  0.523d1,  0.533d1/
+    double precision :: alphaa(1:6,1:9)
+    data alphaa/0.353d0,  0.543d0,  0.536d0,  0.530d0,  0.466d0,&
+    0.434d0,&
+    0.354d0,  0.543d0,  0.536d0,  0.530d0,  0.466d0,  0.434d0,&
+    0.364d0,  0.544d0,  0.536d0,  0.529d0,  0.466d0,  0.434d0,&
+    0.399d0,  0.556d0,  0.534d0,  0.525d0,  0.463d0,  0.432d0,&
+    0.655d0,  0.586d0,  0.532d0,  0.521d0,  0.447d0,  0.424d0,&
+    0.641d0,  0.538d0,  0.538d0,  0.538d0,  0.448d0,  0.443d0,&
+    0.649d0,  0.572d0,  0.552d0,  0.516d0,  0.381d0,  0.370d0,&
+    0.566d0,  0.618d0,  0.580d0,  0.538d0,  0.381d0,  0.363d0,&
+    0.701d0,  0.645d0,  0.598d0,  0.550d0,  0.383d0,  0.369d0/
+    
+    xn_c=(1.d0-y_H2)*xnH
+    
+    xlT=dlog10(T_K)
+    cs=1.d-5*dsqrt(2.d0*xk_B*T_K/(17.d0*xm_p))
+    xNc_OH=xNc_OH+1.d-10
+    xlN=dlog10(xNc_OH/cs)
+    call linear(xlTa,aL0a,6,xlT,aL0)
+    call bilinear(xlTa,xlNa,aLLTEa,6,9,xlT,xlN,aLLTE)
+    call bilinear(xlTa,xlNa,xlnha,6,9,xlT,xlN,xlnh)
+    call bilinear(xlTa,xlNa,alphaa,6,9,xlT,xlN,alpha)
+    
+    xL0inv=10.d0**aL0
+    xLLTEinv=10.d0**aLLTE
+    xn_h=10.d0**xlnh
+    xLinv=xL0inv&
+    +xn_c*xLLTEinv&
+    +xL0inv*((xn_c/xn_h)**alpha)*(1.d0-xn_h*xLLTEinv/xL0inv)
+    xL=1.d0/xLinv
+    xLd_OH=(1.d0-y_H2)*xL*dexp(-tau_cnt)
+
+END SUBROUTINE OHcool

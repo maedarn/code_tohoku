@@ -14,7 +14,7 @@ double precision :: xLmbd_net
 double precision :: Z_gas=1.0d0,Z_dust=1.0d0,Z_metal
 double precision :: sigma_B=5.67d-5
 END MODULE COMVAR
-!new
+
 PROGRAM ZR
 !computes the evolutionary path of
 !metal polluted protostellar clouds
@@ -417,7 +417,7 @@ double precision :: T_K1,T_gr_K1,radius,esc_cnt,xLmbd_cnt,xLmbd_gr
 yHe=8.333d-2
 !      xJ_ex=B_ex*dexp(-A_v/2.5d0)
 xJ_ex=0.d0
-call grtemp(xnH,esc_cnt,xJ_ex,T_gr_K1)
+call grtemp(xnH,T,esc_cnt,T_rad,xJ_ex,T_gr)
 rho=(1.d0+4.d0*yHe)*xm_p*xnH
 xk_gr=xkp_gr(rho,T_gr_K1)*Z_metal
 xk_gas=xk_prm(T_K1,rho)
@@ -902,7 +902,7 @@ END SUBROUTINE equichem
 SUBROUTINE COcool(xnH,T_K,y_H2,xNc_CO,tau_cnt,xLd_CO)
 !     CO cooling function
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xnH,T_K,y_H2,xNc_CO,tau_cnt,xLd_CO
+!double precision :: xnH,T_K,y_H2,xNc_CO,tau_cnt,xLd_CO
 double precision :: xk_B=1.38d-16, xm_p=1.67d-24
 double precision :: xlTa(1:13)
 data xlTa/0.477d0, 0.778d0, 1.000d0, 1.301d0, 1.477d0,&
@@ -1020,15 +1020,15 @@ END SUBROUTINE COcool
 FUNCTION Gamma_CR(zeta,y_a,y_m,y_He)
 !     calculates heating rate (ergs/s/g) due to CR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: zeta,y_a,y_m,y_He
+!double precision :: zeta,y_a,y_m,y_He
 Gamma_CR=3.26d12*(0.46d0*y_a+0.50d0*y_He+0.94d0*y_m)*zeta/(1.d0+4.d0*y_He)
-!return
+return
 END FUNCTION Gamma_CR
 
 
 SUBROUTINE grtemp(xnH,T,esc_cnt,T_rad,xJ_ex,T_gr)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xnH,T,esc_cnt,T_rad,xJ_ex,T_gr
+!double precision :: xnH,T,esc_cnt,T_rad,xJ_ex,T_gr
 double precision, PARAMETER :: yHe=8.333d-2,xk_vis=40.d0
 double precision :: xm_p=1.67d-24
 
@@ -1125,7 +1125,7 @@ END SUBROUTINE grtemp
 
 FUNCTION xkp_gr(rho,T)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: rho,T
+!double precision :: rho,T
 !     Planck mean mass absorption coefficient ("opacity")
 !     owing to Dust Grain (solar metalicity)
 !     USES vaptemp,linear
@@ -1167,7 +1167,7 @@ END FUNCTION xkp_gr
 FUNCTION vol_gr(rho,T_K)
 IMPLICIT REAL*8(a-h,o-z)
 !     gives grain volume per unit mass of gas (solar metalicity)
-double precision :: rho,T_K
+!double precision :: rho,T_K
 !     USES vaptemp
 x(t,t1)=dmin1(1.d0,ddim(1.025d0,t/t1)/0.05d0)
 
@@ -1193,7 +1193,7 @@ SUBROUTINE vaptemp(rho,T_ice,T_vo,T_ro,T_tr,T_ir,T_pyr,T_ol)
 !     T_pyr   for   Orthopyroxene
 !     T_ol    for   Olivine
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: rho,T_ice,T_vo,T_ro,T_tr,T_ir,T_pyr,T_ol
+!double precision :: rho,T_ice,T_vo,T_ro,T_tr,T_ir,T_pyr,T_ol
 !     USES linear
 double precision :: xlg_rhoa(13),T_icea(13),T_ira(13),&
 T_pyra(13),T_ola(13)
@@ -1221,14 +1221,14 @@ T_tr=680.d0
 call linear(xlg_rhoa,T_ira,13,xlg_rho,T_ir)
 call linear(xlg_rhoa,T_pyra,13,xlg_rho,T_pyr)
 call linear(xlg_rhoa,T_ola,13,xlg_rho,T_ol)
-!return
+return
 
 END SUBROUTINE vaptemp
 
 
 SUBROUTINE phelectr(xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe
+!double precision :: xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe
 double precision :: xm_p=1.67d-24, T_ro=575.d0
 if(T_gr_K > T_ro) then
    Gmm_pe=0.d0
@@ -1248,13 +1248,13 @@ xLd_pe=4.65d-30*(T_K**0.94d0)*(x**beta)*y_e
 
 Gmm_pe=Z_metal*(Gam_pe*xnH-xLd_pe*xnH**2)/rho
 
-!return
+return
 END SUBROUTINE phelectr
 
 
 FUNCTION c_H2(T_K)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: T_K,c_H2,E_T,T_K_b,T_K_f,x
+!double precision :: T_K,c_H2,E_T,T_K_b,T_K_f,x
 if(T_K.gt.1.d3) then
    c_rot=1.d0
    go to 10
@@ -1359,8 +1359,8 @@ function E_H2_BFM(iv,J)
 IMPLICIT REAL*8(a-h,o-z)
 !     Borysow, Frommhold, and Moraldi (1989) ApJ,336,495
 !     Equation (A11) (in K)
-double precision :: E_H2_BFM
-integer :: iv,J
+!double precision :: E_H2_BFM
+!integer :: iv,J
 
 Ev0=0.38496d0
 Ev1=-0.04609d0
@@ -1433,7 +1433,7 @@ end function E_H2_BFM
 FUNCTION xLd_H2(xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt)
 IMPLICIT REAL*8(a-h,o-z)
 !     xnH*xn(H2)*xLd_H2 : cooling rate owing to H2 per unit volume
-double precision :: xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt,xLd_H2,Q_bg
+!double precision :: xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt,xLd_H2,Q_bg
 !     USES beta_esc, Q_bg
 double precision :: A(0:2,0:2,0:22,0:22),ET(0:2,0:22),p(0:22),&
 f(0:2,0:22),f_v(0:2)
@@ -1770,7 +1770,7 @@ END FUNCTION xLd_H2
 SUBROUTINE H2Ocool(xnH,T_K,y_H2,xNc_H2O,tau_cnt,xLd_H2O)
 IMPLICIT REAL*8(a-h,o-z)
 !c     H2O cooling function by Neufeld et al.
-double precision :: xnH,T_K,y_H2,xNc_H2O,tau_cnt,xLd_H2O
+!double precision :: xnH,T_K,y_H2,xNc_H2O,tau_cnt,xLd_H2O
 double precision :: xk_B=1.38d-16, xm_p=1.67d-24
 !c     100, 200, 400, 1000, 2000, 4000K
 double precision ::  xlTa(1:6)
@@ -1948,7 +1948,7 @@ FUNCTION xLd_HD(xnH,T_K,y_H,y_H2,xNc_HD,tau_cnt)
 IMPLICIT REAL*8(a-h,o-z)
 ! HD cooling from Galli and Palla (1998), A&A, 335, 403
 ! cooling is for T < 3000 K, in erg cm^3 s-1
-double precision :: xLd_HD,xnH,T_K,y_H,y_H2,xNc_HD,tau_cnt,Q_bg,beta_esc
+!double precision :: xLd_HD,xnH,T_K,y_H,y_H2,xNc_HD,tau_cnt,Q_bg,beta_esc
 double precision ::  xk_B=1.38066d-16,h_Pl=6.62618d-27,pi=3.14159265358979d0,xm_p=1.67d-24
 !     USES Q_bg, beta_esc
 !------------------------------------------------
@@ -2096,14 +2096,22 @@ xLd_HD = xLd10d+xLd21d+xLd32d+xLd20d+xLd31d
 return
 END FUNCTION xLd_HD
 
-FUNCTION xLd(pop,esc,N_line)
+recursive real(8) FUNCTION xLd(pop,esc,N_line)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd,pop
-integer :: N_line
+!double precision :: xLd
+!integer :: N_line
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p),desc(N_p),&
 esc_f(N_p),func_f(N_p),A(N_p,N_p),&
 esc_min(N_p)
+
+interface
+   subroutine pop(esc1,func1,xLd1)
+      integer, PARAMETER :: N_p=100
+      double precision :: xLd1
+      double precision :: esc1(N_p),func1(N_p)
+   end subroutine pop
+end interface 
 
 err_max_min=1.d10
 do 10 itr=1,1000
@@ -2192,9 +2200,9 @@ END FUNCTION xLd
 SUBROUTINE pop_rot(esc,func,xLd_rot)
 !     xnH*rn(molecule)*xLd_rot : cooling rate owing to
 !     rotational transitions per unit volume
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_rot
+!double precision :: xLd_rot
 !     USES beta_esc
 integer, PARAMETER :: N_p=100
 double precision :: f_LTE(0:N_p),A(N_p),f(0:N_p),aa(N_p),&
@@ -2273,9 +2281,9 @@ END SUBROUTINE pop_rot
 
 
 SUBROUTINE pop_CII(esc,func,xLd_CII)
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_CII
+!double precision :: xLd_CII
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2326,9 +2334,9 @@ return
 END SUBROUTINE pop_CII
 
 SUBROUTINE pop_CI(esc,func,xLd_CI)
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_CI
+!double precision :: xLd_CI
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2451,9 +2459,9 @@ END SUBROUTINE pop_CI
 
 SUBROUTINE pop_OI(esc,func,xLd_OI)
 !     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_OI
+!double precision :: xLd_OI
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2578,9 +2586,9 @@ END SUBROUTINE pop_OI
 
 
 SUBROUTINE pop_CIImeta(esc,func,xLd_CIImeta)
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_CIImeta
+!double precision :: xLd_CIImeta
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2629,9 +2637,9 @@ xLd_CIImeta=DE_10*A_10*f_1*esc_10*(1.d0-Q_10/S_10)/xnH
 END SUBROUTINE pop_CIImeta
 
 SUBROUTINE pop_CImeta(esc,func,xLd_CImeta)
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: Ld_CImeta
+!double precision :: Ld_CImeta
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2746,9 +2754,9 @@ END SUBROUTINE pop_CImeta
 
 SUBROUTINE pop_OImeta(esc,func,xLd_OImeta)
 !     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
-use COMVAR
+!use COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xLd_OImeta
+!double precision :: xLd_OImeta
 integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p)
 !double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
@@ -2871,9 +2879,9 @@ END SUBROUTINE pop_OImeta
 
 SUBROUTINE thick_lev(J_thick)
 !double precision :: thick_lev
-USE COMVAR
+!USE COMVAR
 IMPLICIT REAL*8(a-h,o-z)
-integer J_thick,j
+!integer J_thick,j
 integer, PARAMETER :: N_p=100
 double precision :: f_LTE(0:N_p),A(N_p),f(0:N_p),aa(N_p),P_J(N_p),esc(N_p)
 !COMMON /lines/ xnH,T_K,y_e,y_a,y_m,v_bulk,tau_cnt,xNc
@@ -2935,7 +2943,7 @@ END SUBROUTINE thick_lev
 
 FUNCTION beta_esc(tau_L,tau_C)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: beta_esc,tau_L,tau_C
+!double precision :: beta_esc,tau_L,tau_C
 
 if(tau_L.lt.0.d0) then
    beta_esc=1.d0
@@ -2951,7 +2959,7 @@ END FUNCTION beta_esc
 
 SUBROUTINE OHcool(xnH,T_K,y_H2,xNc_OH,tau_cnt,xLd_OH)
 IMPLICIT REAL*8(a-h,o-z)
-double precision :: xnH,T_K,y_H2,xNc_OH,tau_cnt,xLd_OH
+!double precision :: xnH,T_K,y_H2,xNc_OH,tau_cnt,xLd_OH
 !     OH cooling function by Leiden data
 double precision :: xk_B=1.38d-16, xm_p=1.67d-24
 double precision :: xlTa(1:6)
@@ -3023,7 +3031,7 @@ SUBROUTINE react_coef(xnH,T_K,T_gr_K,Z_metal,xk)
 IMPLICIT REAL*8(a-h,o-z)
 !USE COMVAR
 integer, PARAMETER :: N_react=675
-double precision :: xnH,T_K,T_gr_K,Z_metal
+!double precision :: xnH,T_K,T_gr_K,Z_metal
 !common /UVCR/ zeta, G_0
 !common /coldens/A_v,xNc_H,xNc_H2,xNc_HD
 !common /xcrit/xH,xH2,xHe
@@ -5296,7 +5304,7 @@ xk(674)=zeta*750.d0/(1.d0-omega)
 xk(675)=zeta*854.d0/(1.d0-omega)
 
 return
-END
+END SUBROUTINE react_coef
 
 SUBROUTINE react_rat(xk,xnH,y,r_f_tot)
 IMPLICIT REAL*8(a-h,o-z)
@@ -10164,14 +10172,14 @@ else
 endif
 
 return
-END
+END FUNCTION xk_prm
 
 
 
 SUBROUTINE linear(xa,ya,m,x,y)
 IMPLICIT REAL*8(a-h,o-z)
-integer :: m
-double precision :: xa(m),ya(m),x,y
+!integer :: m
+double precision :: xa(m),ya(m)!,x,y
 do 11 i=1,m
    if(x-xa(i).le.0.d0) then
       ms=i
@@ -10186,7 +10194,7 @@ y2=ya(ms)
 t=(x-xa(ms-1))/(xa(ms)-xa(ms-1))
 y=(1.d0-t)*y1+t*y2
 return
-END
+END SUBROUTINE linear
 
 
 SUBROUTINE gaussj(a,n,np,b,m,mp)
@@ -10301,13 +10309,13 @@ do 24 l=n,1,-1
 24    continue
 25    continue
 return
-END
+END SUBROUTINE gaussj
 ! (C) Copr. 1986-92 Numerical Recipes Software v%1jw#<?4210(93Y"+91.d0
 
 SUBROUTINE bilinear(x1a,x2a,ya,m,n,x1,x2,y)
 IMPLICIT REAL*8(a-h,o-z)
-integer m,n
-double precision :: x1a(m),x2a(n),ya(m,n),x1,x2,y
+!integer m,n
+double precision :: x1a(m),x2a(n),ya(m,n)!,x1,x2,y
 do 11 i=1,m
    if(x1-x1a(i).le.0.d0) then
       ms=i
@@ -10334,7 +10342,7 @@ t=(x1-x1a(ms-1))/(x1a(ms)-x1a(ms-1))
 u=(x2-x2a(ns-1))/(x2a(ns)-x2a(ns-1))
 y=(1.d0-t)*(1.d0-u)*y1+t*(1.d0-u)*y2+t*u*y3+(1.d0-t)*u*y4
 return
-END
+END SUBROUTINE bilinear
 
 
 
