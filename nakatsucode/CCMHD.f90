@@ -2516,7 +2516,7 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   if( dt .le. 0.2d0*Pn(i,j,k)/(gammi1*dabs(CooL)) ) then
     U(i,j,k,5) = Pn(i,j,k) - gammi1*CooL*dt !explicit
   else
-    Call IMC( Pn(i,j,k),ndH(i,j,k)+ndp(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k),dt,i,j,k ) !implicit
+    Call IMC( Pn(i,j,k),ndH(i,j,k)+ndp(i,j,k)+ndHez(i,j,k)+ndHep(i,j,k)+ndH2(i,j,k),dt,i,j,k ) !implicit
     U(i,j,k,5) = Pn(i,j,k)
   end if
 !----- Conduction ------------------------------------------------------

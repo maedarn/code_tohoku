@@ -14,6 +14,7 @@ DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax!,Tmin
 INTEGER :: Ncellx,Ncelly,Ncellz,iwx,iwy,iwz,maxstp,nitera
 INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
+DOUBLE PRECISION  :: Gampd_1, Gampd_2, Lamdg, LH2a, LH2b, LH2c, LH2d, LH2e
 
 DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
 INTEGER :: idum1,idum2
@@ -28,10 +29,10 @@ DOUBLE PRECISION  :: dt1=1.d-5
 END MODULE comvar
 
 MODULE chmvar
-double precision, parameter :: Zsolar=1.d-4,xHe=0.1d0
-DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
+double precision, parameter :: Zsolar=1.d-2,xHe=0.1d0,zeta_cr=1.d0
+DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=3.d-3
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
-DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4*Zsolar, xo=3.2d-4*Zsolar, dv=2.d0, Tgr=5.d-3, fgr=1.d0*Zsolar
+DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4*Zsolar, xo=3.2d-4*Zsolar, dv=2.d0, Tgr=3.d-3, fgr=1.d0*Zsolar
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
@@ -175,9 +176,9 @@ call metal_cool_corona()
 !open(100,file=dir//'Thermal_Z10m0_Tst_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
 !open(110,file=dir//'Thermal_Z10m0_Tst_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
 !open(120,file=dir//'Thermal_Z10m0_Tst_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
-open(100,file=dir//'init_Z10m4_Tst_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
-open(110,file=dir//'init_Z10m4_Tst_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
-open(120,file=dir//'init_Z10m4_Tst_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
+open(100,file=dir//'init_Z10m2_dff_l.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
+open(110,file=dir//'init_Z10m2_dff_md.dat',access='stream',FORM='UNFORMATTED')!, position='append')
+open(120,file=dir//'init_Z10m2_dff_h.dat' ,access='stream',FORM='FORMATTED')!, position='append')
 !open(100,file=dir//'thermal_eq_curve_l_hot3.dat' ,access='stream',FORM='UNFORMATTED')!, position='append')
 !open(110,file=dir//'thermal_eq_curve_md_hot3.dat',access='stream',FORM='UNFORMATTED')!, position='append')
 !open(120,file=dir//'thermal_eq_curve_h_hot3.dat' ,access='stream',FORM='FORMATTED')!, position='append')
@@ -190,9 +191,9 @@ open(120,file=dir//'init_Z10m4_Tst_h.dat' ,access='stream',FORM='FORMATTED')!, p
 do i=0,ix
 Rho1 = Rho(i)
 !init_condition
-!Rho1 =1.0273365703885329d0
+Rho1 =1.0273365703885329d0
 !Rho1 = 66.179587716638878d0
-Rho1=119.12325788995d0
+!Rho1=119.12325788995d0
 
 write(*,*) 'Loop', i
 
@@ -609,6 +610,10 @@ double precision :: n1,n2,b21,fneb
 double precision, dimension(1:ifile) :: LCIE_each
 DOUBLE PRECISION :: ndp,ndH,ndH2,ndHm,ndHe,ndHep,ndC,ndCp,ndCO,nde,ndtot,ndHtot
 DOUBLE PRECISION, dimension(2) :: Ntot,NH2,NnC,NCO,tCII
+DOUBLE PRECISION :: dlogT=(-dlog10(1.d4) + dlog10(1.d8))/dble(200),dlogT2
+DOUBLE PRECISION :: ktmk,x_ktmk1,x_ktmk2,Mtl_CL
+integer :: idlogT
+DOUBLE PRECISION :: Ecr,phis, phi_pah=0.5d0,Td,nde1,D0,k15,k11,k10,eta,Rd,Rm
 
 !( 1 pc * 5.3d-22 = 1.63542d-3 )
 !( 1 pc * 2.d-15  = 6.1714d3 )
@@ -636,10 +641,13 @@ Lamc = 6.0157d7*n2*b21
 !***------------------------- OI Cooling
 tO1  = 3.40057d-6*Ntot(1)/xo ; tO2 = 3.40057d-6*Ntot(2)/xo
 call fesc(tO1,fesO1); call fesc(tO2,fesO2)
-Lamo = fgr*(dmax1(ndtot*xo-ndCO,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * ((T*1.d1)**0.4d0) * dexp( -0.228d0/T )
+Lamo = fgr*(dmax1(ndtot*xo-ndCO,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * ((T*1.d1)**0.4d0) * dexp( -0.228d0/T ) * xo/3.2d-4
 Lamo = Lamo * (fesO1+fesO2)
 !***------------------------- DustRec Cooling
 Lamd = fgr*nde*ndtot*6.06236d0 * (T**0.94d0) * ( pha**( 0.462628d0/(T**6.8d-2) ) )
+!---Bialy+19; Draine p.287---
+Td=1.64d1*(G0/1.7d0)**(1.d0/6.0)
+Lamdg = fgr*ndtot*ndtot*dsqrt(T*1.d3)*3.8d-33*1.9733d27*(T*1.d3-Td)*(1.d0-0.8d0*dexp(-75.d0/(T*1.d3)))
 !***------------------------- CO Cooling
 ncr  = 3.3d6*(T**0.75d0)/(ndH+ndp+ndH2+ndHe+ndHep)
 tau1 = 1.33194d1*NCO(1)/(T*dv); tau2 = 1.33194d1*NCO(2)/(T*dv)
@@ -653,11 +661,36 @@ LCOH2= ndH2*ndCO * 3.60834d4*T*dexp(-(3.14d2/T)**0.333d0)*dexp(-3.08d0/T)
 Gampe = fgr*ndtot * 2.56526d3 * G0*ATN1 * &
        ( 7.382d-3*(T**0.7d0)/(1.d0+2.d-4*pha) + 4.9d-2/(1.d0+4.d-3*(pha**0.73d0)) )
 !------------------------- CR Heating
-Gamcr = (ndH+ndHe+ndH2) * 1.89435d0
+!Gamcr = (ndH+ndHe+ndH2) * 1.89435d0
+!---Bialy+19
+Ecr=6.43d0*(1.d0+4.06d0*(nde/(nde+7.d-2*ndtot))**0.5d0)*1.6022d-12
+phis=(ndtot-nde/1.2d0)*0.67d0/(ndtot+nde/5.d-2)
+!Gamcr = (ndH+ndHe+ndH2) * Ecr * zeta_cr / (1.d0 + phis) !zeta=1.d-16
+Gamcr = (ndH+ndHe+ndH2+nde) * Ecr * zeta_cr * 3.d-17 / (1.d0 + phis) * 1.9733d27 !zeta=1.d-16
 !***------------------------- Photo-destruction Heating
 SHLD1 = 0.965d0/(1.d0+x1/dv)**2 + 0.035d0/dsqrt(1.d0+x1)*dexp(-8.5d-4*dsqrt(1.d0+x1))
 SHLD2 = 0.965d0/(1.d0+x2/dv)**2 + 0.035d0/dsqrt(1.d0+x2)*dexp(-8.5d-4*dsqrt(1.d0+x2))
 Gampd = ndH2 * 4.16362d4 * G0*ATN2 * ( SHLD1+SHLD2 )*0.5d0
+!---Bialy+19
+!Photodissociation
+D0=5.8d-11 !* 3.154d13
+!Gampd = ndH2 * (G0/1.7d0) *ATN2 * ( SHLD1+SHLD2 )*0.5d0 * D0 * 0.4d0 *1.6022d-12 * 1.9733d27
+!pumping
+!Gampd = Gampd + 9.d0 * ndH2 * (G0/1.7d0) *ATN2 * ( SHLD1+SHLD2 ) * D0 * 1.12d0 *1.6022d-12 &
+!* 1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot) * 1.9733d27
+Gampd_1= 9.d0 * ndH2 * (G0/1.7d0) *ATN2 * ( SHLD1+SHLD2 ) * D0 * 1.12d0 *1.6022d-12 &
+* 1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot) * 1.9733d27
+!formation
+k15=4.1d-8*(T)**(-0.5d0) !* 3.154d13
+k11=2.6d-9*(T)**(-0.39d0)*dexp(-0.0394d0/T) !* 3.154d13
+k10=7.2d-16*(T)**(0.64d0)*dexp(-0.0092d0/T) !* 3.154d13
+eta=1.d0/(1.d0 + 5.6d-9*(G0/1.7d0)/k11/ndtot + ndp*k15/k11/ndtot)
+Rd=3.d-17*(T*1.d0)**0.5d0*fgr !*3.154d13
+Rm=k10*nde/ndtot*eta !1.9d-18*T**1.02d0*zeta_cr**0.5d0*(ndtot/10.d0)**(-0.5d0)*3.154d13
+Gampd_2 = ndtot * ndH * (0.6d0+14.6d0*1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot))*1.6022d-12 * 1.9733d27 * Rd
+Gampd_2 = Gampd_2 + ndtot * ndH * (1.d0+13.2d0*1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot))*1.6022d-12 * 1.9733d27 * Rm
+!Gampd = Gampd + ndtot * ndH * (0.6d0+14.6d0*1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot))*1.6022d-12 * 1.9733d27 * Rd
+!Gampd = Gampd + ndtot * ndH * (1.d0+13.2d0*1.d0/(1.d0+1.1d5/dsqrt(T)/ndtot))*1.6022d-12 * 1.9733d27 * Rm
 !------------------------- H2 cooling
 LamH2H = 0.d0
 if((T.gt.1.d-2).and.(T.le.1.d-1)) then
@@ -687,21 +720,42 @@ if((T.gt.1.d-2).and.(T.le.6.d0)) then
                       -0.166d0*(dlog10(T))**4+0.1919d0*(dlog10(T))**5 )
   LamH2He = ndHe*ndH2*10.d0**(LamH2He)
 endif
+!Glover+2008
 LamH2p = 0.d0
+!if((T.gt.1.d-2).and.(T.le.1.d1)) then
+!  LamH2p = ( -21.7167d0+1.3866d0*dlog10(T)-0.379d0*(dlog10(T))**2+0.1145d0*(dlog10(T))**3 &
+!                      -0.2321d0*(dlog10(T))**4+0.05854d0*(dlog10(T))**5 )
+!  LamH2p = ndp*ndH2*10.d0**(LamH2p)
+!endif
+!Glover+2015
 if((T.gt.1.d-2).and.(T.le.1.d1)) then
-  LamH2p = ( -21.7167d0+1.3866d0*dlog10(T)-0.379d0*(dlog10(T))**2+0.1145d0*(dlog10(T))**3 &
-                      -0.2321d0*(dlog10(T))**4+0.05854d0*(dlog10(T))**5 )
+  LamH2p = ( -22.089523d0+1.5714711d0*dlog10(T)+0.015391166d0*(dlog10(T))**2-0.23619985d0*(dlog10(T))**3 &
+                      -0.51002221d0*(dlog10(T))**4+0.32168730d0*(dlog10(T))**5 )
   LamH2p = ndp*ndH2*10.d0**(LamH2p)
 endif
 LamH2e = 0.d0
-if((T.gt.1.d-2).and.(T.le.2.d-1)) then
-  LamH2e = ( -34.286d0-48.537d0*dlog10(T)-77.121d0*(dlog10(T))**2-51.352d0*(dlog10(T))**3 &
-                      -15.169d0*(dlog10(T))**4-0.9812d0*(dlog10(T))**5 )
+!Glover+2008
+!if((T.gt.1.d-2).and.(T.le.2.d-1)) then
+!  LamH2e = ( -34.286d0-48.537d0*dlog10(T)-77.121d0*(dlog10(T))**2-51.352d0*(dlog10(T))**3 &
+!                      -15.169d0*(dlog10(T))**4-0.9812d0*(dlog10(T))**5 )
+!  LamH2e = nde*ndH2*10.d0**(LamH2e)
+!endif
+!if((T.gt.2.d-1).and.(T.le.1.d1)) then
+!  LamH2e = ( -22.19d0+1.573d0*dlog10(T)-0.2134d0*(dlog10(T))**2+0.9615d0*(dlog10(T))**3 &
+!                      -0.910d0*(dlog10(T))**4+0.1375d0*(dlog10(T))**5 )
+!  LamH2e = nde*ndH2*10.d0**(LamH2e)
+!endif
+!Glover+2015
+if((T.gt.1.d-1).and.(T.le.5.d-1)) then
+  LamH2e = ( -21.928796d0+16.815730d0*dlog10(T)+96.743155d0*(dlog10(T))**2+343.19180d0*(dlog10(T))**3 &
+             +734.71651d0*(dlog10(T))**4+983.67576d0*(dlog10(T))**5+801.81247d0*(dlog10(T))**6 &
+             +364.14446d0*(dlog10(T))**7+70.609154d0*(dlog10(T))**8)
   LamH2e = nde*ndH2*10.d0**(LamH2e)
 endif
-if((T.gt.2.d-1).and.(T.le.1.d1)) then
-  LamH2e = ( -22.19d0+1.573d0*dlog10(T)-0.2134d0*(dlog10(T))**2+0.9615d0*(dlog10(T))**3 &
-                      -0.910d0*(dlog10(T))**4+0.1375d0*(dlog10(T))**5 )
+if((T.gt.5.d-1).and.(T.le.1.d1)) then
+  LamH2e = ( -22.921189d0+1.6802758d0*dlog10(T)+0.93310622d0*(dlog10(T))**2+4.0406627d0*(dlog10(T))**3 &
+             -4.7274036d0*(dlog10(T))**4-8.8077017d0*(dlog10(T))**5+8.9167183d0*(dlog10(T))**6 &
+             +6.4380698d0*(dlog10(T))**7-6.3701156d0*(dlog10(T))**8)
   LamH2e = nde*ndH2*10.d0**(LamH2e)
 endif
 LamH2 = (LamH2H+LamH2H2+LamH2He+LamH2p+LamH2e)*1.9733d27
@@ -752,9 +806,10 @@ LCOH2 = LCOH2 * (1.d0-Sigmo)
 LCIEHe = Sigmo * (LCIEHe)
 LCIE = Sigmo * (LCIE)
 Lneb = Lneb * (1.d0-Sigmo)
+Lamdg = Lamdg * (1.d0-Sigmo)
 
 CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) + (LCIEHe + LCIE) &
-- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb
+- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb - Gampd_1 - Gampd_2 + Lamdg
 
 !write(*,*) 'FCooL',T,ndtot, Lamc, Lamo, Lamd, LCOr, LCOH, LCOH2, LCIEHe,LCIE, Gampe, Gamcr, Gampd, LamH2, Laml, Lrr, Lff
 END SUBROUTINE Fcool

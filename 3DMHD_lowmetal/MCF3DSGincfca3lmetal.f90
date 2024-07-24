@@ -29,7 +29,7 @@ END MODULE comvar
 MODULE mpivar
 INTEGER :: NPE,NRANK, NSPLTx,NSPLTy,NSPLTz, IST,JST,KST, LEFT,RIGT,BOTM,TOP,UP,DOWN
 INTEGER :: BCx1,BCx2,BCy1,BCy2,BCz1,BCz2, N_MPI(20)
-DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(8)
+DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(9)
 REAL*4, dimension(:,:,:), allocatable :: DTF
 REAL*4, dimension(:,:,:,:), allocatable :: VTF,rd49
 END MODULE mpivar
