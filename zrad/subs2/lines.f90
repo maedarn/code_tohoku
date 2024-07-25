@@ -27,7 +27,7 @@ do itr=1,1000
       call pop(esc_f,func_f,xLd)
 ! ------ set the matrix A
       do i=1,N_line
-         A(i,j)=(func_f(i)-func(i))/(esc_f(j)-esc(j))
+         A(i,j)=(func_f(i)-func(i))/(esc_f(j)-esc(j)+1.d-100)
       enddo
    enddo
 ! ------- set the vector desc

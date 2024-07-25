@@ -46,42 +46,46 @@ USE lines
 USE indcool
 USE radgr
 IMPLICIT REAL*8(a-h,o-z)
-PARAMETER (N_sp=50) 
-DIMENSION y(N_sp)
+integer, PARAMETER :: N_sp=50 
+double precision :: y(N_sp), t_ratio
 double precision :: xm_p=1.67d-24,xk_B=1.38d-16,G=6.67d-8,&
                  pi=3.14159265358979d0
 
 !---parameters---
-Z_gas=1.0d-2
-Z_dust=1.0d-2
+Z_gas=1.0d-6
+Z_dust=1.0d-6
 !G_0=1.d0
 !zeta=1.d-17
-G_0=100.d0
+G_0=0.d0
 zeta=0.d0
 T_rad=10.d0
 yHe=8.333d-2
 yD=3.d-5
-!---parameters---
-            
-open(8,file='data2/nT.dat',status='unknown')
-open(11,file='data2/1.dat',status='unknown')
-open(12,file='data2/2.dat',status='unknown')
-!open(13,file='3.dat',status='unknown')    
-open(14,file='data2/4.dat',status='unknown')
-open(15,file='data2/data_y.dat',status='unknown')
-!open(16,file='data/ar.dat',status='unknown')
+!t_ratio=4.d-3 !for Z=1.d0
+t_ratio=2.d-2
 
-!************************************************************
-i_ev=1
-!----initial condition 
+!initial condition 
 xnH=1.d-1
 !xnH=1.d5
 rho=(1.d0+4.d0*yHe)*xm_p*xnH    
-T_K=3000.d0
+T_K=300.d0
 !T_K=10.d0
 !T_K=8000.d0
 Z_metal_gas=Z_gas
 
+!evolution
+i_ev=1
+!---parameters---
+            
+open(8,file='data2/nT_z6_nm1_GZ0.dat',status='unknown')
+open(11,file='data2/1_z6_nm1_GZ0.dat',status='unknown')
+open(12,file='data2/2_z6_nm1_GZ0.dat',status='unknown')
+!open(13,file='3.dat',status='unknown')    
+open(14,file='data2/4_z6_nm1_GZ0.dat',status='unknown')
+open(15,file='data2/data_y_z6_nm1_GZ0.dat',status='unknown')
+!open(16,file='data/ar.dat',status='unknown')
+
+!************************************************************
 do i=1,N_sp
       y(i)=0.d0
 enddo
@@ -162,10 +166,13 @@ do i=1,1000000
       v_bulk=dsqrt(v_bulk**2+v_turb**2)
       !continuum cooling
       A_v=Z_metal*xnH*radius*5.3d-22
+
+      !write(*,*) '-tst1-', i
       call  rad_cool(Z_metal,T_K,T_gr_K,radius,A_v,esc_cnt,&
       dt,xmu,gamma,y,xLmbd_ch,xLmbd_line,xLmbd_cnt,xLmbd_gr,i,i_ev)
       tau_cont=tau_cnt
 
+      !write(*,*) '-tst2-', i
       !PE heating/cooling
       call  phelectr(xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe)
 
@@ -179,6 +186,7 @@ do i=1,1000000
       xNc_H=dmin1(1.d0,v_D/v_bulk)*y_H*xnH*radius
       v_D=dsqrt(2.d0*xk_B*T_K/(3.d0*xm_p))
       xNc_HD=dmin1(1.d0,v_D/v_bulk)*y_HD*xnH*radius
+      !write(*,*) '-tst3-', i
       call chemcool(xnH,T_K,T_gr_K,Z_metal,&
            y,dt,t_chem,xmu,gamma,xLmbd_ch)
 
@@ -192,6 +200,8 @@ do i=1,1000000
 
       xMJ=rho*radius**3/2.d33
       
+      !write(*,*) '-tst4-', i
+
       !update values of rho & e
       call update(i_ev)
 
@@ -252,11 +262,11 @@ do i=1,1000000
 
       if(itchem.eq.0) then
             dt=dmax1(1.d0*t_chem,1.2d0*dt)
-            if(dmin1(2.d-2*t_col,2.d-2*t_cool).le.dt) itchem=1
+            if(dmin1(t_ratio*t_col,t_ratio*t_cool).le.dt) itchem=1
       elseif(xnH < 1.d0) then
-            dt=dmin1(2.d-2*t_col,2.d-2*t_cool)
+            dt=dmin1(t_ratio*t_col,t_ratio*t_cool)
       elseif(xnH < 1.d14) then
-            dt=dmin1(2.d-2*t_col,2.d-2*t_cool)
+            dt=dmin1(t_ratio*t_col,t_ratio*t_cool)
       else
             dt=dmin1(5.d-2*t_col,5.d-2*t_cool)
       endif
