@@ -1,10 +1,9 @@
 
 SUBROUTINE chemcool(xnH,Tp,Tp_gr,Z_metal,&
     y,dt,tchem,xmu,gamma,xLmbdch)
+    USE PYSCONST
 IMPLICIT REAL*8(a-h,o-z)
-INTEGER, PARAMETER :: maxit=100,N_sp=50      
 double precision :: y(N_sp),ytmp(N_sp)
-double precision :: xm_p=1.67d-24,xk_B=1.38d-16
 
 !    input    Tp,xnH,dt,y,xmu,gamma  
 !    output   y,xmu,gamma,xLmbdch
@@ -73,8 +72,8 @@ SUBROUTINE chemreact(xnH,T_K,T_gr_K,Z_metal,&
 !*      no radiation                      *
 !******************************************
         USE xcrit
+        USE PYSCONST
 IMPLICIT REAL*8(a-h,o-z)
-integer, PARAMETER :: N_sp=50,N_react=675
 double precision :: eps=1.d-4,eps_y=1.d-10,xnH_eq=3.d16
 double precision :: y(N_sp),y_init(N_sp),y_tmp(N_sp),dy(N_sp),ddy(N_sp)
 double precision :: xk(N_react)
@@ -265,13 +264,11 @@ SUBROUTINE equichem(xnH,T_K,y_e,y_HI,y_HII,y_H2,y_HeI,y_HeII,y_HeIII)
 !***********************************************
 !*        Equillibrium  Chemistry    (Saha)    *
 !***********************************************
+   USE PYSCONST
 IMPLICIT REAL*8(a-h,o-z)
-double precision, PARAMETER :: yHe=8.333d-2
-double precision :: pi=3.14159d0,rmasse=9.109534d-28,h=6.626176d-27,&
-     rmassp=1.67d-24
 
 T_eV=8.61735d-5*T_K
-phyc=2.d0*(2.d0*1.60219d-12*pi*rmasse/h**2)**1.5d0
+phyc=2.d0*(2.d0*1.60219d-12*pi*rmasse/h_Pl**2)**1.5d0
 chiH0=13.6d0
 chiHe0=24.6d0
 chiHep=79.0d0-chiHe0
@@ -284,7 +281,7 @@ zH2=H2_pf(T_K)
 fH0=phyc*(T_eV**1.5d0)*dexp(-chiH0/T_eV)/zH0/xnH
 fHe0=phyc*(T_eV**1.5d0)*dexp(-chiHe0/T_eV)*(zHep/zHe0)/xnH
 fHep=phyc*(T_eV**1.5d0)*dexp(-chiHep/T_eV)/zHep/xnH
-fH2=(zH0**2/zH2)*(1.60219d-12*pi*rmassp/h**2)**1.5d0&
+fH2=(zH0**2/zH2)*(1.60219d-12*pi*rmassp/h_Pl**2)**1.5d0&
      *(T_eV**1.5d0)*dexp(-chiH2/T_eV)/xnH
 
 if(fH2.eq.0.d0) then 

@@ -1,9 +1,8 @@
 
-SUBROUTINE grtemp(xnH,T,esc_cnt,T_rad,xJ_ex,T_gr)
+SUBROUTINE grtemp(xnH,T,esc_cnt,T_rad,xJ_ex,T_gr,xk_vis)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-    !double precision :: xnH,T,esc_cnt,T_rad,xJ_ex,T_gr
-    double precision, PARAMETER :: yHe=8.333d-2,xk_vis=40.d0
-    double precision :: xm_p=1.67d-24
+   
     
     funcL(T_d)=4.9d-2*vol_gr((1.d0+4.d0*yHe)*xnH*xm_p,T_d)&
     *dsqrt(T*1.d-3)*(0.354+0.5d0*yHe)*(T-T_d)
@@ -167,8 +166,6 @@ SUBROUTINE vaptemp(rho,T_ice,T_vo,T_ro,T_tr,T_ir,T_pyr,T_ol)
    !     T_pyr   for   Orthopyroxene
    !     T_ol    for   Olivine
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: rho,T_ice,T_vo,T_ro,T_tr,T_ir,T_pyr,T_ol
-   !     USES linear
    double precision :: xlg_rhoa(13),T_icea(13),T_ira(13),&
    T_pyra(13),T_ola(13)
    DATA (xlg_rhoa(i),i=1,13)&
@@ -201,9 +198,8 @@ END SUBROUTINE vaptemp
    
    
 SUBROUTINE phelectr(xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xnH,T_K,T_gr_K,y_e,Z_metal,G_0,A_v,Gmm_pe
-   double precision :: xm_p=1.67d-24, T_ro=575.d0
    if(T_gr_K > T_ro) then
       Gmm_pe=0.d0
       return

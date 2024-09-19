@@ -1,8 +1,7 @@
 SUBROUTINE COcool(xnH,T_K,y_H2,xNc_CO,tau_cnt,xLd_CO)
    !     CO cooling function
+   USE PYSCONST
 IMPLICIT REAL*8(a-h,o-z)
-!double precision :: xnH,T_K,y_H2,xNc_CO,tau_cnt,xLd_CO
-double precision :: xk_B=1.38d-16, xm_p=1.67d-24
 double precision :: xlTa(1:13)
 data xlTa/0.477d0, 0.778d0, 1.000d0, 1.301d0, 1.477d0,&
 1.699d0, 1.903d0, 2.000d0, 2.477d0, 2.778d0,&

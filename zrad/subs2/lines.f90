@@ -1,8 +1,6 @@
 FUNCTION xLd(pop,esc,N_line)
+   USE PYSCONST
 IMPLICIT REAL*8(a-h,o-z)
-!double precision :: xLd
-!integer :: N_line
-integer, PARAMETER :: N_p=100
 double precision :: esc(N_p),func(N_p),desc(N_p),&
 esc_f(N_p),func_f(N_p),A(N_p,N_p),&
 esc_min(N_p)
@@ -92,19 +90,13 @@ END FUNCTION xLd
 SUBROUTINE pop_rot(esc,func,xLd_rot)
    !     xnH*rn(molecule)*xLd_rot : cooling rate owing to
    !     rotational transitions per unit volume
-   !use COMVAR
    USE lines
    USE mol_lines
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xLd_rot
    !     USES beta_esc
-   integer, PARAMETER :: N_p=100
    double precision :: f_LTE(0:N_p),A(N_p),f(0:N_p),aa(N_p),&
    DDD(0:N_p),xnn(0:N_p),esc(N_p),func(N_p),Q(N_p),S(N_p)
-
-   DOUBLE PRECISION :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-        xm_p=1.67d-24
-
 
         Z=0.d0
         do j=0,J_max
@@ -176,14 +168,10 @@ SUBROUTINE pop_rot(esc,func,xLd_rot)
 END SUBROUTINE pop_rot
 
 SUBROUTINE pop_CII(esc,func,xLd_CII)
-   !use COMVAR
    USE lines
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xLd_CII
-   integer, PARAMETER :: N_p=100
    double precision :: esc(N_p),func(N_p)
-   DOUBLE PRECISION :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-        xm_p=1.67d-24
 
 g_0=2.d0 !Degeneracy
 g_1=4.d0 !Degeneracy
@@ -232,12 +220,10 @@ END SUBROUTINE pop_CII
 SUBROUTINE pop_CI(esc,func,xLd_CI)
    !use COMVAR
    USE lines  
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
    !double precision :: xLd_CI
-   integer, PARAMETER :: N_p=100
    double precision :: esc(N_p),func(N_p)
-   DOUBLE PRECISION :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-        xm_p=1.67d-24
 
 
 g_0=1.d0
@@ -357,14 +343,10 @@ END SUBROUTINE pop_CI
 
 SUBROUTINE pop_OI(esc,func,xLd_OI)
    !     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
-   !use COMVAR
    USE lines
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xLd_OI
-   integer, PARAMETER :: N_p=100
    double precision :: esc(N_p),func(N_p)
-   double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-    xm_p=1.67d-24
 
 
     g_0=5.d0
@@ -486,15 +468,10 @@ END SUBROUTINE pop_OI
 
 
 SUBROUTINE pop_CIImeta(esc,func,xLd_CIImeta)
-   !use COMVAR
    USE lines
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xLd_CIImeta
-   integer, PARAMETER :: N_p=100
    double precision :: esc(N_p),func(N_p)
-   double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-   xm_p=1.67d-24
-
 
 g_0=6.d0
 g_1=12.d0
@@ -539,15 +516,10 @@ return
 END SUBROUTINE pop_CIImeta
 
 SUBROUTINE pop_CImeta(esc,func,xLd_CImeta)
-    !use COMVAR
     USE lines
+    USE PYSCONST
     IMPLICIT REAL*8(a-h,o-z)
-    !double precision :: Ld_CImeta
-    integer, PARAMETER :: N_p=100
     double precision :: esc(N_p),func(N_p)
-
-    double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-    xm_p=1.67d-24
 
 
 g_0=9.d0
@@ -659,14 +631,11 @@ END SUBROUTINE pop_CImeta
 
 SUBROUTINE pop_OImeta(esc,func,xLd_OImeta)
     !     xnH*rn(OI)*xLd_OI : cooling rate owing to OI per unit volume
-    !use COMVAR
     USE lines
+    USE PYSCONST
     IMPLICIT REAL*8(a-h,o-z)
-    !double precision :: xLd_OImeta
-    integer, PARAMETER :: N_p=100
     double precision :: esc(N_p),func(N_p)
-    double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-    xm_p=1.67d-24
+
 
 g_0=9.d0
 g_1=5.d0
@@ -784,15 +753,11 @@ return
 END SUBROUTINE pop_OImeta
 
 SUBROUTINE thick_lev(J_thick)
-   !double precision :: thick_lev
-   !USE COMVAR
    USE lines 
    USE mol_lines 
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   integer, PARAMETER :: N_p=100
    double precision :: f_LTE(0:N_p),A(N_p),f(0:N_p),aa(N_p),P_J(N_p),esc(N_p)
-   double precision :: xk_B=1.38d-16,h_Pl=6.63d-27,pi=3.14159265358979d0,&
-   xm_p=1.67d-24
 
    J_thick=0
 
@@ -846,7 +811,6 @@ END SUBROUTINE thick_lev
 
 FUNCTION beta_esc(tau_L,tau_C)
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: beta_esc,tau_L,tau_C
    
    if(tau_L.lt.0.d0) then
       beta_esc=1.d0

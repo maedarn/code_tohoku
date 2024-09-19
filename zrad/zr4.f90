@@ -26,7 +26,7 @@ MODULE radgr
 double precision :: T_gr_K,tau_cont
 END MODULE radgr
    
-MODULE mol_lines 
+MODULE mol_lines
 double precision :: A0,DT0,sigma,eta_T,xmu_mol
 integer :: J_max=25
 END MODULE mol_lines 
@@ -66,7 +66,7 @@ USE coldens
 USE lines 
 USE indcool
 USE radgr
-IMPLICIT REAL*8(a-h,o-z)
+IMPLICIT REAL*8(a-h,o-z) !i,j,k,l,m,n: integer 
 integer, PARAMETER :: N_sp=50 
 double precision :: y(N_sp), t_ratio
 double precision :: xm_p=1.67d-24,xk_B=1.38d-16,G=6.67d-8,&

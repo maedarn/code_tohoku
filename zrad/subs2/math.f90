@@ -1,6 +1,5 @@
 SUBROUTINE linear(xa,ya,m,x,y)
    IMPLICIT REAL*8(a-h,o-z)
-   !integer :: m
    double precision :: xa(m),ya(m)!,x,y
    do i=1,m
       if(x-xa(i).le.0.d0) then
@@ -20,14 +19,13 @@ END SUBROUTINE linear
    
     
 SUBROUTINE gaussj(a,n,np,b,m,mp)
+   USE GSPARA
    IMPLICIT REAL*8(a-h,o-z)
    INTEGER m,mp,n,np
-   !     PARAMETER (NMAX=50,eps=1.d-13)
-   integer, PARAMETER :: NMAX=50
-   double precision, PARAMETER :: eps=0.d0
    DOUBLE PRECISION a(np,np),b(np,mp),b_max(np,mp)
    INTEGER i,icol,irow,j,k,l,ll,indxc(NMAX),indxr(NMAX),ipiv(NMAX)
    DOUBLE PRECISION big,dum,pivinv
+
    do j=1,n
      ipiv(j)=0
    enddo
@@ -136,8 +134,7 @@ END SUBROUTINE gaussj
     
 SUBROUTINE bilinear(x1a,x2a,ya,m,n,x1,x2,y)
    IMPLICIT REAL*8(a-h,o-z)
-   !integer m,n
-   double precision :: x1a(m),x2a(n),ya(m,n)!,x1,x2,y
+   double precision :: x1a(m),x2a(n),ya(m,n)
    do i=1,m
       if(x1-x1a(i).le.0.d0) then
          ms=i

@@ -8,7 +8,7 @@ DOUBLE PRECISION, dimension(-1:ndz) :: z,dz
 DOUBLE PRECISION, dimension(:,:,:,:), allocatable :: U, Bcc, Blg, Vfc, EMF,Bug
 DOUBLE PRECISION, dimension(:,:,:),   allocatable :: dnc, xlag, dxlagM
 
-DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2
+DOUBLE PRECISION, parameter :: kb=8.63359d0, Kcond=1.6384d-2, t_min_th=2.5d-5
 DOUBLE PRECISION  :: gamma,gammi1,gammi2,gammi3,gampl1,gampl2,gampl3
 DOUBLE PRECISION  :: CFL,facdep,tfinal,time,phr(-1:400)
 DOUBLE PRECISION  :: pmin,pmax,rmin,rmax,Tmin
@@ -18,7 +18,10 @@ INTEGER :: ifchem,ifthrm,ifrad,ifgrv,iffed,loopbc=2
 DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
-character(45) :: dir='/work/maedarn/3DMHD/samplecnv-10m4-v100-d100/' !samplecnv2
+!character(45) :: dir='/work/maedarn/3DMHD/samplecnv-10m4-v100-d100/' !samplecnv2
+!character(45) :: dir='/work/maedarn/3DMHD/samplecnv-10m0-2-v100-tm/'
+!character(37) :: dir='/work/maedarn/3DMHD/samplecnv-10m2-n/'
+character(35) :: dir='/work/maedarn/3DMHD/samplecnv-10m4/'
 
 integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 integer :: time_end_c6,time_end_c7,time_end_c8
@@ -32,6 +35,8 @@ INTEGER :: BCx1,BCx2,BCy1,BCy2,BCz1,BCz2, N_MPI(20)
 DOUBLE PRECISION  :: BBRV(10,2,2),BBRV_cm(9)
 REAL*4, dimension(:,:,:), allocatable :: DTF
 REAL*4, dimension(:,:,:,:), allocatable :: VTF,rd49
+double precision  :: ntime_CPU(5)
+double precision  :: cmtime_CPU(11)
 END MODULE mpivar
 
 MODULE chmvar
@@ -264,18 +269,31 @@ write(*,*)'READ',NRANK
 !ndtot=40.088111042533122d0
 !pinit1=0.22470327523212519d0*kb*(pini+Hini+H2ini+Heini+Hepini); pinit2=pinit1
 !---0.0001_Z, D119---
-pini=5.0822846054371033d-2
-Hini=65.613430728514430d0
-H2ini=3.6254946325657588d-5
-Hmini=2.7901638224369778d-10
-Heini=6.4907600663954419d0
-Hepini=3.5136993463809082d-3
-Cini=1.1873105458399322d-10
-Cpini=1.0105201934274448d-6
-COini=3.9391386482382157d-22
-nde=5.4337555920945364d-2
-ndtot=72.158599850203274d0
-pinit1=2.7660167081654068d0*kb*(pini+Hini+H2ini+Heini+Hepini); pinit2=pinit1
+!pini=5.0822846054371033d-2
+!Hini=65.613430728514430d0
+!H2ini=3.6254946325657588d-5
+!Hmini=2.7901638224369778d-10
+!Heini=6.4907600663954419d0
+!Hepini=3.5136993463809082d-3
+!Cini=1.1873105458399322d-10
+!Cpini=1.0105201934274448d-6
+!COini=3.9391386482382157d-22
+!nde=5.4337555920945364d-2
+!ndtot=72.158599850203274d0
+!pinit1=2.7660167081654068d0*kb*(pini+Hini+H2ini+Heini+Hepini); pinit2=pinit1
+!---0.0001_Z, D1---
+pini=6.6550406243849041d-3
+Hini=0.55964380463790098d0
+H2ini=9.3309443666000398d-10
+Hmini=6.8395742897108990d-11
+Heini=5.5587655200783986d-2
+Hepini=4.1992093841892818d-4
+Cini=7.6820546395404889d-14
+Cpini=8.7160064016756252d-9
+COini=6.8353376855065652d-31
+nde=7.0749702788102343d-3
+ndtot=0.62230642326767771d0
+pinit1=6.7315845489501953d0*kb*(pini+Hini+H2ini+Heini+Hepini); pinit2=pinit1
 dinit1=mH*Hini+mH*pini+mH2*H2ini+mH*Hmini+mHe*Heini+mHe*Hepini; dinit2=dinit1
 BBRV_cm(1)=Hini; BBRV_cm(2)=pini; BBRV_cm(3)=H2ini; BBRV_cm(4)=Heini
 BBRV_cm(5)=Hepini; BBRV_cm(6)=Cini; BBRV_cm(7)=COini; BBRV_cm(8)=Cpini; BBRV_cm(9)=Hmini
@@ -738,6 +756,9 @@ time_CPU(1) = 0.d0
 time_CPU(2) = 0.d0
 time_CPU(3) = 0.d0
 Time_signal = 0
+ntime_CPU(:) =0.d0
+cmtime_CPU(:)=0.d0
+
 write(*,*) 'DTF1'
 do in10 = 1, maxstp
   
@@ -784,8 +805,11 @@ do in10 = 1, maxstp
     if(time+dt.gt.tfinal) dt = tfinal - time
     if(time+dt.gt.tsave ) dt = tsave  - time
 
+    !ntime_CPU(1) = MPI_WTIME()
     if(ifgrv.eq.2) then; call GRAVTY(dt,3); end if
+    !ntime_CPU(2) = MPI_WTIME()
     call SOURCE(0.5d0*dt)
+    !ntime_CPU(3) = MPI_WTIME()
 
     if(iffed.eq.2) then; call feedback(dt,1); end if
     if(iffed.eq.2) then; call feedback(dt,2); end if
@@ -829,11 +853,16 @@ do in10 = 1, maxstp
     call CC(3,dt)
     DEALLOCATE(EMF)
     call CC(4,dt)
+    !ntime_CPU(4) = MPI_WTIME()
 
     call SOURCE(0.5d0*dt)
     if(ifgrv.eq.2) then; call GRAVTY(dt,2); call GRAVTY(dt,3); end if
     call DISSIP()
+    !ntime_CPU(5) = MPI_WTIME()
     time = time + dt
+
+    !write(*,*) 'Time1', ntime_CPU(2)-ntime_CPU(1),ntime_CPU(3)-ntime_CPU(2),ntime_CPU(4)-ntime_CPU(3),&
+    !ntime_CPU(5)-ntime_CPU(4)
   end do
   itime = itime - 1
   7777   continue
@@ -2677,6 +2706,11 @@ DOUBLE PRECISION :: temp1,temp2,temp3,omeps,eps
 DOUBLE PRECISION, dimension(:,:,:), allocatable :: Tn,Pn,Qx,Qy,Qz
 double precision  :: mmean,rtTx,rtTy,rtTz,tcd,CooL
 
+
+!if(NRANK==0) then
+!write(*,*) 'Fcool', dt
+!endif
+
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   nde(i,j,k) = ndp(i,j,k)+ndHep(i,j,k)+ndCp(i,j,k)
   ndtot(i,j,k) = ndp(i,j,k)+ndH(i,j,k)+2.d0*ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
@@ -2962,9 +2996,12 @@ USE mpivar
 USE chmvar
 
 double precision  tLMT,alpha,tauC,Nn,Tn,dl
-double precision  CooL
+double precision  CooL,t_min
+integer :: ncount
 
 tLMT = tfinal
+ncount = 0
+t_min =1.d3
 
 do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
   Nn = ndp(i,j,k)+ndH(i,j,k)+ndH2(i,j,k)+ndHe(i,j,k)+ndHep(i,j,k)
@@ -2978,12 +3015,17 @@ do k = 1, Ncellz; do j = 1, Ncelly; do i = 1, Ncellx
 !-----------------------------( Avoid over cooling )
   Call Fcool(CooL,Tn,i,j,k)
   tauC  =  U(i,j,k,5)/gammi1/dabs(CooL)
-  tauC  =  dmax1( 0.2d0*tauC , 2.5d-4 )
+  t_min = dmin1( 0.2d0*tauC, t_min)
+  if(0.2d0*tauC < t_min_th) then
+    ncount=1+ncount
+  endif
+  tauC  =  dmax1( 0.2d0*tauC , t_min_th )
 
   tLMT =  dmin1( tLMT , tauC  )
   tLMT =  dmin1( tLMT , alpha )
 end do; end do; end do
 if(tLMT.lt.0.d0) write(5,*) time,NRANK,'err at Stblty'
+!write(*,*) 'CNT_ICM',t_min,ncount 
 
 END SUBROUTINE Stblty
 
@@ -3207,6 +3249,12 @@ Lamdg = Lamdg * (1.d0-Sigmo)
 !- Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb
 CooL  = (Lamc + Lamo + Lamd + LCOr + LCOH + LCOH2) + (LCIEHe + LCIE) &
 - Gampe - Gamcr - Gampd + LamH2 + Laml + Lrr + Lff + Lneb - Gampm - GamH2f + Lamdg
+
+!if((i==1).and.(j==1).and.(k==1)) then
+!write(*,*)'IMC',i,j,k,T*1.d3,Lamc , Lamo , Lamd + LCOr , LCOH , LCOH2,LCIEHe ,&
+!LCIE, Gampe , Gamcr , Gampd , LamH2,Laml,Lrr , Lff , Lneb , Gampm , GamH2f , Lamdg
+!endif
+
 END SUBROUTINE Fcool
 
 SUBROUTINE linear(xa,ya,m,x,y)

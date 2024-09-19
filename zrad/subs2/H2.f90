@@ -1,6 +1,5 @@
 FUNCTION c_H2(T_K)
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: T_K,c_H2,E_T,T_K_b,T_K_f,x
    if(T_K.gt.1.d3) then
       c_rot=1.d0
       go to 10
@@ -71,12 +70,11 @@ END FUNCTION c_H2
 !********************************************************************
 
 function H2_pf(T_K)
+   USE mol_lines
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: H2_pf,T_K
-   integer, parameter :: iv_max=5,j_max=25
-   double precision :: ET(0:iv_max,0:j_max)!,ET_H2_BFM(0:iv_max,0:j_max)
+   double precision :: ET(0:iv_max,0:J_max)
    do iv=0,iv_max
-      do j=0,j_max
+      do j=0,J_max
          ET(iv,j)=E_H2_BFM(iv,j)
       enddo
    enddo
@@ -86,7 +84,7 @@ function H2_pf(T_K)
    z_p=0.d0
    z_o=0.d0
    do iv=0,iv_max
-      do j=0,j_max
+      do j=0,J_max
          if(ET(iv,j)-ET(0,0).le.ET_diss) then
             if(mod(j,2).eq.0) then
                z_p=z_p+dble(2*j+1)*dexp(-(ET(iv,j)-ET(0,0))/T_K)
@@ -107,8 +105,6 @@ function E_H2_BFM(iv,J)
    IMPLICIT REAL*8(a-h,o-z)
    !     Borysow, Frommhold, and Moraldi (1989) ApJ,336,495
    !     Equation (A11) (in K)
-   !double precision :: E_H2_BFM
-   !integer :: iv,J
    
    Ev0=0.38496d0
    Ev1=-0.04609d0
@@ -180,14 +176,12 @@ end function E_H2_BFM
         
 
 FUNCTION xLd_H2(xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
    !     xnH*xn(H2)*xLd_H2 : cooling rate owing to H2 per unit volume
-   !double precision :: xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt,xLd_H2,Q_bg
-   !     USES beta_esc, Q_bg
    double precision :: A(0:2,0:2,0:22,0:22),ET(0:2,0:22),p(0:22),&
    f(0:2,0:22),f_v(0:2)
-   double precision :: xk_B=1.380662d-16,h_P=6.626176d-27,pi=3.14159265358979d0,&
-   xm_p=1.67d-24,c_light=2.99792458d10,beta_esc,esc
+   double precision :: beta_esc,esc
    data (((A(i,ii,j,j+2),ii=0,i-1),i=1,2),j=0,20)&
    /8.54d-7 ,3.47d-7 ,1.29d-6&
    ,4.23d-7 ,1.61d-7 ,6.40d-7&
@@ -452,7 +446,7 @@ FUNCTION xLd_H2(xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt)
             jf=ji+2
             DT=ET(ivi,ji)-ET(ivf,jf)
             DE=DT*xk_B
-            xnu_Hz=DE/h_P
+            xnu_Hz=DE/h_Pl
             xNc_l=xNc_H2*f(ivf,jf)
             xNc_u=xNc_H2*f(ivi,ji)
             g_l=dble(2*jf+1)
@@ -475,7 +469,7 @@ FUNCTION xLd_H2(xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt)
             jf=ji
             DT=ET(ivi,ji)-ET(ivf,jf)
             DE=DT*xk_B
-            xnu_Hz=DE/h_P
+            xnu_Hz=DE/h_Pl
             xNc_l=xNc_H2*f(ivf,jf)
             xNc_u=xNc_H2*f(ivi,ji)
             g_l=dble(2*jf+1)
@@ -497,7 +491,7 @@ FUNCTION xLd_H2(xnH,T_K,y_H,y_H2,y_e,y_Hp,xNc_H2,tau_cnt)
             jf=ji-2
             DT=ET(ivi,ji)-ET(ivf,jf)
             DE=DT*xk_B
-            xnu_Hz=DE/h_P
+            xnu_Hz=DE/h_Pl
             xNc_l=xNc_H2*f(ivf,jf)
             xNc_u=xNc_H2*f(ivi,ji)
             g_l=dble(2*jf+1)

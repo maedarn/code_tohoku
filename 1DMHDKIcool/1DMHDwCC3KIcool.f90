@@ -4,7 +4,8 @@
 !*******************************************************!
 
 MODULE comvar
-INTEGER, parameter :: nd=1024+2
+!INTEGER, parameter :: nd=1024+2
+INTEGER, parameter :: nd=256+2
 double precision, dimension(-1:nd) :: x,dx,Va
 double precision, dimension(-1:nd,8) :: U
 
@@ -22,7 +23,7 @@ double precision, dimension(-1:nd) :: ndp,ndH,ndH2,ndHe,ndHep,ndC,ndCp,ndCO,nde,
 double precision, dimension(-1:nd,2) :: Ntot,NH2,NnC,NCO,tCII
 double precision  :: ndpmin,ndHmin,ndH2min,ndHemin,ndHepmin,ndCmin,ndCpmin,ndCOmin
 
-CHARACTER(22) :: dir='/Users/ryunosukemaeda/'
+CHARACTER(47) :: dir='/Users/maedarn/Dropbox/analysis/test1D/riemann/'
 character(4) :: title
 END MODULE comvar
 
@@ -79,7 +80,6 @@ open(8,file=dir//'INPUT3.DAT')
   read(8,*)  iflag,ifchem,ifthrm,ifrad
   read(8,*) title
 close(8)
-
 
 !UEQ ntot = 5.059326
 goto 10002
@@ -203,14 +203,14 @@ open(2,file=dir//'tsave.DAT')
   read(2,'(i8)') nunit
 close(2)
 
-if(nunit.eq.1) goto 118
-  open(unit=8,file=dir//'000.dat',FORM='UNFORMATTED') !CONVERT='LITTLE_ENDIAN'
-    read(8) (x(i),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
-             ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=-1,Ncell+2)
-  close(8)
-  do i=1,Ncell; dx(i) = x(i)-x(i-1); end do
-  call BC(Ncell,dx(-1),BCx1,BCx2)
-118  continue
+!if(nunit.eq.1) goto 118
+!  open(unit=8,file=dir//'000.dat',FORM='UNFORMATTED') !CONVERT='LITTLE_ENDIAN'
+!    read(8) (x(i),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
+!             ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=-1,Ncell+2)
+!  close(8)
+!  do i=1,Ncell; dx(i) = x(i)-x(i-1); end do
+!  call BC(Ncell,dx(-1),BCx1,BCx2)
+!118  continue
 
 
 do i=1,Ncell+1
@@ -265,11 +265,11 @@ do in10 = 1, maxstp
     if(time+dt.gt.tfinal) dt = tfinal - time
 
 !***** Source parts *****
-    call SOURCE(dt*0.5d0)
+   ! call SOURCE(dt*0.5d0)
 !***** Godunov parts *****
     call MHD(dt)
 !***** Source parts *****
-    call SOURCE(dt*0.5d0)
+   ! call SOURCE(dt*0.5d0)
 !************************
     time = time + dt
   end do
@@ -288,17 +288,15 @@ USE comvar
 
 integer :: nunit,msig
 double precision  :: dt,t(10000)
-character(7) filenm
+character(8) filenm
 
 write(filenm,'("title",I3.3)') nunit
-100 format(E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3, &
-         E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3) !再利用のため100をつけておく
+100 format(E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3,E19.10e3) !再利用のため100をつけておく
 !100 format(E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12, &
  !E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12,E21.12)
 
 open(10,file=dir//filenm//'.dat')
-   write(10,100) ( 0.5d0*(x(i)+x(i-1)),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8), &
-                   ndH(i),ndp(i),ndH2(i),ndHe(i),ndHep(i),ndC(i),ndCO(i),ndCp(i),i=1,Ncell )
+   write(10,100) ( 0.5d0*(x(i)+x(i-1)),U(i,1),U(i,2),U(i,3),U(i,4),U(i,5),U(i,6),U(i,7),U(i,8),i=1,Ncell )
 close(10)
 
 !write(*,*) U(-1,1),U(-1,2),U(-1,3),U(-1,4),U(-1,5),U(-1,6),U(-1,7),U(-1,8)
@@ -317,7 +315,7 @@ close(10)
 !enddo
 ! write(*,*) '*************************************'
 !endif
-write(*,*) U(512,5), nunit
+!write(*,*) U(512,5), nunit
 
 t(nunit) = time
 open(3,file=dir//'time.DAT')
@@ -713,6 +711,7 @@ integer :: Ncell
 double precision, parameter :: eps = 1.d-10
 double precision  :: U(-1:Ncell+2), grdU(-1:Ncell+2), dx(-1:Ncell+2)
 double precision  :: delp,delm,flmt
+double precision  :: r_lm
 
 do i = i_sta, Ncell+i_end
   ix  = i
@@ -721,7 +720,19 @@ do i = i_sta, Ncell+i_end
 
   delp = U(ixp)-U(ix )
   delm = U(ix )-U(ixm)
+  r_lm = delm/delp
+  !van albada 2
   flmt = dmax1( 0.d0,(2.d0*delp*delm+eps)/(delp**2+delm**2+eps) )
+  !minmod
+  !flmt = dmax1( 0.d0, dmin1(1.d0,r_lm) )
+  !superbee
+  !flmt = dmax1( 0.d0, dmin1(1.d0,2.d0*r_lm), dmin1(2.d0,r_lm) )
+  !van leer
+  !flmt = dmax1( 0.d0,(r_lm + dabs(r_lm)+eps)/(1.d0 + dabs(r_lm)+eps))
+  !CHARM
+  !flmt = dmax1( 0.d0,(r_lm*(3.d0*r_lm+1.d0)+eps)/((1.d0 + r_lm)**2 + eps))
+  !HCUS
+
   grdU(i) = flmt*( U(ixp)-U(ixm) )/( dx(i)+0.5d0*dx(i-1)+0.5d0*dx(i+1) )
 end do
 

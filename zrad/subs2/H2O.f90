@@ -1,8 +1,7 @@
 SUBROUTINE H2Ocool(xnH,T_K,y_H2,xNc_H2O,tau_cnt,xLd_H2O)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
    !c     H2O cooling function by Neufeld et al.
-   !double precision :: xnH,T_K,y_H2,xNc_H2O,tau_cnt,xLd_H2O
-   double precision :: xk_B=1.38d-16, xm_p=1.67d-24
    !c     100, 200, 400, 1000, 2000, 4000K
    double precision ::  xlTa(1:6)
    data xlTa/2.000d0, 2.301d0, 2.602d0,&

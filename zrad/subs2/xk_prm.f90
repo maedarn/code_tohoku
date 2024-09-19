@@ -4,7 +4,6 @@ FUNCTION xk_prm(T,rho)
    !            rho  density (g/cm^3)
    !    output  xk   mean opacity (cm^2/g)
    IMPLICIT REAL*8(a-h,o-z)
-   !    USES bilinear
    DIMENSION rlgk(57,19),T6(57),rlgR(19)
    
    DATA ((rlgk(i,j),j=1,19),i=1,8)&

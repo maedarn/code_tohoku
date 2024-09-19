@@ -19,7 +19,7 @@ DOUBLE PRECISION  :: Gampd_1, Gampd_2, Lamdg, LH2a, LH2b, LH2c, LH2d, LH2e
 DOUBLE PRECISION  :: dx1,dy1,dz1,prss1,Rst1
 INTEGER :: idum1,idum2
 DOUBLE PRECISION  :: nad
-character(65) :: dir='/Users/maedarn/Dropbox/code/code/Cooling_Kim/Thermal_instE_balbus' !samplecnv2
+character(65) :: dir='/Users/maedarn/Dropbox/code/code/Cooling_Kim/Thermal_instF_balbus' !samplecnv2
 
 integer :: time_begin_c,time_end_c1,time_end_c2,time_end_c3,time_end_c4,time_end_c5,CountPerSec, CountMax
 integer :: time_end_c6,time_end_c7,time_end_c8
@@ -30,7 +30,8 @@ END MODULE comvar
 
 MODULE chmvar
 double precision :: Zsolar=1.d0,xHe=0.1d0, fgr=1.d0,av1para=0.d0,av2para=0.d0
-DOUBLE PRECISION, parameter :: G0=1.7d0, Axc=5.4d-4, Axo=3.d-4, dv=2.d0, Tgr=5.d-3 !Bialy+19
+DOUBLE PRECISION, parameter :: G0=1.d0, Axc=5.4d-4, Axo=3.d-4, dv=2.d0, Tgr=5.d-3 !Bialy+19
+!DOUBLE PRECISION, parameter :: G0=1.7d0, Axc=5.4d-4, Axo=3.d-4, dv=2.d0, Tgr=5.d-3 !Bialy+19
 DOUBLE PRECISION :: xc=1.4d-4, xo=3.2d-4,dmo=0.41d0,dmc=0.53d0,Zd=1.d0
 DOUBLE PRECISION, parameter :: mH=1.d0, mHe=4.d0, mH2=2.d0, mC=12.d0, mCO=28.d0, TCMB=5.d-2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4, xo=3.2d-4, dv=2.d0, Tgr=5.d-3, fgr=1.d0
@@ -53,7 +54,7 @@ integer, parameter :: ifile = 30, imtrx=200,num_lin=30*(3+32)/2,itrchm=1000000,i
 integer, dimension(1:ifile) :: in_mtl
 double precision, dimension(1:ifile) :: Zmetals
 double precision, dimension(1:ifile,1:2,0:imtrx):: Mtl
-double precision :: Zi=1.d0,alphaB,ni,ne,zeta_cr=1.d0  !,kb=1.38d-16
+double precision :: Zi=1.d0,alphaB,ni,ne,zeta_cr=3.d-1  !,kb=1.38d-16
 double precision,parameter :: dlogTn = (-dlog10(1.d4) + dlog10(1.d8))/dble(imtrx)
 END MODULE chmvar
 
@@ -112,13 +113,13 @@ allocate(Lambda_CIE(0:ix,1:num_lin))
 !enddo
 
 !--Bialy+19
-if(Zsolar .ge. 0.2d0) then
-fgr=Zsolar
-else
-fgr=0.2d0*(Zsolar/0.2d0)**3
-endif
-xo=Axo*Zsolar*(1.d0-dmo*fgr/Zsolar)
-xc=Axc*Zsolar*(1.d0-dmc*fgr/Zsolar)
+!if(Zsolar .ge. 0.2d0) then
+!fgr=Zsolar
+!else
+!fgr=0.2d0*(Zsolar/0.2d0)**3
+!endif
+!xo=Axo*Zsolar*(1.d0-dmo*fgr/Zsolar)
+!xc=Axc*Zsolar*(1.d0-dmc*fgr/Zsolar)
 write(*,*)'metal_xc_xo_dust',xc,xo,fgr
 !--Bialy+19
 
@@ -678,7 +679,8 @@ Lamc = 6.0157d7*n2*b21
 !Lamc=3.15d-27*1.9733d27*dexp(-0.092d0/T)*ndtot*(ndH+0.5d0*ndH2) * xc /1.4d-4
 !Lamc=Lamc+1.4d-24*1.9733d27*(T*1.d0)**(-0.5d0)*dexp(-0.092d0/T) * ndtot * nde * xc /1.4d-4
 !***------------------------- OI Cooling
-tO1  = 3.40057d-6*Ntot(1)/xo ; tO2 = 3.40057d-6*Ntot(2)/xo
+!tO1  = 3.40057d-6*Ntot(1)/xo ; tO2 = 3.40057d-6*Ntot(2)/xo
+tO1  = 11.6618d0*Ntot(1)*xo ; tO2 = 11.6618d0*Ntot(2)*xo
 call fesc(tO1,fesO1); call fesc(tO2,fesO2)
 !Lamo = fgr*(dmax1(ndtot*xo-ndCO,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )
 !Lamo = fgr*(dmax1(ndtot*xo,0.d0)/xo) * (ndH+0.5d0*ndH2) * 1.23916d1 * (T**0.4d0) * dexp( -0.228d0/T )

@@ -2,10 +2,8 @@ SUBROUTINE react_coef(xnH,T_K,T_gr_K,Z_metal,xk)
    USE UVCR
    USE coldens
    USE xcrit
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !USE COMVAR
-   integer, PARAMETER :: N_react=675
-   !double precision :: xnH,T_K,T_gr_K,Z_metal
    double precision :: xk(N_react)
    
    T_eV=8.61735d-5*T_K
@@ -2275,12 +2273,12 @@ SUBROUTINE react_coef(xnH,T_K,T_gr_K,Z_metal,xk)
    xk(675)=zeta*854.d0/(1.d0-omega)
    
    return
-   END SUBROUTINE react_coef
+END SUBROUTINE react_coef
 
 
 SUBROUTINE react_rat(xk,xnH,y,r_f_tot)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
-   !double precision :: xk,xnH,y,r_f_tot
    !****************************************************************
    !*     dy(i)/dt=r_f_tot(i)                                      *
    !*     This subroutine returns reaction rate for each spieces,  *
@@ -2288,7 +2286,6 @@ SUBROUTINE react_rat(xk,xnH,y,r_f_tot)
    !****************************************************************
    !    N_sp = number of spiecies
    !    N_react = number of reactions
-   integer, PARAMETER :: N_sp=50,N_react=675
    double precision ::  y(N_sp),r_f(N_react,N_sp),r_f_tot(N_sp),xk(N_react)
    !****************************************************************
    !*     SPECIES                                                  *

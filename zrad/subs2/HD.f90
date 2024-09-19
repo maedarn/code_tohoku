@@ -1,10 +1,9 @@
 
 FUNCTION xLd_HD(xnH,T_K,y_H,y_H2,xNc_HD,tau_cnt)
+   USE PYSCONST
    IMPLICIT REAL*8(a-h,o-z)
    ! HD cooling from Galli and Palla (1998), A&A, 335, 403
    ! cooling is for T < 3000 K, in erg cm^3 s-1
-   !double precision :: xLd_HD,xnH,T_K,y_H,y_H2,xNc_HD,tau_cnt,Q_bg,beta_esc
-   double precision ::  xk_B=1.38066d-16,h_Pl=6.62618d-27,pi=3.14159265358979d0,xm_p=1.67d-24
    !     USES Q_bg, beta_esc
    !------------------------------------------------
    !     Various parameters for HD
