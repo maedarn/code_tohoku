@@ -484,7 +484,7 @@ END IF
 END IF
 !write(*,*) 'rMPI--' , uc(0,0,0)
 CALL BCsgr_MPI(uc,nx,ny,nz,1,1,1,1,1,1)
-!write(*,*) 'rMPI--2' , uc(0,0,0)
+
 END SUBROUTINE rstrctMPI
 
 

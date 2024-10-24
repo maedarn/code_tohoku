@@ -50,10 +50,10 @@ DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-4*Zsolar, xo=3.2d-4*Zsolar, dv=2
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=0.28d-4, xo=0.64d-4, dv=2.d0, Tgr=5.d-3, fgr=0.2d0 !1/5 solar metal
 !DOUBLE PRECISION, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=2.d0, Tgr=5.d-3, fgr=1.d-3 !1/1000 solar metal
 !POP0
-!REAL*8, parameter :: G0=1.d0, xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
-!REAL*8, parameter :: G0=1.d0, xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
-!REAL*8, parameter :: G0=1.d0, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POP3
-!REAL*8, parameter :: G0=1.d0, xc=1.4d-8, xo=3.2d-8, dv=3.d0, Tgr=5.d-3, fgr=1.d-4, Pen=1.d5 !POP4
+!REAL*8, parameter :: G0=1.d0,  xc=1.4d-5, xo=3.2d-5, dv=3.d0, Tgr=5.d-3, fgr=1.d-1, Pen=1.d5 !POP1
+!REAL*8, parameter :: G0=1.d0,  xc=1.4d-6, xo=3.2d-6, dv=3.d0, Tgr=5.d-3, fgr=1.d-2, Pen=1.d5 !POP2
+!REAL*8, parameter :: G0=1.d0,  xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POP3
+!REAL*8, parameter :: G0=1.d0,  xc=1.4d-8, xo=3.2d-8, dv=3.d0, Tgr=5.d-3, fgr=1.d-4, Pen=1.d5 !POP4
 !REAL*8, parameter :: G0=1.d-4, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPA
 !REAL*8, parameter :: G0=1.d-3, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPB
 !REAL*8, parameter :: G0=1.d-2, xc=1.4d-7, xo=3.2d-7, dv=3.d0, Tgr=5.d-3, fgr=1.d-3, Pen=1.d5 !POPC
@@ -1772,7 +1772,7 @@ double precision  :: depend1,depend2,cm
 double precision  :: dm(-1:ndmax)
 double precision  :: ndHym,ndpm,ndHem,ndHepm,ndH2m,ndHmm
 
-itrn = 5
+itrn = 1
 
 if(iwx.eq.1) then; Ncell = Ncellx; Ncm = Ncelly; Ncl = Ncellz; BT1 = 2; BT2 = 3; VN = 2; end if
 if(iwy.eq.1) then; Ncell = Ncelly; Ncm = Ncellz; Ncl = Ncellx; BT1 = 3; BT2 = 1; VN = 3; end if
@@ -3452,13 +3452,13 @@ LCIEHe=Mtl_CL*Zmetals(2)*1.9733d27 * ndHtot * ndHtot * ndHtot / Zmetals(1)
 LCIE_each(:)=0.d0
 LCIE=0.d0
 do kmtl=3,ifile
-x_ktmk1=dlog10(Mtl(k,1,idlogT))
-x_ktmk2=dlog10(Mtl(k,1,idlogT+1))
+x_ktmk1=dlog10(Mtl(kmtl,1,idlogT))
+x_ktmk2=dlog10(Mtl(kmtl,1,idlogT+1))
 ktmk=(dlog10(T*1.d3)-x_ktmk1)/(x_ktmk2-x_ktmk1)
-Mtl_CL=(1.d0-ktmk)*Mtl(k,2,idlogT)+ktmk*Mtl(k,2,idlogT+1)
+Mtl_CL=(1.d0-ktmk)*Mtl(kmtl,2,idlogT)+ktmk*Mtl(kmtl,2,idlogT+1)
 !LCIE=Mtl_CL*Zmetals(k)*Zsolar*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 !LCIE=Mtl_CL*Zmetals(k)*ndfgr(i,j,k)*1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
-LCIE=Mtl_CL*Zmetals(k)*ndfgr(i,j,k)/ndtot(i,j,k) *1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
+LCIE=Mtl_CL*Zmetals(kmtl)*ndfgr(i,j,k)/ndtot(i,j,k) *1.9733d27  * ndHtot * ndHtot * ndHtot / Zmetals(1) +LCIE
 enddo
 else
 LCIEHe=0.d0
